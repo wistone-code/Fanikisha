@@ -29,17 +29,17 @@
 </div>
 
 <div class="card overflow-x-auto">
-    <table class="w-full text-sm">
+    <table class="w-full text-sm sortable-table">
         <thead>
             <tr class="text-left text-xs uppercase text-gray-400 border-b">
-                <th class="px-4 py-3">Name</th>
+                <th class="px-4 py-3" data-sort="text">Name</th>
                 @if ($isFuneral)
-                    <th class="px-4 py-3">Contribution</th>
+                    <th class="px-4 py-3" data-sort="number">Contribution</th>
                 @else
-                    <th class="px-4 py-3">Pledge amount</th>
-                    <th class="px-4 py-3">Paid</th>
-                    <th class="px-4 py-3">Remain</th>
-                    <th class="px-4 py-3">Phone</th>
+                    <th class="px-4 py-3" data-sort="number">Pledge amount</th>
+                    <th class="px-4 py-3" data-sort="number">Paid</th>
+                    <th class="px-4 py-3" data-sort="number">Remain</th>
+                    <th class="px-4 py-3" data-sort="text">Phone</th>
                 @endif
                 @if ($isAdmin)<th class="px-4 py-3"></th>@endif
             </tr>
