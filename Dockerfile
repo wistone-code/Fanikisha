@@ -7,10 +7,12 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libzip-dev \
     libonig-dev \
+    libxml2-dev \
+    zlib1g-dev \
+    pkg-config \
     unzip \
     git \
     && rm -rf /var/lib/apt/lists/*
-
 # gd is required by phpoffice/phpspreadsheet (the Excel export feature) — this is the
 # extension that was missing from Railway's default build environment and caused
 # `composer install` to fail with "ext-gd * -> it is missing from your system".
