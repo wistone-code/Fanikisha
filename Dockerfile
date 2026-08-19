@@ -1,26 +1,10 @@
 FROM php:8.3-cli
 
-# System packages needed to build the PHP extensions below, plus zip/unzip for Composer.
-RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libzip-dev \
-    libonig-dev \
-    libxml2-dev \
-    zlib1g-dev \
-    pkg-config \
-    unzip \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-# gd is required by phpoffice/phpspreadsheet (the Excel export feature) — this is the
-# extension that was missing from Railway's default build environment and caused
-# `composer install` to fail with "ext-gd * -> it is missing from your system".
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" gd pdo_mysql mbstring xml zip bcmath
+RUN apt-get update && apt-get install -y unzip git && rm -rf /var/lib/apt/lists/*
 
-# Official Composer binary, copied in rather than installed via a separate script —
-# this is the standard, well-documented pattern for adding Composer to a PHP image.
+ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+RUN install-php-extensions gd pdo_mysql mbstring xml zip bcmath
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
@@ -28,7 +12,4 @@ COPY . .
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Railway's "Custom Start Command" setting (already configured in the dashboard)
-# overrides this CMD when set, so this is a fallback for completeness/consistency —
-# both run the exact same command either way.
 CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
