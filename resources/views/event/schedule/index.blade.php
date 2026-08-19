@@ -28,7 +28,34 @@
         <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save message</button>
     </form>
     <div class="border-t pt-4">
-        <a href="{{ route('schedule.broadcast-sms') }}" class="btn btn-primary w-full justify-center"><i class="fa-solid fa-tower-broadcast"></i> Broadcast SMS to all pledgers</a>
+        @if (trim($broadcastMessage) === '')
+        <p class="text-xs text-gray-400">Save a message above to enable broadcasting.</p>
+        @elseif ($pledgers->isEmpty())
+        <p class="text-xs text-gray-400">No contacts with a phone number to message.</p>
+        @else
+        <button onclick="document.getElementById('scheduleBroadcastModal').classList.remove('hidden')" class="btn btn-primary w-full justify-center"><i class="fa-solid fa-tower-broadcast"></i> Broadcast SMS to all pledgers</button>
+        @endif
+    </div>
+</div>
+
+<div id="scheduleBroadcastModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[80vh] flex flex-col">
+        <div class="flex justify-between items-center mb-1">
+            <h3 class="font-semibold">Send to each pledger</h3>
+            <button onclick="document.getElementById('scheduleBroadcastModal').classList.add('hidden')" class="text-gray-400"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <p class="text-xs text-gray-500 mb-3">Tap "Send" for each contact — your phone doesn't support sending to everyone in one link, so this sends them one at a time.</p>
+        <div class="overflow-y-auto space-y-2">
+            @foreach ($pledgers as $p)
+            <div class="flex justify-between items-center border rounded-lg px-3 py-2">
+                <div>
+                    <div class="text-sm font-semibold">{{ $p->name }}</div>
+                    <div class="text-xs text-gray-400">{{ $p->phone }}</div>
+                </div>
+                <a href="sms:{{ rawurlencode($p->phone) }}?body={{ rawurlencode($broadcastMessage) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> Send</a>
+            </div>
+            @endforeach
+        </div>
     </div>
 </div>
 @endif
@@ -48,7 +75,6 @@
                     <form method="POST" action="{{ route('schedule.destroy', $item) }}" class="inline" onsubmit="return confirm('Delete this schedule item?')">
                         @csrf @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i> Delete</button>
-
                     </form>
                 </td>
                 @endif

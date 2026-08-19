@@ -154,7 +154,6 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::patch('/schedule/{item}', [ScheduleController::class, 'update'])->name('schedule.update');
             Route::delete('/schedule/{item}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');
             Route::patch('/schedule/message', [ScheduleController::class, 'updateMessage'])->name('schedule.message');
-            Route::get('/schedule/broadcast-sms', [ScheduleController::class, 'broadcastSms'])->name('schedule.broadcast-sms');
 
             Route::post('/guests/{pledge}/send-invite', [GuestController::class, 'sendInvite'])->name('guests.send-invite');
             Route::get('/guests/{pledge}/sms', [GuestController::class, 'inviteSms'])->name('guests.sms');

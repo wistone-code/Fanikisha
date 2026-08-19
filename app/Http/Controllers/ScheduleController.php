@@ -13,7 +13,7 @@ class ScheduleController extends Controller
 {
     use AuthorizesEventOwnership;
 
-    public function index(Request $request): View
+    public function index(Request $request, MessageTemplateService $messages): View
     {
         $event = app('currentEvent');
 
@@ -21,6 +21,8 @@ class ScheduleController extends Controller
             'event' => $event,
             'items' => $event->scheduleItems,
             'isAdmin' => $request->user()->isAdminOn($event),
+            'pledgers' => $event->pledges()->whereNotNull('phone')->get(),
+            'broadcastMessage' => $messages->forSchedule($event),
         ]);
     }
 
@@ -67,26 +69,6 @@ class ScheduleController extends Controller
         app('currentEvent')->update(['schedule_message' => $data['schedule_message']]);
 
         return back()->with('status', 'Broadcast message saved');
-    }
-
-    public function broadcastSms(MessageTemplateService $messages): RedirectResponse
-    {
-        $event = app('currentEvent');
-        $message = $messages->forSchedule($event);
-
-        if (trim($message) === '') {
-            return back()->withErrors(['schedule_message' => 'Write a broadcast message first, then save it before sending.']);
-        }
-
-        $numbers = $event->pledges()->whereNotNull('phone')->pluck('phone');
-
-        if ($numbers->isEmpty()) {
-            return back()->withErrors(['schedule_message' => 'No contacts with a phone number to message.']);
-        }
-
-        $body = rawurlencode($message);
-
-        return redirect()->away('sms:'.rawurlencode($numbers->implode(','))."?body={$body}");
     }
 
     // ---- Export ----------------------------------------------------------------------
