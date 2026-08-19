@@ -1,0 +1,105 @@
+@extends('layouts.app')
+@section('title', 'Service Providers — '.config('app.name'))
+
+@section('content')
+<div class="flex justify-between items-start mb-4 flex-wrap gap-3">
+    <div>
+        <h2 class="text-xl font-semibold">Service providers</h2>
+        @if ($isAdmin)<p class="text-sm text-gray-500">Ceremony budget auto-calculates from provider costs.</p>@endif
+    </div>
+    @if ($isAdmin)
+    <button onclick="document.getElementById('addProviderModal').classList.remove('hidden')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add provider</button>
+    @endif
+</div>
+
+<div class="card p-4 mb-4 max-w-xs">
+    <div class="text-xs uppercase text-gray-400 font-semibold">Ceremony budget</div>
+    <div class="text-2xl font-semibold mt-1">{{ number_format($total) }}</div>
+    <div class="text-xs text-gray-400 mt-1">{{ $providers->count() }} provider{{ $providers->count() === 1 ? '' : 's' }}</div>
+</div>
+
+@if ($isAdmin)
+<div class="card p-5 mb-4">
+    <div class="text-xs font-semibold mb-2">Contact message <span class="text-gray-400 font-normal">— use {name}, {service}, {budget}, {event}</span></div>
+    <form method="POST" action="{{ route('providers.message') }}">
+        @csrf @method('PATCH')
+        <textarea name="provider_message" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('provider') }}</textarea>
+        <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save message</button>
+    </form>
+</div>
+@endif
+
+<div class="card overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead><tr class="text-left text-xs uppercase text-gray-400 border-b">
+            <th class="px-4 py-3">Name</th><th class="px-4 py-3">Service</th><th class="px-4 py-3">Budget</th>
+            @if ($isAdmin)<th class="px-4 py-3">Contact</th><th class="px-4 py-3"></th>@endif
+        </tr></thead>
+        <tbody>
+        @forelse ($providers as $p)
+            <tr class="border-b last:border-0">
+                <td class="px-4 py-3 font-semibold">{{ $p->name }}</td>
+                <td class="px-4 py-3">{{ $p->service }}</td>
+                <td class="px-4 py-3">{{ number_format($p->budget) }}</td>
+                @if ($isAdmin)
+                <td class="px-4 py-3">
+                    @if ($p->phone)
+                    <a href="{{ route('providers.sms', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</a>
+                    <a href="{{ route('providers.whatsapp', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+                    @else
+                    <span class="text-gray-400 text-xs">No phone</span>
+                    @endif
+                </td>
+                <td class="px-4 py-3 text-right whitespace-nowrap">
+                    <button onclick="document.getElementById('editProvider{{ $p->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <form method="POST" action="{{ route('providers.destroy', $p) }}" class="inline" onsubmit="return confirm('Delete this provider?')">
+                        @csrf @method('DELETE')
+                        <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i> Delete</button>
+                    </form>
+                </td>
+                @endif
+            </tr>
+            @if ($isAdmin)
+            <div id="editProvider{{ $p->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+                    <h3 class="font-semibold mb-4">Edit provider</h3>
+                    <form method="POST" action="{{ route('providers.update', $p) }}" class="space-y-3">
+                        @csrf @method('PATCH')
+                        <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ $p->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="text-xs font-semibold">Service</label><input type="text" name="service" value="{{ $p->service }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="text-xs font-semibold">Budget</label><input type="number" name="budget" value="{{ $p->budget }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="text-xs font-semibold">Contact (phone)</label><input type="tel" name="phone" value="{{ $p->phone }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div class="flex gap-2 pt-2">
+                            <button type="button" onclick="document.getElementById('editProvider{{ $p->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                            <button class="btn btn-primary flex-1 justify-center">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+        @empty
+            <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">No providers added yet.</td></tr>
+        @endforelse
+        </tbody>
+    </table>
+</div>
+
+@if ($isAdmin)
+<div id="addProviderModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+        <h3 class="font-semibold mb-4">Add provider</h3>
+        <form method="POST" action="{{ route('providers.store') }}" class="space-y-3">
+            @csrf
+            <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Service</label><input type="text" name="service" required placeholder="e.g. Catering, Photography" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Budget</label><input type="number" name="budget" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Contact (phone)</label><input type="tel" name="phone" placeholder="0712 345 678" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('addProviderModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                <button class="btn btn-primary flex-1 justify-center">Add provider</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+@endsection
