@@ -7,10 +7,31 @@
         <h2 class="text-xl font-semibold">Ceremony schedule</h2>
         @if ($isAdmin)<p class="text-sm text-gray-500">Plan out the run of show — event and time for each item.</p>@endif
     </div>
-    @if ($isAdmin)
-    <button onclick="document.getElementById('addScheduleModal').classList.remove('hidden')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add item</button>
-    @endif
+    <div class="flex gap-2 flex-wrap">
+        @if ($items->count())
+        <a href="{{ route('schedule.export.excel') }}" class="btn btn-ghost"><i class="fa-solid fa-file-excel"></i> Excel</a>
+        <a href="{{ route('schedule.export.pdf') }}" class="btn btn-ghost"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+        @endif
+        @if ($isAdmin)
+        <button onclick="document.getElementById('addScheduleModal').classList.remove('hidden')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add item</button>
+        @endif
+    </div>
 </div>
+
+@if ($isAdmin)
+<div class="card p-5 mb-4 max-w-xl">
+    <div class="text-xs font-semibold mb-2">Broadcast message <span class="text-gray-400 font-normal">— use {event}, {place}, {date}. Write your own — there's no starter text.</span></div>
+    <form method="POST" action="{{ route('schedule.message') }}" class="mb-4">
+        @csrf @method('PATCH')
+        <textarea name="schedule_message" rows="5" placeholder="Write the schedule announcement…" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('schedule') }}</textarea>
+        @error('schedule_message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save message</button>
+    </form>
+    <div class="border-t pt-4">
+        <a href="{{ route('schedule.broadcast-sms') }}" class="btn btn-primary w-full justify-center"><i class="fa-solid fa-tower-broadcast"></i> Broadcast SMS to all pledgers</a>
+    </div>
+</div>
+@endif
 
 <div class="card overflow-x-auto">
     <table class="w-full text-sm">
@@ -27,6 +48,7 @@
                     <form method="POST" action="{{ route('schedule.destroy', $item) }}" class="inline" onsubmit="return confirm('Delete this schedule item?')">
                         @csrf @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i> Delete</button>
+
                     </form>
                 </td>
                 @endif

@@ -99,4 +99,30 @@ class ProviderController extends Controller
 
         return redirect()->away("https://wa.me/{$digits}?text={$text}");
     }
+
+    // ---- Export ----------------------------------------------------------------------
+
+    public function exportExcel()
+    {
+        $event = app('currentEvent');
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\ProvidersExport($event),
+            str($event->name)->slug().'-providers.xlsx'
+        );
+    }
+
+    public function exportPdf()
+    {
+        $event = app('currentEvent');
+        $providers = $event->providers;
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.providers-pdf', [
+            'event' => $event,
+            'providers' => $providers,
+            'totalBudget' => $providers->sum('budget'),
+        ]);
+
+        return $pdf->download(str($event->name)->slug().'-providers.pdf');
+    }
 }

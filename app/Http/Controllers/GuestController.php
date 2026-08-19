@@ -29,7 +29,6 @@ class GuestController extends Controller
         if ($tab === 'meeting') {
             return view('event.guests.meeting', [
                 'event' => $event,
-                'pledges' => $event->pledges,
                 'isAdmin' => $isAdmin,
             ]);
         }
@@ -86,25 +85,25 @@ class GuestController extends Controller
 
     // ---- Meeting invitation (non-Funeral only) --------------------------------------
 
-    public function meetingSms(Pledge $pledge, MessageTemplateService $messages): RedirectResponse
+    /** Meeting invitation is a single broadcast — no more per-individual SMS/WhatsApp. */
+    public function meetingBroadcastSms(MessageTemplateService $messages): RedirectResponse
     {
-        $this->assertPledgeInCurrentEvent($pledge);
-
         $event = app('currentEvent');
-        $body = rawurlencode($messages->forMeeting($event, $pledge));
+        $message = $messages->forMeeting($event);
 
-        return redirect()->away('sms:'.rawurlencode($pledge->phone ?? '')."?body={$body}");
-    }
+        if (trim($message) === '') {
+            return back()->withErrors(['meeting_message' => 'Write a meeting message first, then save it before broadcasting.']);
+        }
 
-    public function meetingWhatsApp(Pledge $pledge, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
-    {
-        $this->assertPledgeInCurrentEvent($pledge);
+        $numbers = $event->pledges()->whereNotNull('phone')->pluck('phone');
 
-        $event = app('currentEvent');
-        $digits = $phones->digitsOnly($pledge->phone);
-        $text = rawurlencode($messages->forMeeting($event, $pledge));
+        if ($numbers->isEmpty()) {
+            return back()->withErrors(['meeting_message' => 'No contacts with a phone number to message.']);
+        }
 
-        return redirect()->away("https://wa.me/{$digits}?text={$text}");
+        $body = rawurlencode($message);
+
+        return redirect()->away('sms:'.rawurlencode($numbers->implode(','))."?body={$body}");
     }
 
     public function updateMeetingMessage(Request $request): RedirectResponse
@@ -136,10 +135,6 @@ class GuestController extends Controller
     {
         $event = app('currentEvent');
 
-        // The phone-book numbers are entirely client-supplied (from the browser's
-        // Contact Picker), so they're validated as plain short strings and then
-        // normalized/filtered exactly like any other phone input before ever
-        // reaching the sms: URI we build below.
         $validated = $request->validate([
             'phones' => ['array', 'max:500'],
             'phones.*' => ['string', 'max:32'],

@@ -130,9 +130,20 @@ class PledgeController extends Controller
     public function remindAllSms(MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
     {
         $event = app('currentEvent');
+        $message = $messages->forBroadcast($event);
+
+        if (trim($message) === '') {
+            return back()->withErrors(['broadcast_message' => 'Write a broadcast message first, then save it before sending.']);
+        }
+
         $outstanding = $event->pledges()->whereColumn('paid', '<', 'amount')->whereNotNull('phone')->get();
         $numbers = implode(',', $outstanding->pluck('phone')->filter()->all());
-        $body = rawurlencode($messages->forBroadcast($event));
+
+        if ($numbers === '') {
+            return back()->withErrors(['broadcast_message' => 'No outstanding pledgers with a phone number to message.']);
+        }
+
+        $body = rawurlencode($message);
 
         return redirect()->away('sms:'.rawurlencode($numbers)."?body={$body}");
     }

@@ -15,6 +15,7 @@ class Event extends Model
         'name', 'event_type', 'place', 'event_date', 'pledge_deadline', 'created_by',
         'provider_message', 'reminder_message', 'broadcast_message',
         'invitation_message', 'meeting_message', 'announcement_message', 'committee_message',
+        'schedule_message',
     ];
 
     protected function casts(): array
@@ -94,7 +95,13 @@ class Event extends Model
     /**
      * Returns the saved message for the given surface, or that surface's default
      * template (filled with this event's own name/place/date where relevant).
-     * $surface is one of: provider, reminder, broadcast, invitation, meeting, announcement.
+     * $surface is one of: provider, reminder, broadcast, invitation, meeting,
+     * announcement, committee, schedule.
+     *
+     * "broadcast", "meeting", and "schedule" are deliberately user-defined with NO
+     * starter text — the admin must write their own before sending, rather than
+     * silently defaulting to placeholder content (which previously included a
+     * hardcoded example bank account, easy to send by accident without editing it).
      */
     public function messageOrDefault(string $surface): string
     {
@@ -103,9 +110,7 @@ class Event extends Model
         return $this->{$column} ?: match ($surface) {
             'provider' => 'Hello {name}, confirming your booking as our {service} provider for {event}. Budget: {budget}. Please reach out if you have any questions.',
             'reminder' => 'Hi {name}, friendly reminder on {event} contribution: pledged {pledged}, paid {paid} so far, {remain} remaining. Thank you!',
-            'broadcast' => "Habari,\nKwa heshima, naomba nichukue nafasi hii kukukumbusha kupunguza/kumalizia mchango wa {event}, itakayofanyika {date} {place}.\nTuma mchango wako kupitia namba;\n0745409131 (Voda) au Acc No. 0152216330900 - CRDB Jina:Anna Mapunda.\nAsante, Mungu akubariki.",
             'invitation' => "You're invited to {event}! Join us on {date}".($this->place ? ' at {place}' : '').'. Tap your link to RSVP: {link}',
-            'meeting' => "Hi {name}, you're invited to a meeting for {event}".($this->place ? ' at {place}' : '').'. Please make it a priority to attend. Thank you!',
             'announcement' => 'Habari {name}, this is to inform you about {event}'.($this->place ? ' at {place}' : '').' on {date}. Your presence and support mean a lot to the family. Thank you.',
             'committee' => 'Hello {name}, you have been elected as {role} on {committee} committee.',
             default => '',

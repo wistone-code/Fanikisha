@@ -47,13 +47,27 @@ class MessageTemplateService
         ]);
     }
 
-    /** Placeholders: {name} {event} {place} */
-    public function forMeeting(Event $event, Pledge $pledge): string
+    /**
+     * Meeting invitation is now sent as a single broadcast (no more per-individual
+     * sends), so this is a group message like forBroadcast/forAnnouncement rather
+     * than personalized per pledge. Placeholders: {event} {place} {date}
+     */
+    public function forMeeting(Event $event): string
     {
         return strtr($event->messageOrDefault('meeting'), [
-            '{name}' => $pledge->name,
             '{event}' => $event->name,
             '{place}' => $event->place ?? '',
+            '{date}' => $event->event_date->format('d.m.Y'),
+        ]);
+    }
+
+    /** Placeholders: {event} {place} {date} */
+    public function forSchedule(Event $event): string
+    {
+        return strtr($event->messageOrDefault('schedule'), [
+            '{event}' => $event->name,
+            '{place}' => $event->place ?? '',
+            '{date}' => $event->event_date->format('d.m.Y'),
         ]);
     }
 

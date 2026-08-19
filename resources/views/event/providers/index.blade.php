@@ -7,9 +7,15 @@
         <h2 class="text-xl font-semibold">Service providers</h2>
         @if ($isAdmin)<p class="text-sm text-gray-500">Ceremony budget auto-calculates from provider costs.</p>@endif
     </div>
-    @if ($isAdmin)
-    <button onclick="document.getElementById('addProviderModal').classList.remove('hidden')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add provider</button>
-    @endif
+    <div class="flex gap-2 flex-wrap">
+        @if ($providers->count())
+        <a href="{{ route('providers.export.excel') }}" class="btn btn-ghost"><i class="fa-solid fa-file-excel"></i> Excel</a>
+        <a href="{{ route('providers.export.pdf') }}" class="btn btn-ghost"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+        @endif
+        @if ($isAdmin)
+        <button onclick="document.getElementById('addProviderModal').classList.remove('hidden')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add provider</button>
+        @endif
+    </div>
 </div>
 
 <div class="card p-4 mb-4 max-w-xs">
@@ -47,6 +53,7 @@
                     <a href="{{ route('providers.sms', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</a>
                     <a href="{{ route('providers.whatsapp', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
                     @else
+
                     <span class="text-gray-400 text-xs">No phone</span>
                     @endif
                 </td>

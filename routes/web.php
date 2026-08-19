@@ -53,6 +53,11 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
 
     Route::post('/account/password', [PasswordChangeController::class, 'updateOwn'])->name('password.own.update');
 
+    // Hit by the session-timeout warning's "Stay signed in" button (see layouts/app.blade.php).
+    // A real request here is what resets Laravel's session idle clock — this only fires when
+    // a person actually clicks, never automatically, so it can't silently defeat the timeout.
+    Route::get('/keep-alive', fn () => response()->noContent())->name('keep-alive');
+
     // System Admin only — zero visibility into any event's data.
     Route::middleware('super_user')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
@@ -92,9 +97,20 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::get('/export/pdf', [PledgeController::class, 'exportPdf'])->name('export.pdf');
         });
 
-        Route::get('/providers', [ProviderController::class, 'index'])->name('providers.index');
+        Route::prefix('providers')->name('providers.')->group(function () {
+            Route::get('/', [ProviderController::class, 'index'])->name('index');
+            Route::get('/export/excel', [ProviderController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/export/pdf', [ProviderController::class, 'exportPdf'])->name('export.pdf');
+        });
+
         Route::get('/committees', [CommitteeController::class, 'index'])->name('committees.index');
-        Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
+
+        Route::prefix('schedule')->name('schedule.')->group(function () {
+            Route::get('/', [ScheduleController::class, 'index'])->name('index');
+            Route::get('/export/excel', [ScheduleController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/export/pdf', [ScheduleController::class, 'exportPdf'])->name('export.pdf');
+        });
+
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
 
         // Team Management: admin-only, and hidden entirely for Funeral events.
@@ -137,13 +153,14 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::post('/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
             Route::patch('/schedule/{item}', [ScheduleController::class, 'update'])->name('schedule.update');
             Route::delete('/schedule/{item}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');
+            Route::patch('/schedule/message', [ScheduleController::class, 'updateMessage'])->name('schedule.message');
+            Route::get('/schedule/broadcast-sms', [ScheduleController::class, 'broadcastSms'])->name('schedule.broadcast-sms');
 
             Route::post('/guests/{pledge}/send-invite', [GuestController::class, 'sendInvite'])->name('guests.send-invite');
             Route::get('/guests/{pledge}/sms', [GuestController::class, 'inviteSms'])->name('guests.sms');
             Route::get('/guests/{pledge}/whatsapp', [GuestController::class, 'inviteWhatsApp'])->name('guests.whatsapp');
             Route::patch('/guests/message/invitation', [GuestController::class, 'updateInvitationMessage'])->name('guests.message.invitation');
-            Route::get('/guests/{pledge}/meeting/sms', [GuestController::class, 'meetingSms'])->name('guests.meeting.sms');
-            Route::get('/guests/{pledge}/meeting/whatsapp', [GuestController::class, 'meetingWhatsApp'])->name('guests.meeting.whatsapp');
+            Route::get('/guests/meeting/broadcast-sms', [GuestController::class, 'meetingBroadcastSms'])->name('guests.meeting.broadcast-sms');
             Route::patch('/guests/message/meeting', [GuestController::class, 'updateMeetingMessage'])->name('guests.message.meeting');
             Route::patch('/guests/message/announcement', [GuestController::class, 'updateAnnouncementMessage'])->name('guests.message.announcement');
             Route::post('/guests/broadcast-sms', [GuestController::class, 'broadcastSms'])->name('guests.broadcast-sms');

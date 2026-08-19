@@ -7,46 +7,23 @@
     <span class="pb-3 border-b-2" style="border-color:var(--primary);color:var(--primary);">Meeting invitation</span>
 </div>
 
-<div class="grid grid-cols-1 {{ $isAdmin ? 'lg:grid-cols-2' : '' }} gap-5 items-start">
-    <div>
-        <div class="mb-3">
-            <h2 class="text-xl font-semibold">Meeting invitation</h2>
-            @if ($isAdmin)<p class="text-sm text-gray-500">Invite pledgers to a planning meeting — no payment required.</p>@endif
-        </div>
-        <div class="card overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead><tr class="text-left text-xs uppercase text-gray-400 border-b"><th class="px-4 py-3">Name</th><th class="px-4 py-3">Phone</th>@if($isAdmin)<th class="px-4 py-3"></th>@endif</tr></thead>
-                <tbody>
-                @forelse ($pledges as $p)
-                    <tr class="border-b last:border-0">
-                        <td class="px-4 py-3 font-semibold">{{ $p->name }}</td>
-                        <td class="px-4 py-3">{{ $p->phone ?? '—' }}</td>
-                        @if ($isAdmin)
-                        <td class="px-4 py-3 text-right whitespace-nowrap">
-                            <a href="{{ route('guests.meeting.sms', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</a>
-                            <a href="{{ route('guests.meeting.whatsapp', $p) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
-                        </td>
-                        @endif
-                    </tr>
-                @empty
-                    <tr><td colspan="3" class="px-4 py-10 text-center text-gray-400">No pledges yet.</td></tr>
-                @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
+<div class="mb-3"><h2 class="text-xl font-semibold">Meeting invitation</h2>@if ($isAdmin)<p class="text-sm text-gray-500">Sent as a single broadcast to everyone with a phone number on file — write your own message below, there's no starter text.</p>@endif</div>
 
-    @if ($isAdmin)
-    <div>
-        <div class="mb-3"><h2 class="text-xl font-semibold">Meeting message</h2><p class="text-sm text-gray-500">Use <code>{name}</code>, <code>{event}</code>, <code>{place}</code></p></div>
-        <div class="card p-5">
-            <form method="POST" action="{{ route('guests.message.meeting') }}">
-                @csrf @method('PATCH')
-                <textarea name="meeting_message" rows="6" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('meeting') }}</textarea>
-                <button class="btn btn-primary mt-3"><i class="fa-solid fa-check"></i> Save message</button>
-            </form>
-        </div>
+@if (!$isAdmin)
+<div class="card p-5"><p class="text-sm whitespace-pre-wrap">{{ $event->messageOrDefault('meeting') }}</p></div>
+@else
+<div class="card p-5 max-w-xl">
+    <div class="text-xs font-semibold mb-2">Meeting message <span class="text-gray-400 font-normal">— use {event}, {place}, {date}</span></div>
+    <form method="POST" action="{{ route('guests.message.meeting') }}" class="mb-5">
+        @csrf @method('PATCH')
+        <textarea name="meeting_message" rows="6" placeholder="Write the meeting invitation message…" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('meeting') }}</textarea>
+        @error('meeting_message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        <button class="btn btn-primary mt-3"><i class="fa-solid fa-check"></i> Save message</button>
+    </form>
+    <div class="border-t pt-4">
+        <a href="{{ route('guests.meeting.broadcast-sms') }}" class="btn btn-primary w-full justify-center"><i class="fa-solid fa-tower-broadcast"></i> Broadcast SMS to all pledgers</a>
+        <p class="text-xs text-gray-400 mt-2">Sends one group SMS to every pledger with a phone number on file.</p>
     </div>
-    @endif
 </div>
+@endif
 @endsection

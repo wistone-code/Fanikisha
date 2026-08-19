@@ -68,6 +68,7 @@
                             <a href="{{ route('admin.account') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Account Settings</a>
                         @else
                             @php($event = app('currentEvent'))
+
                             @php($isAdmin = $event && auth()->user()->isAdminOn($event))
                             @if ($event)
                                 @php($routeNames = ['home' => 'dashboard', 'financial' => 'financial.index', 'pledges' => 'pledges.index', 'providers' => 'providers.index', 'committees' => 'committees.index', 'schedule' => 'schedule.index', 'team' => 'team.index', 'invitations' => 'guests.index', 'settings' => 'event.settings'])
@@ -78,7 +79,8 @@
                         @endif
                         <div class="border-t my-1"></div>
                         <form method="POST" action="{{ route('logout') }}">@csrf
-                            <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">Logout</button>
+                            <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600
+ hover:bg-red-50">Logout</button>
                         </form>
                     </div>
                 </div>
@@ -142,8 +144,10 @@
 
 <script>
 (function () {
+    // Session idle timeout, in minutes, from the server's actual config — kept in sync
+    // automatically with SESSION_LIFETIME rather than hardcoded here.
     const SESSION_LIFETIME_MINUTES = {{ (int) config('session.lifetime') }};
-    const WARNING_SECONDS = 60;
+    const WARNING_SECONDS = 60; // how long before expiry the warning appears
     const LOGIN_URL = "{{ route('login') }}";
     const KEEP_ALIVE_URL = "{{ route('keep-alive') }}";
 
@@ -156,8 +160,13 @@
         countdownInterval = setInterval(function () {
             secondsLeft--;
             document.getElementById('sessionCountdown').textContent = Math.max(0, secondsLeft);
+
+            document.getElementById('sessionCountdown').textContent = Math.max(0, secondsLeft);
             if (secondsLeft <= 0) {
                 clearInterval(countdownInterval);
+                // The session has already expired server-side by this point (this warning
+                // was deliberately timed to fire right as the idle window closes) — sending
+                // the person to login now avoids leaving them stuck on a dead page.
                 window.location.href = LOGIN_URL + '?timeout=1';
             }
         }, 1000);
@@ -170,6 +179,9 @@
     }
 
     document.getElementById('staySignedInBtn').addEventListener('click', function () {
+        // A real network request is what actually resets Laravel's session idle clock —
+        // this only ever runs from a genuine click, so it can't silently keep a session
+        // alive while the person is actually away, which would defeat the timeout entirely.
         fetch(KEEP_ALIVE_URL, { credentials: 'same-origin' }).finally(function () {
             clearInterval(countdownInterval);
             document.getElementById('sessionWarningModal').classList.add('hidden');
@@ -179,6 +191,19 @@
 
     scheduleWarning();
 })();
+
+// Close the nav/user dropdown menus when clicking anywhere outside them, instead of
+// only via their own trigger buttons (which just toggles them back open/shut).
+document.addEventListener('click', function (e) {
+    const navMenu = document.getElementById('navMenu');
+    const userMenu = document.getElementById('userMenu');
+    if (navMenu && !navMenu.classList.contains('hidden') && !e.target.closest('#navMenu') && !e.target.closest('button[onclick*="navMenu"]')) {
+        navMenu.classList.add('hidden');
+    }
+    if (userMenu && !userMenu.classList.contains('hidden') && !e.target.closest('#userMenu') && !e.target.closest('button[onclick*="userMenu"]')) {
+        userMenu.classList.add('hidden');
+    }
+});
 </script>
 @endauth
 
