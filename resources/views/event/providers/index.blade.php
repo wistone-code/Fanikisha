@@ -24,21 +24,10 @@
     <div class="text-xs text-gray-400 mt-1">{{ $providers->count() }} provider{{ $providers->count() === 1 ? '' : 's' }}</div>
 </div>
 
-@if ($isAdmin)
-<div class="card p-5 mb-4">
-    <div class="text-xs font-semibold mb-2">Contact message <span class="text-gray-400 font-normal">— use {name}, {service}, {budget}, {event}</span></div>
-    <form method="POST" action="{{ route('providers.message') }}">
-        @csrf @method('PATCH')
-        <textarea name="provider_message" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('provider') }}</textarea>
-        <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save message</button>
-    </form>
-</div>
-@endif
-
-<div class="card overflow-x-auto">
-    <table class="w-full text-sm">
+<div class="card overflow-x-auto mb-4">
+    <table class="w-full text-sm sortable-table">
         <thead><tr class="text-left text-xs uppercase text-gray-400 border-b">
-            <th class="px-4 py-3">Name</th><th class="px-4 py-3">Service</th><th class="px-4 py-3">Budget</th>
+            <th class="px-4 py-3" data-sort="text">Name</th><th class="px-4 py-3" data-sort="text">Service</th><th class="px-4 py-3" data-sort="number">Budget</th>
             @if ($isAdmin)<th class="px-4 py-3">Contact</th><th class="px-4 py-3"></th>@endif
         </tr></thead>
         <tbody>
@@ -53,7 +42,6 @@
                     <a href="{{ route('providers.sms', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</a>
                     <a href="{{ route('providers.whatsapp', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
                     @else
-
                     <span class="text-gray-400 text-xs">No phone</span>
                     @endif
                 </td>
