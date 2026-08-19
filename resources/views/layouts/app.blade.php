@@ -14,7 +14,8 @@
         --primary-dark: {{ $theme['primary_dark'] ?? '#132836' }};
         --accent: {{ $theme['accent'] ?? '#7A93A8' }};
     }
-    body{font-family:'Inter',sans-serif;background:#F6F8F9;}
+         body{font-family:'Inter',sans-serif;background:#F6F8F9;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+    input.text-sm, select.text-sm, textarea.text-sm { font-size: 16px; }
     h1,h2,.display{font-family:'Fraunces',serif;}
     .btn{display:inline-flex;align-items:center;gap:6px;border-radius:9px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer;}
     .btn-primary{background:var(--primary);color:#fff;}
