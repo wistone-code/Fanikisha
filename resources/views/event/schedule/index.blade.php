@@ -41,23 +41,43 @@
 <div id="scheduleBroadcastModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[80vh] flex flex-col">
         <div class="flex justify-between items-center mb-1">
-            <h3 class="font-semibold">Send to each pledger</h3>
+            <h3 class="font-semibold">Send SMS</h3>
             <button onclick="document.getElementById('scheduleBroadcastModal').classList.add('hidden')" class="text-gray-400"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <p class="text-xs text-gray-500 mb-3">Tap "Send" for each contact — your phone doesn't support sending to everyone in one link, so this sends them one at a time.</p>
-        <div class="overflow-y-auto space-y-2">
-            @foreach ($pledgers as $p)
-            <div class="flex justify-between items-center border rounded-lg px-3 py-2">
-                <div>
-                    <div class="text-sm font-semibold">{{ $p->name }}</div>
-                    <div class="text-xs text-gray-400">{{ $p->phone }}</div>
+
+        <button type="button" data-copy-text="{{ $broadcastMessage }}" onclick="copyScheduleText(this)" id="copyMsgBtn" class="btn btn-ghost w-full justify-center mt-2"><i class="fa-solid fa-copy"></i> Copy message</button>
+        <button type="button" data-copy-text="{{ $pledgers->pluck('phone')->implode(', ') }}" onclick="copyScheduleText(this)" id="copyNumBtn" class="btn btn-ghost w-full justify-center mt-2 mb-1"><i class="fa-solid fa-copy"></i> Copy phone numbers</button>
+        <p class="text-xs text-gray-400 mb-4">Guaranteed to work: copy the message, open your own Messages app, add everyone as recipients yourself, then paste.</p>
+
+        <a href="sms:{{ $pledgers->map(fn ($p) => rawurlencode($p->phone))->implode(';') }}?body={{ rawurlencode($broadcastMessage) }}" class="btn btn-primary w-full justify-center mt-1 mb-1"><i class="fa-solid fa-tower-broadcast"></i> Try sending to everyone at once</a>
+        <p class="text-xs text-gray-400 mb-4">Experimental — may or may not work depending on your phone's messaging app.</p>
+
+        <div class="border-t pt-3">
+            <p class="text-xs text-gray-500 mb-2">Or send one at a time:</p>
+            <div class="overflow-y-auto space-y-2">
+                @foreach ($pledgers as $p)
+                <div class="flex justify-between items-center border rounded-lg px-3 py-2">
+                    <div>
+                        <div class="text-sm font-semibold">{{ $p->name }}</div>
+                        <div class="text-xs text-gray-400">{{ $p->phone }}</div>
+                    </div>
+                    <a href="sms:{{ rawurlencode($p->phone) }}?body={{ rawurlencode($broadcastMessage) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> Send</a>
                 </div>
-                <a href="sms:{{ rawurlencode($p->phone) }}?body={{ rawurlencode($broadcastMessage) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> Send</a>
+                @endforeach
             </div>
-            @endforeach
         </div>
     </div>
 </div>
+
+<script>
+function copyScheduleText(btn) {
+    navigator.clipboard.writeText(btn.dataset.copyText).then(function () {
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        setTimeout(function () { btn.innerHTML = original; }, 1500);
+    });
+}
+</script>
 @endif
 
 <div class="card overflow-x-auto">
@@ -73,7 +93,8 @@
                 <td class="px-4 py-3 text-right whitespace-nowrap">
                     <button onclick="document.getElementById('editItem{{ $item->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i> Edit</button>
                     <form method="POST" action="{{ route('schedule.destroy', $item) }}" class="inline" onsubmit="return confirm('Delete this schedule item?')">
-                        @csrf @method('DELETE')
+                        @csrf
+                        @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i> Delete</button>
                     </form>
                 </td>
