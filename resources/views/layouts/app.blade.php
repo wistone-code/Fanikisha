@@ -68,7 +68,6 @@
                             <a href="{{ route('admin.account') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Account Settings</a>
                         @else
                             @php($event = app('currentEvent'))
-
                             @php($isAdmin = $event && auth()->user()->isAdminOn($event))
                             @if ($event)
                                 @php($routeNames = ['home' => 'dashboard', 'financial' => 'financial.index', 'pledges' => 'pledges.index', 'providers' => 'providers.index', 'committees' => 'committees.index', 'schedule' => 'schedule.index', 'team' => 'team.index', 'invitations' => 'guests.index', 'settings' => 'event.settings'])
@@ -79,8 +78,7 @@
                         @endif
                         <div class="border-t my-1"></div>
                         <form method="POST" action="{{ route('logout') }}">@csrf
-                            <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600
- hover:bg-red-50">Logout</button>
+                            <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">Logout</button>
                         </form>
                     </div>
                 </div>
@@ -160,11 +158,9 @@
         countdownInterval = setInterval(function () {
             secondsLeft--;
             document.getElementById('sessionCountdown').textContent = Math.max(0, secondsLeft);
-
-            document.getElementById('sessionCountdown').textContent = Math.max(0, secondsLeft);
             if (secondsLeft <= 0) {
                 clearInterval(countdownInterval);
-                // The session has already expired server-side by this point (this warning
+                // The session has already expired server-side by this point (this
                 // was deliberately timed to fire right as the idle window closes) — sending
                 // the person to login now avoids leaving them stuck on a dead page.
                 window.location.href = LOGIN_URL + '?timeout=1';
@@ -179,9 +175,6 @@
     }
 
     document.getElementById('staySignedInBtn').addEventListener('click', function () {
-        // A real network request is what actually resets Laravel's session idle clock —
-        // this only ever runs from a genuine click, so it can't silently keep a session
-        // alive while the person is actually away, which would defeat the timeout entirely.
         fetch(KEEP_ALIVE_URL, { credentials: 'same-origin' }).finally(function () {
             clearInterval(countdownInterval);
             document.getElementById('sessionWarningModal').classList.add('hidden');
@@ -203,6 +196,56 @@ document.addEventListener('click', function (e) {
     if (userMenu && !userMenu.classList.contains('hidden') && !e.target.closest('#userMenu') && !e.target.closest('button[onclick*="userMenu"]')) {
         userMenu.classList.add('hidden');
     }
+});
+// Auto-refresh every 30s — skipped while typing into a field or while any modal
+// (identified by the shared .fixed.inset-0 dialog pattern used across the app) is
+// open, so it can't silently wipe out something you're in the middle of entering.
+setInterval(function () {
+    const typing = document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+    const modalOpen = Array.from(document.querySelectorAll('.fixed.inset-0')).some(m => !m.classList.contains('hidden'));
+    if (!typing && !modalOpen) {
+        window.location.reload();
+    }
+}, 30000);
+
+// Generic click-to-sort for any <table class="sortable-table">. Add data-sort="text"
+// or data-sort="number" to a <th> to make that column sortable — no per-page JS needed.
+document.querySelectorAll('table.sortable-table thead th[data-sort]').forEach(function (th) {
+    const label = th.textContent.trim();
+    th.style.cursor = 'pointer';
+    th.innerHTML = label + ' <span class="sort-arrow text-gray-300"></span>';
+
+    th.addEventListener('click', function () {
+        const table = th.closest('table');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr')).filter(r => !r.querySelector('td[colspan]'));
+        if (rows.length < 2) return;
+
+        const colIndex = Array.from(th.parentNode.children).indexOf(th);
+        const type = th.dataset.sort;
+        const dir = th.dataset.sortDir === 'asc' ? 'desc' : 'asc';
+
+        table.querySelectorAll('thead th[data-sort]').forEach(function (h) {
+            h.dataset.sortDir = '';
+            h.querySelector('.sort-arrow').textContent = '';
+        });
+        th.dataset.sortDir = dir;
+        th.querySelector('.sort-arrow').textContent = dir === 'asc' ? '▲' : '▼';
+
+        rows.sort(function (a, b) {
+            let av = a.children[colIndex]?.textContent.trim() ?? '';
+            let bv = b.children[colIndex]?.textContent.trim() ?? '';
+            let cmp;
+            if (type === 'number') {
+                cmp = (parseFloat(av.replace(/[^0-9.\-]/g, '')) || 0) - (parseFloat(bv.replace(/[^0-9.\-]/g, '')) || 0);
+            } else {
+                cmp = av.localeCompare(bv);
+            }
+            return dir === 'asc' ? cmp : -cmp;
+        });
+
+        rows.forEach(r => tbody.appendChild(r));
+    });
 });
 </script>
 @endauth
