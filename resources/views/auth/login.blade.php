@@ -2,6 +2,9 @@
 @section('title', 'Sign in — '.config('app.name'))
 
 @section('content')
+@if (request('timeout'))
+<div class="bg-amber-50 text-amber-700 text-sm rounded-lg px-3 py-2 mb-4"><i class="fa-solid fa-clock"></i> You were signed out after being inactive for a while. Please sign in again.</div>
+@endif
 @if (session('status'))
 <div class="bg-green-50 text-green-700 text-sm rounded-lg px-3 py-2 mb-4">{{ session('status') }}</div>
 @endif

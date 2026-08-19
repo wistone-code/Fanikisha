@@ -14,8 +14,7 @@
         --primary-dark: {{ $theme['primary_dark'] ?? '#132836' }};
         --accent: {{ $theme['accent'] ?? '#7A93A8' }};
     }
-         body{font-family:'Inter',sans-serif;background:#F6F8F9;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
-    input.text-sm, select.text-sm, textarea.text-sm { font-size: 16px; }
+    body{font-family:'Inter',sans-serif;background:#F6F8F9;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
     h1,h2,.display{font-family:'Fraunces',serif;}
     .btn{display:inline-flex;align-items:center;gap:6px;border-radius:9px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer;}
     .btn-primary{background:var(--primary);color:#fff;}
@@ -25,6 +24,9 @@
     .badge{display:inline-flex;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:600;}
     .badge-admin{background:#e7edf1;color:var(--primary);}
     .badge-viewer{background:#f0e7e5;color:#5c6b73;}
+    /* iOS Safari auto-zooms the whole page when focusing any input under 16px —
+       Tailwind's text-sm (14px) triggers this on every form field otherwise. */
+    input.text-sm, select.text-sm, textarea.text-sm { font-size: 16px; }
 </style>
 </head>
 <body class="text-[#1B2429]">
@@ -128,6 +130,56 @@
         </form>
     </div>
 </div>
+
+<div id="sessionWarningModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center">
+        <i class="fa-solid fa-clock text-2xl mb-3" style="color:var(--primary);"></i>
+        <h3 class="font-semibold text-lg mb-1">Still there?</h3>
+        <p class="text-sm text-gray-500 mb-4">You'll be signed out in <span id="sessionCountdown" class="font-semibold">60</span> seconds due to inactivity.</p>
+        <button id="staySignedInBtn" class="btn btn-primary w-full justify-center"><i class="fa-solid fa-check"></i> Stay signed in</button>
+    </div>
+</div>
+
+<script>
+(function () {
+    const SESSION_LIFETIME_MINUTES = {{ (int) config('session.lifetime') }};
+    const WARNING_SECONDS = 60;
+    const LOGIN_URL = "{{ route('login') }}";
+    const KEEP_ALIVE_URL = "{{ route('keep-alive') }}";
+
+    let warningTimer, countdownInterval, secondsLeft;
+
+    function showWarning() {
+        secondsLeft = WARNING_SECONDS;
+        document.getElementById('sessionCountdown').textContent = secondsLeft;
+        document.getElementById('sessionWarningModal').classList.remove('hidden');
+        countdownInterval = setInterval(function () {
+            secondsLeft--;
+            document.getElementById('sessionCountdown').textContent = Math.max(0, secondsLeft);
+            if (secondsLeft <= 0) {
+                clearInterval(countdownInterval);
+                window.location.href = LOGIN_URL + '?timeout=1';
+            }
+        }, 1000);
+    }
+
+    function scheduleWarning() {
+        const msUntilWarning = Math.max(0, (SESSION_LIFETIME_MINUTES * 60 - WARNING_SECONDS) * 1000);
+        clearTimeout(warningTimer);
+        warningTimer = setTimeout(showWarning, msUntilWarning);
+    }
+
+    document.getElementById('staySignedInBtn').addEventListener('click', function () {
+        fetch(KEEP_ALIVE_URL, { credentials: 'same-origin' }).finally(function () {
+            clearInterval(countdownInterval);
+            document.getElementById('sessionWarningModal').classList.add('hidden');
+            scheduleWarning();
+        });
+    });
+
+    scheduleWarning();
+})();
+</script>
 @endauth
 
 </body>
