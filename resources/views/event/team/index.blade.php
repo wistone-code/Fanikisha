@@ -54,7 +54,7 @@
             <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Username</label><input type="text" name="username" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Email <span id="emailHint" class="text-gray-400 font-normal">(required for Admin role)</span></label><input type="email" name="email" id="memberEmail" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="text-xs font-semibold">Temporary password</label><input type="password" name="password" required minlength="8" placeholder="Upper&lowercase letters + a number" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <p class="text-xs text-gray-400">A temporary password will be generated automatically and shown once after adding.</p>
             <div>
                 <label class="text-xs font-semibold">Role</label>
                 <select name="role" id="memberRole" class="w-full border rounded-lg px-3 py-2 text-sm">
