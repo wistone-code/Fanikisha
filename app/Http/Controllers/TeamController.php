@@ -8,7 +8,6 @@ use App\Services\PasswordGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class TeamController extends Controller
@@ -23,24 +22,24 @@ class TeamController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, PasswordGeneratorService $passwords): RedirectResponse
     {
         $event = app('currentEvent');
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-            // Mandatory when the role being granted is Admin; optional for Viewer.
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email', 'required_if:role,admin'],
-            'password' => ['required', Password::min(8)->mixedCase()->numbers()],
             'role' => ['required', 'in:admin,viewer'],
         ]);
+
+        $plainPassword = $passwords->generate();
 
         $user = User::create([
             'name' => $data['name'],
             'username' => $data['username'],
             'email' => $data['email'] ?? null,
-            'password' => Hash::make($data['password']),
+            'password' => Hash::make($plainPassword),
             'is_super_user' => false,
             'must_change_password' => true,
             'created_by' => $request->user()->id,
@@ -48,7 +47,10 @@ class TeamController extends Controller
 
         EventMember::create(['event_id' => $event->id, 'user_id' => $user->id, 'role' => $data['role']]);
 
-        return back()->with('status', 'Member added');
+        return back()->with([
+            'status' => 'Member added',
+            'reveal_credentials' => ['name' => $user->name, 'username' => $user->username, 'password' => $plainPassword],
+        ]);
     }
 
     public function destroy(EventMember $member): RedirectResponse
@@ -65,7 +67,6 @@ class TeamController extends Controller
         return back()->with('status', 'Member removed');
     }
 
-    /** Admin resetting SOMEONE ELSE's password — generates a random temp password. */
     public function resetPassword(EventMember $member, PasswordGeneratorService $passwords): RedirectResponse
     {
         $event = app('currentEvent');
