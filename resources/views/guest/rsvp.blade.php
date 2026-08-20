@@ -23,6 +23,7 @@
             @endif
             <div class="text-xs uppercase tracking-widest font-semibold mb-2" style="color:{{ $theme['accent'] }};">You're invited to</div>
             <h1 class="text-2xl font-semibold text-white">{{ $event->name }}</h1>
+            <div class="text-sm font-medium mt-1" style="color:{{ $theme['accent'] }};">{{ $event->event_type }}</div>
         </div>
         <div class="p-8">
             <p class="text-sm text-gray-500 mb-1">{{ $event->event_date->format('l, F j, Y') }}</p>
