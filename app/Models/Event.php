@@ -90,7 +90,7 @@ class Event extends Model
             'collected' => (float) $collected,
             'remain' => (float) ($totalPledged - $collected),
             'budget' => (float) $budget,
-            'variance' => (float) ($budget - $totalPledged),
+            'variance' => (float) ($budget - $collected),
             'pledge_count' => $this->pledges()->count(),
         ];
     }
