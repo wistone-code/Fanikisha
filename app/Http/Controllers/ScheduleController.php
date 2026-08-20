@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AuthorizesEventOwnership;
 use App\Models\ScheduleItem;
+use App\Services\BeemSmsService;
 use App\Services\MessageTemplateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,6 +70,30 @@ class ScheduleController extends Controller
         app('currentEvent')->update(['schedule_message' => $data['schedule_message']]);
 
         return back()->with('status', 'Broadcast message saved');
+    }
+
+    public function broadcast(Request $request, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
+    {
+        $event = app('currentEvent');
+        $broadcastMessage = $messages->forSchedule($event);
+        $pledgers = $event->pledges()->whereNotNull('phone')->get();
+
+        if (trim($broadcastMessage) === '') {
+            return back()->with('status', 'Save a broadcast message first, then try again.');
+        }
+
+        if ($pledgers->isEmpty()) {
+            return back()->with('status', 'No pledgers with a phone number to message.');
+        }
+
+        $result = $sms->sendBulk($broadcastMessage, $pledgers);
+
+        if ($result['successful']) {
+            return back()->with('status', "Schedule sent via SMS to {$result['valid']} pledger(s)."
+                .(($result['invalid'] ?? 0) > 0 ? " {$result['invalid']} number(s) were invalid." : ''));
+        }
+
+        return back()->with('status', 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
     }
 
     // ---- Export ----------------------------------------------------------------------

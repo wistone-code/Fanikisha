@@ -9,7 +9,10 @@
     </div>
     <div class="flex gap-2 flex-wrap">
         @if ($isAdmin && trim($broadcastMessage) !== '' && $pledgers->isNotEmpty())
-        <a href="sms:{{ $pledgers->map(fn ($p) => rawurlencode($p->phone))->implode(';') }}?body={{ rawurlencode($broadcastMessage) }}" class="btn btn-primary">Share schedule</a>
+        <form method="POST" action="{{ route('schedule.broadcast') }}" class="inline" onsubmit="return confirm('Send this schedule via SMS to all pledgers now?')">
+            @csrf
+            <button class="btn btn-primary">Share schedule</button>
+        </form>
         @endif
         @if ($items->count())
         <a href="{{ route('schedule.export.excel') }}" class="btn btn-ghost"><i class="fa-solid fa-file-excel"></i> Excel</a>
