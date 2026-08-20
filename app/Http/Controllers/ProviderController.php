@@ -39,18 +39,31 @@ class ProviderController extends Controller
         return back()->with('status', 'Provider added');
     }
 
-    public function update(Request $request, Provider $provider, PhoneNumberService $phones): RedirectResponse
+    public function update(Request $request, Provider $provider, PhoneNumberService $phones, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $this->assertProviderInCurrentEvent($provider);
 
         $data = $this->validated($request);
+        $previousPaid = (float) $provider->paid;
 
         $provider->update([
             ...$data,
             'phone' => $phones->normalize($data['phone'] ?? null),
         ]);
 
-        return back()->with('status', 'Provider updated');
+        $status = 'Provider updated';
+
+        // Only fires when the paid amount actually went up (not on every save) and there's a phone to text.
+        if ((float) $provider->paid > $previousPaid && $provider->phone) {
+            $event = app('currentEvent');
+            $result = $sms->sendSingle($messages->forProviderPayment($event, $provider), $provider->phone);
+
+            $status .= $result['successful']
+                ? ' — payment notification sent.'
+                : ' — but payment notification failed: '.($result['error'] ?? 'unknown error');
+        }
+
+        return back()->with('status', $status);
     }
 
     public function destroy(Provider $provider): RedirectResponse
