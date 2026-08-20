@@ -48,7 +48,7 @@
                     <a href="{{ route('providers.whatsapp', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
                     <form method="POST" action="{{ route('providers.confirm-payment.sms', $p) }}" class="inline" onsubmit="return confirm('Send payment confirmation SMS to {{ $p->name }}?')">
                         @csrf
-                        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-circle-check"></i> Confirm Payment</button>
+                        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-circle-check"></i> Payment Notification</button>
                     </form>
                     @else
                     <span class="text-gray-400 text-xs">No phone</span>
