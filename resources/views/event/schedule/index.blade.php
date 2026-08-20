@@ -8,6 +8,9 @@
         @if ($isAdmin)<p class="text-sm text-gray-500">Plan out the run of show — event and time for each item.</p>@endif
     </div>
     <div class="flex gap-2 flex-wrap">
+        @if ($isAdmin && trim($broadcastMessage) !== '' && $pledgers->isNotEmpty())
+        <a href="sms:{{ $pledgers->map(fn ($p) => rawurlencode($p->phone))->implode(';') }}?body={{ rawurlencode($broadcastMessage) }}" class="btn btn-primary"><i class="fa-solid fa-tower-broadcast"></i> Share schedule</a>
+        @endif
         @if ($items->count())
         <a href="{{ route('schedule.export.excel') }}" class="btn btn-ghost"><i class="fa-solid fa-file-excel"></i> Excel</a>
         <a href="{{ route('schedule.export.pdf') }}" class="btn btn-ghost"><i class="fa-solid fa-file-pdf"></i> PDF</a>
@@ -38,110 +41,3 @@
                 @endif
             </tr>
             @if ($isAdmin)
-            <div id="editItem{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-                <div class="bg-white rounded-2xl max-w-sm w-full p-6">
-                    <h3 class="font-semibold mb-4">Edit schedule item</h3>
-                    <form method="POST" action="{{ route('schedule.update', $item) }}" class="space-y-3">
-                        @csrf @method('PATCH')
-                        <div><label class="text-xs font-semibold">Event</label><input type="text" name="title" value="{{ $item->title }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div><label class="text-xs font-semibold">Date</label><input type="date" name="date" value="{{ $item->date->format('Y-m-d') }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-                            <div><label class="text-xs font-semibold">Time</label><input type="time" name="time" value="{{ $item->time }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-                        </div>
-                        <div class="flex gap-2 pt-2">
-                            <button type="button" onclick="document.getElementById('editItem{{ $item->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
-                            <button class="btn btn-primary flex-1 justify-center">Save changes</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            @endif
-        @empty
-            <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">No schedule items yet.</td></tr>
-        @endforelse
-        </tbody>
-    </table>
-</div>
-
-@if ($isAdmin)
-<div class="card p-5 mb-4 max-w-xl">
-    <div class="text-xs font-semibold mb-2">Broadcast message <span class="text-gray-400 font-normal">— use {event}, {place}, {date}. Write your own — there's no starter text.</span></div>
-    <form method="POST" action="{{ route('schedule.message') }}" class="mb-4">
-        @csrf @method('PATCH')
-        <textarea name="schedule_message" rows="5" placeholder="Write the schedule announcement…" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('schedule') }}</textarea>
-        @error('schedule_message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
-        <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save message</button>
-    </form>
-    <div class="border-t pt-4">
-        @if (trim($broadcastMessage) === '')
-        <p class="text-xs text-gray-400">Save a message above to enable broadcasting.</p>
-        @elseif ($pledgers->isEmpty())
-        <p class="text-xs text-gray-400">No contacts with a phone number to message.</p>
-        @else
-        <button onclick="document.getElementById('scheduleBroadcastModal').classList.remove('hidden')" class="btn btn-primary w-full justify-center"><i class="fa-solid fa-tower-broadcast"></i> Broadcast SMS to all pledgers</button>
-        @endif
-    </div>
-</div>
-
-<div id="scheduleBroadcastModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[80vh] flex flex-col">
-        <div class="flex justify-between items-center mb-1">
-            <h3 class="font-semibold">Send SMS</h3>
-            <button onclick="document.getElementById('scheduleBroadcastModal').classList.add('hidden')" class="text-gray-400"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-
-        <button type="button" data-copy-text="{{ $broadcastMessage }}" onclick="copyScheduleText(this)" id="copyMsgBtn" class="btn btn-ghost w-full justify-center mt-2"><i class="fa-solid fa-copy"></i> Copy message</button>
-        <button type="button" data-copy-text="{{ $pledgers->pluck('phone')->implode(', ') }}" onclick="copyScheduleText(this)" id="copyNumBtn" class="btn btn-ghost w-full justify-center mt-2 mb-1"><i class="fa-solid fa-copy"></i> Copy phone numbers</button>
-        <p class="text-xs text-gray-400 mb-4">Guaranteed to work: copy the message, open your own Messages app, add everyone as recipients yourself, then paste.</p>
-
-        <a href="sms:{{ $pledgers->map(fn ($p) => rawurlencode($p->phone))->implode(';') }}?body={{ rawurlencode($broadcastMessage) }}" class="btn btn-primary w-full justify-center mt-1 mb-1"><i class="fa-solid fa-tower-broadcast"></i> Try sending to everyone at once</a>
-        <p class="text-xs text-gray-400 mb-4">Experimental — may or may not work depending on your phone's messaging app.</p>
-
-        <div class="border-t pt-3">
-            <p class="text-xs text-gray-500 mb-2">Or send one at a time:</p>
-            <div class="overflow-y-auto space-y-2">
-                @foreach ($pledgers as $p)
-                <div class="flex justify-between items-center border rounded-lg px-3 py-2">
-                    <div>
-                        <div class="text-sm font-semibold">{{ $p->name }}</div>
-                        <div class="text-xs text-gray-400">{{ $p->phone }}</div>
-                    </div>
-                    <a href="sms:{{ rawurlencode($p->phone) }}?body={{ rawurlencode($broadcastMessage) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> Send</a>
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function copyScheduleText(btn) {
-    navigator.clipboard.writeText(btn.dataset.copyText).then(function () {
-        const original = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
-        setTimeout(function () { btn.innerHTML = original; }, 1500);
-    });
-}
-</script>
-@endif
-
-@if ($isAdmin)
-<div id="addScheduleModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6">
-        <h3 class="font-semibold mb-4">Add schedule item</h3>
-        <form method="POST" action="{{ route('schedule.store') }}" class="space-y-3">
-            @csrf
-            <div><label class="text-xs font-semibold">Event</label><input type="text" name="title" required placeholder="e.g. Vows, Reception" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div class="grid grid-cols-2 gap-2">
-                <div><label class="text-xs font-semibold">Date</label><input type="date" name="date" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-                <div><label class="text-xs font-semibold">Time</label><input type="time" name="time" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            </div>
-            <div class="flex gap-2 pt-2">
-                <button type="button" onclick="document.getElementById('addScheduleModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
-                <button class="btn btn-primary flex-1 justify-center">Add item</button>
-            </div>
-        </form>
-    </div>
-</div>
-@endif
-@endsection
