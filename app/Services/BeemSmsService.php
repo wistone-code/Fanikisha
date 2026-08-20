@@ -64,7 +64,7 @@ class BeemSmsService
 
             return [
                 'successful' => false,
-                'error' => $data['message'] ?? $response->body() ?: ('Beem rejected the request (HTTP '.$response->status().').'),
+                'error' => $data['message'] ?? ('Beem rejected the request (HTTP '.$response->status().').'),
             ];
         } catch (Throwable $e) {
             Log::error('Beem SMS send exception', ['message' => $e->getMessage()]);
