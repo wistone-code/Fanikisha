@@ -68,6 +68,7 @@ class ProviderController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'service' => ['required', 'string', 'max:255'],
             'budget' => ['required', 'numeric', 'min:0'],
+            'paid' => ['nullable', 'numeric', 'min:0'],
             'phone' => ['nullable', 'string', 'max:32'],
         ]);
     }
@@ -102,6 +103,19 @@ class ProviderController extends Controller
         $text = rawurlencode($messages->forProvider($event, $provider));
 
         return redirect()->away("https://wa.me/{$digits}?text={$text}");
+    }
+
+    /** Sends a payment-confirmation SMS with the current paid/budget/remaining figures. */
+    public function confirmPaymentSms(Provider $provider, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
+    {
+        $this->assertProviderInCurrentEvent($provider);
+
+        $event = app('currentEvent');
+        $result = $sms->sendSingle($messages->forProviderPayment($event, $provider), $provider->phone);
+
+        return back()->with('status', $result['successful']
+            ? "Payment confirmation sent to {$provider->name}."
+            : 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
     }
 
     // ---- Export ----------------------------------------------------------------------

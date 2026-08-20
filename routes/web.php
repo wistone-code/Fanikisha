@@ -140,6 +140,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::patch('/providers/{provider}', [ProviderController::class, 'update'])->name('providers.update');
             Route::delete('/providers/{provider}', [ProviderController::class, 'destroy'])->name('providers.destroy');
             Route::post('/providers/{provider}/sms', [ProviderController::class, 'sendSms'])->name('providers.sms');
+            Route::post('/providers/{provider}/confirm-payment/sms', [ProviderController::class, 'confirmPaymentSms'])->name('providers.confirm-payment.sms');
             Route::get('/providers/{provider}/whatsapp', [ProviderController::class, 'sendWhatsApp'])->name('providers.whatsapp');
 
             Route::post('/committees', [CommitteeController::class, 'store'])->name('committees.store');

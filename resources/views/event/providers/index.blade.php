@@ -27,7 +27,7 @@
 <div class="card overflow-x-auto mb-4">
     <table class="w-full text-sm sortable-table">
         <thead><tr class="text-left text-xs uppercase text-gray-400 border-b">
-            <th class="px-4 py-3" data-sort="text">Name</th><th class="px-4 py-3" data-sort="text">Service</th><th class="px-4 py-3" data-sort="number">Budget</th>
+            <th class="px-4 py-3" data-sort="text">Name</th><th class="px-4 py-3" data-sort="text">Service</th><th class="px-4 py-3" data-sort="number">Budget</th><th class="px-4 py-3" data-sort="number">Paid</th><th class="px-4 py-3" data-sort="number">Balance</th>
             @if ($isAdmin)<th class="px-4 py-3">Contact</th><th class="px-4 py-3"></th>@endif
         </tr></thead>
         <tbody>
@@ -36,6 +36,8 @@
                 <td class="px-4 py-3 font-semibold">{{ $p->name }}</td>
                 <td class="px-4 py-3">{{ $p->service }}</td>
                 <td class="px-4 py-3">{{ number_format($p->budget) }}</td>
+                <td class="px-4 py-3">{{ number_format($p->paid) }}</td>
+                <td class="px-4 py-3">{{ number_format($p->remaining()) }}</td>
                 @if ($isAdmin)
                 <td class="px-4 py-3">
                     @if ($p->phone)
@@ -44,6 +46,10 @@
                         <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
                     </form>
                     <a href="{{ route('providers.whatsapp', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+                    <form method="POST" action="{{ route('providers.confirm-payment.sms', $p) }}" class="inline" onsubmit="return confirm('Send payment confirmation SMS to {{ $p->name }}?')">
+                        @csrf
+                        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-circle-check"></i> Confirm Payment</button>
+                    </form>
                     @else
                     <span class="text-gray-400 text-xs">No phone</span>
                     @endif
@@ -66,6 +72,7 @@
                         <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ $p->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div><label class="text-xs font-semibold">Service</label><input type="text" name="service" value="{{ $p->service }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div><label class="text-xs font-semibold">Budget</label><input type="number" name="budget" value="{{ $p->budget }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="text-xs font-semibold">Paid</label><input type="number" name="paid" value="{{ $p->paid }}" step="0.01" min="0" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div><label class="text-xs font-semibold">Contact (phone)</label><input type="tel" name="phone" value="{{ $p->phone }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div class="flex gap-2 pt-2">
                             <button type="button" onclick="document.getElementById('editProvider{{ $p->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
@@ -76,7 +83,7 @@
             </div>
             @endif
         @empty
-            <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">No providers added yet.</td></tr>
+            <tr><td colspan="7" class="px-4 py-10 text-center text-gray-400">No providers added yet.</td></tr>
         @endforelse
         </tbody>
     </table>

@@ -102,4 +102,20 @@ class MessageTemplateService
             '{event}' => $event->name,
         ]);
     }
+
+    /**
+     * Payment confirmation sent to a provider after recording a payment.
+     * Fixed template (not user-editable via a saved message, unlike the others above).
+     */
+    public function forProviderPayment(Event $event, Provider $provider): string
+    {
+        return strtr('Dear {name}, we confirm receipt of your payment for {service} ({event}). Paid: {paid} of {budget}. Remaining: {remain}. Thank you!', [
+            '{name}' => $provider->name,
+            '{service}' => $provider->service,
+            '{event}' => $event->name,
+            '{paid}' => number_format((float) $provider->paid),
+            '{budget}' => number_format((float) $provider->budget),
+            '{remain}' => number_format($provider->remaining()),
+        ]);
+    }
 }
