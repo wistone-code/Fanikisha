@@ -49,4 +49,24 @@
         <button class="btn btn-primary mt-2"><i class="fa-solid fa-check"></i> Save automatic reminder settings</button>
     </form>
 </div>
+
+<div class="card p-6 max-w-md mt-4">
+    <div class="text-sm font-semibold mb-1">Invitation e-card photo</div>
+    <p class="text-xs text-gray-500 mb-3">Shown on the guest invitation card (e.g. a photo of the couple, celebrant, or family). JPG/PNG/WebP, up to 5MB.</p>
+    @if ($event->hasCardPhoto())
+    <div class="mb-3">
+        <img src="{{ route('event.settings.card-photo.view') }}" class="w-24 h-24 rounded-full object-cover border" alt="Current card photo">
+    </div>
+    <form method="POST" action="{{ route('event.settings.card-photo.remove') }}" class="mb-4" onsubmit="return confirm('Remove the card photo?')">
+        @csrf @method('DELETE')
+        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i> Remove photo</button>
+    </form>
+    @endif
+    <form method="POST" action="{{ route('event.settings.card-photo.upload') }}" enctype="multipart/form-data" class="space-y-3">
+        @csrf
+        <input type="file" name="card_photo" accept="image/jpeg,image/png,image/webp" required class="w-full border rounded-lg px-3 py-2 text-sm">
+        @error('card_photo')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+        <button class="btn btn-primary mt-2"><i class="fa-solid fa-upload"></i> {{ $event->hasCardPhoto() ? 'Replace photo' : 'Upload photo' }}</button>
+    </form>
+</div>
 @endsection

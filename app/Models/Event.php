@@ -17,7 +17,7 @@ class Event extends Model
         'invitation_message', 'meeting_message', 'announcement_message', 'committee_message',
         'schedule_message',
         'reminder_auto_enabled', 'reminder_auto_frequency_days', 'reminder_auto_time', 'reminder_auto_last_sent_at',
-        'sms_quota', 'sms_sent_count',
+        'sms_quota', 'sms_sent_count', 'card_photo', 'card_photo_mime',
     ];
 
     protected function casts(): array
@@ -83,6 +83,11 @@ class Event extends Model
     public function hasSmsCapacity(int $count = 1): bool
     {
         return $this->sms_quota === null || ($this->sms_sent_count + $count) <= $this->sms_quota;
+    }
+
+    public function hasCardPhoto(): bool
+    {
+        return ! empty($this->card_photo);
     }
 
     public function showsCountdown(): bool

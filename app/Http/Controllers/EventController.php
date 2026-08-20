@@ -90,4 +90,42 @@ class EventController extends Controller
 
         return back()->with('status', 'Automatic reminder settings saved');
     }
+
+    /** Uploads (or replaces) the photo shown on the guest e-card / invitation. */
+    public function uploadCardPhoto(Request $request): RedirectResponse
+    {
+        $event = app('currentEvent');
+
+        $data = $request->validate([
+            'card_photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $file = $data['card_photo'];
+
+        $event->update([
+            'card_photo' => file_get_contents($file->getRealPath()),
+            'card_photo_mime' => $file->getMimeType(),
+        ]);
+
+        return back()->with('status', 'Card photo updated');
+    }
+
+    public function removeCardPhoto(): RedirectResponse
+    {
+        $event = app('currentEvent');
+
+        $event->update(['card_photo' => null, 'card_photo_mime' => null]);
+
+        return back()->with('status', 'Card photo removed');
+    }
+
+    /** Admin-only preview of the current card photo, shown on the settings page. */
+    public function viewCardPhoto()
+    {
+        $event = app('currentEvent');
+
+        abort_unless($event->hasCardPhoto(), 404);
+
+        return response($event->card_photo)->header('Content-Type', $event->card_photo_mime);
+    }
 }

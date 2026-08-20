@@ -36,9 +36,21 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->
 // Public RSVP landing page opened from an activated invitation link — no auth required.
 Route::get('/rsvp/{token}', function (string $token) {
     $pledge = \App\Models\Pledge::where('invite_token', $token)->firstOrFail();
+    $event = $pledge->event;
+    $theme = app(\App\Services\EventThemeService::class)->for($event->event_type);
 
-    return view('guest.rsvp', ['pledge' => $pledge, 'event' => $pledge->event]);
+    return view('guest.rsvp', ['pledge' => $pledge, 'event' => $event, 'theme' => $theme]);
 })->name('guest.rsvp');
+
+// Publicly servable event card photo (no auth — guests view this on the RSVP page above).
+Route::get('/rsvp/{token}/photo', function (string $token) {
+    $pledge = \App\Models\Pledge::where('invite_token', $token)->firstOrFail();
+    $event = $pledge->event;
+
+    abort_unless($event->hasCardPhoto(), 404);
+
+    return response($event->card_photo)->header('Content-Type', $event->card_photo_mime);
+})->name('guest.rsvp.photo');
 
 // ---- Authenticated, but not yet past the forced password change ----------------------
 
@@ -126,6 +138,9 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::get('/settings', [EventController::class, 'editSettings'])->name('event.settings');
             Route::patch('/settings', [EventController::class, 'updateSettings'])->name('event.settings.update');
             Route::patch('/settings/auto-reminder', [EventController::class, 'updateAutoReminder'])->name('event.settings.auto-reminder');
+            Route::post('/settings/card-photo', [EventController::class, 'uploadCardPhoto'])->name('event.settings.card-photo.upload');
+            Route::delete('/settings/card-photo', [EventController::class, 'removeCardPhoto'])->name('event.settings.card-photo.remove');
+            Route::get('/settings/card-photo', [EventController::class, 'viewCardPhoto'])->name('event.settings.card-photo.view');
 
             Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');
             Route::patch('/pledges/{pledge}', [PledgeController::class, 'update'])->name('pledges.update');
