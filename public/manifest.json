@@ -1,0 +1,21 @@
+{
+    "name": "Fanikisha",
+    "short_name": "Fanikisha",
+    "description": "Event pledge and contribution management platform.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#F6F8F9",
+    "theme_color": "#1F3A52",
+    "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

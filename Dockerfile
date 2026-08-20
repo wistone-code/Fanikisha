@@ -1,3 +1,17 @@
+# ---- Stage 1: build the frontend assets (compiled Tailwind CSS via Vite) ----
+FROM node:20-bookworm-slim AS assets
+
+WORKDIR /app
+COPY package.json ./
+RUN npm install
+
+# Needs the full source since Tailwind scans .blade.php files to know which
+# classes are actually used.
+COPY . .
+RUN npm run build
+
+
+# ---- Stage 2: the PHP application (unchanged from before, plus one COPY) ----
 FROM php:8.4-cli
 
 RUN apt-get update && apt-get install -y unzip git && rm -rf /var/lib/apt/lists/*
@@ -9,6 +23,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 COPY . .
+
+# Pull in the compiled CSS/JS built in stage 1 above.
+COPY --from=assets /app/public/build ./public/build
 
 RUN composer config policy.advisories.block false
 

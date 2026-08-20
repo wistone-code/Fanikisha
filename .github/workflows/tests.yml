@@ -26,3 +26,15 @@ jobs:
 
       - name: Run tests
         run: php artisan test
+
+  docker-build:
+    runs-on: ubuntu-latest
+    # Doesn't need the test job to pass first — this just verifies the
+    # Dockerfile itself builds successfully, independent of test results.
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t fanikisha-build-check .
