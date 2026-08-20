@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AuthorizesEventOwnership;
 use App\Models\Pledge;
+use App\Services\BeemSmsService;
 use App\Services\MessageTemplateService;
 use App\Services\PhoneNumberService;
 use Illuminate\Http\RedirectResponse;
@@ -52,15 +53,18 @@ class GuestController extends Controller
         return back()->with('status', 'Invitation link activated');
     }
 
-    public function inviteSms(Pledge $pledge, MessageTemplateService $messages): RedirectResponse
+    /** Sends the invitation directly via Beem SMS instead of opening the phone's Messages app. */
+    public function inviteSms(Pledge $pledge, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
         abort_unless($pledge->invite_token, 403, 'This invitation has not been activated yet.');
 
         $event = app('currentEvent');
-        $body = rawurlencode($messages->forInvitation($event, $pledge));
+        $result = $sms->sendSingle($messages->forInvitation($event, $pledge), $pledge->phone);
 
-        return redirect()->away('sms:'.rawurlencode($pledge->phone ?? '')."?body={$body}");
+        return back()->with('status', $result['successful']
+            ? "Invitation sent to {$pledge->name}."
+            : 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
     }
 
     public function inviteWhatsApp(Pledge $pledge, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
@@ -85,8 +89,8 @@ class GuestController extends Controller
 
     // ---- Meeting invitation (non-Funeral only) --------------------------------------
 
-    /** Meeting invitation is a single broadcast — no more per-individual SMS/WhatsApp. */
-    public function meetingBroadcastSms(MessageTemplateService $messages): RedirectResponse
+    /** Sends the meeting invitation directly via Beem SMS to every pledger with a phone number. */
+    public function meetingBroadcastSms(MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $event = app('currentEvent');
         $message = $messages->forMeeting($event);
@@ -95,15 +99,18 @@ class GuestController extends Controller
             return back()->withErrors(['meeting_message' => 'Write a meeting message first, then save it before broadcasting.']);
         }
 
-        $numbers = $event->pledges()->whereNotNull('phone')->pluck('phone');
+        $pledgers = $event->pledges()->whereNotNull('phone')->get();
 
-        if ($numbers->isEmpty()) {
+        if ($pledgers->isEmpty()) {
             return back()->withErrors(['meeting_message' => 'No contacts with a phone number to message.']);
         }
 
-        $body = rawurlencode($message);
+        $result = $sms->sendBulk($message, $pledgers);
 
-        return redirect()->away('sms:'.rawurlencode($numbers->implode(','))."?body={$body}");
+        return back()->with('status', $result['successful']
+            ? "Meeting invitation sent via SMS to {$result['valid']} contact(s)."
+                .(($result['invalid'] ?? 0) > 0 ? " {$result['invalid']} number(s) were invalid." : '')
+            : 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
     }
 
     public function updateMeetingMessage(Request $request): RedirectResponse
@@ -131,7 +138,7 @@ class GuestController extends Controller
      * Falls back to every saved contact with a phone number when the picker isn't
      * available (e.g. iOS Safari doesn't support it at all) or the person cancels it.
      */
-    public function broadcastSms(Request $request, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
+    public function broadcastSms(Request $request, MessageTemplateService $messages, PhoneNumberService $phones, BeemSmsService $sms): RedirectResponse
     {
         $event = app('currentEvent');
 
@@ -152,8 +159,12 @@ class GuestController extends Controller
             return back()->withErrors(['phones' => 'No contacts available to message.']);
         }
 
-        $body = rawurlencode($messages->forAnnouncement($event, null));
+        $recipients = $numbers->map(fn ($phone) => (object) ['phone' => $phone]);
+        $result = $sms->sendBulk($messages->forAnnouncement($event, null), $recipients);
 
-        return redirect()->away('sms:'.rawurlencode($numbers->implode(','))."?body={$body}");
+        return back()->with('status', $result['successful']
+            ? "Announcement sent via SMS to {$result['valid']} contact(s)."
+                .(($result['invalid'] ?? 0) > 0 ? " {$result['invalid']} number(s) were invalid." : '')
+            : 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
     }
 }

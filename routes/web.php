@@ -130,15 +130,15 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::delete('/pledges/{pledge}', [PledgeController::class, 'destroy'])->name('pledges.destroy');
             Route::patch('/pledges/message/reminder', [PledgeController::class, 'updateReminderMessage'])->name('pledges.message.reminder');
             Route::patch('/pledges/message/broadcast', [PledgeController::class, 'updateBroadcastMessage'])->name('pledges.message.broadcast');
-            Route::get('/pledges/{pledge}/remind/sms', [PledgeController::class, 'remindSms'])->name('pledges.remind.sms');
+            Route::post('/pledges/{pledge}/remind/sms', [PledgeController::class, 'remindSms'])->name('pledges.remind.sms');
             Route::get('/pledges/{pledge}/remind/whatsapp', [PledgeController::class, 'remindWhatsApp'])->name('pledges.remind.whatsapp');
-            Route::get('/pledges/remind-all/sms', [PledgeController::class, 'remindAllSms'])->name('pledges.remind-all.sms');
+            Route::post('/pledges/remind-all/sms', [PledgeController::class, 'remindAllSms'])->name('pledges.remind-all.sms');
 
             Route::post('/providers', [ProviderController::class, 'store'])->name('providers.store');
             Route::patch('/providers/message', [ProviderController::class, 'updateMessage'])->name('providers.message');
             Route::patch('/providers/{provider}', [ProviderController::class, 'update'])->name('providers.update');
             Route::delete('/providers/{provider}', [ProviderController::class, 'destroy'])->name('providers.destroy');
-            Route::get('/providers/{provider}/sms', [ProviderController::class, 'sendSms'])->name('providers.sms');
+            Route::post('/providers/{provider}/sms', [ProviderController::class, 'sendSms'])->name('providers.sms');
             Route::get('/providers/{provider}/whatsapp', [ProviderController::class, 'sendWhatsApp'])->name('providers.whatsapp');
 
             Route::post('/committees', [CommitteeController::class, 'store'])->name('committees.store');
@@ -147,7 +147,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::delete('/committees/{committee}', [CommitteeController::class, 'destroy'])->name('committees.destroy');
             Route::delete('/committees/members/{member}', [CommitteeController::class, 'destroyMember'])->name('committees.members.destroy');
             Route::patch('/committees/members/{member}', [CommitteeController::class, 'updateMember'])->name('committees.members.update');
-            Route::get('/committees/members/{member}/sms', [CommitteeController::class, 'notifySms'])->name('committees.members.sms');
+            Route::post('/committees/members/{member}/sms', [CommitteeController::class, 'notifySms'])->name('committees.members.sms');
             Route::get('/committees/members/{member}/whatsapp', [CommitteeController::class, 'notifyWhatsApp'])->name('committees.members.whatsapp');
 
             Route::post('/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
@@ -157,10 +157,10 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::delete('/schedule/{item}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');
 
             Route::post('/guests/{pledge}/send-invite', [GuestController::class, 'sendInvite'])->name('guests.send-invite');
-            Route::get('/guests/{pledge}/sms', [GuestController::class, 'inviteSms'])->name('guests.sms');
+            Route::post('/guests/{pledge}/sms', [GuestController::class, 'inviteSms'])->name('guests.sms');
             Route::get('/guests/{pledge}/whatsapp', [GuestController::class, 'inviteWhatsApp'])->name('guests.whatsapp');
             Route::patch('/guests/message/invitation', [GuestController::class, 'updateInvitationMessage'])->name('guests.message.invitation');
-            Route::get('/guests/meeting/broadcast-sms', [GuestController::class, 'meetingBroadcastSms'])->name('guests.meeting.broadcast-sms');
+            Route::post('/guests/meeting/broadcast-sms', [GuestController::class, 'meetingBroadcastSms'])->name('guests.meeting.broadcast-sms');
             Route::patch('/guests/message/meeting', [GuestController::class, 'updateMeetingMessage'])->name('guests.message.meeting');
             Route::patch('/guests/message/announcement', [GuestController::class, 'updateAnnouncementMessage'])->name('guests.message.announcement');
             Route::post('/guests/broadcast-sms', [GuestController::class, 'broadcastSms'])->name('guests.broadcast-sms');

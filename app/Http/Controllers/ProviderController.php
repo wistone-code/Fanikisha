@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AuthorizesEventOwnership;
 use App\Models\Provider;
+use App\Services\BeemSmsService;
 use App\Services\MessageTemplateService;
 use App\Services\PhoneNumberService;
 use Illuminate\Http\RedirectResponse;
@@ -79,14 +80,17 @@ class ProviderController extends Controller
         return back()->with('status', 'Contact message saved');
     }
 
-    public function sendSms(Provider $provider, MessageTemplateService $messages): RedirectResponse
+    /** Sends the message directly via Beem SMS instead of opening the phone's Messages app. */
+    public function sendSms(Provider $provider, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $this->assertProviderInCurrentEvent($provider);
 
         $event = app('currentEvent');
-        $body = rawurlencode($messages->forProvider($event, $provider));
+        $result = $sms->sendSingle($messages->forProvider($event, $provider), $provider->phone);
 
-        return redirect()->away('sms:'.rawurlencode($provider->phone ?? '')."?body={$body}");
+        return back()->with('status', $result['successful']
+            ? "Message sent to {$provider->name}."
+            : 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
     }
 
     public function sendWhatsApp(Provider $provider, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse

@@ -21,7 +21,10 @@
         <button class="btn btn-primary mt-3"><i class="fa-solid fa-check"></i> Save message</button>
     </form>
     <div class="border-t pt-4">
-        <a href="{{ route('guests.meeting.broadcast-sms') }}" class="btn btn-primary w-full justify-center"><i class="fa-solid fa-tower-broadcast"></i> Broadcast SMS to all pledgers</a>
+        <form method="POST" action="{{ route('guests.meeting.broadcast-sms') }}" onsubmit="return confirm('Send this meeting invitation via SMS to all pledgers now?')">
+            @csrf
+            <button class="btn btn-primary w-full justify-center"><i class="fa-solid fa-tower-broadcast"></i> Broadcast SMS to all pledgers</button>
+        </form>
         <p class="text-xs text-gray-400 mt-2">Sends one group SMS to every pledger with a phone number on file.</p>
     </div>
 </div>

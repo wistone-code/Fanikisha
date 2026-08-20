@@ -74,6 +74,21 @@ class BeemSmsService
     }
 
     /**
+     * Send one message to a single phone number. Thin wrapper around sendBulk()
+     * so individual reminders/notifications share the same request/response logic.
+     *
+     * @return array{successful: bool, valid?: int, invalid?: int, request_id?: mixed, error?: string}
+     */
+    public function sendSingle(string $message, ?string $phone): array
+    {
+        if (blank($phone)) {
+            return ['successful' => false, 'error' => 'No phone number on file.'];
+        }
+
+        return $this->sendBulk($message, collect([(object) ['phone' => $phone]]));
+    }
+
+    /**
      * Beem expects full international format, e.g. 255700000000 (no +, no leading 0).
      */
     private function normalizePhone(string $phone): string

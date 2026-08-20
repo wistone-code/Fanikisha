@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AuthorizesEventOwnership;
 use App\Models\Committee;
 use App\Models\CommitteeMember;
+use App\Services\BeemSmsService;
 use App\Services\MessageTemplateService;
 use App\Services\PhoneNumberService;
 use Illuminate\Http\RedirectResponse;
@@ -96,14 +97,18 @@ class CommitteeController extends Controller
         return back()->with('status', 'Notification message saved');
     }
 
-    public function notifySms(CommitteeMember $member, MessageTemplateService $messages): RedirectResponse
+    /** Sends the notification directly via Beem SMS instead of opening the phone's Messages app. */
+    public function notifySms(CommitteeMember $member, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $this->assertCommitteeMemberInCurrentEvent($member);
 
         $event = app('currentEvent');
-        $body = rawurlencode($messages->forCommittee($event, $member->pledge, $member->title, $member->committee->name));
+        $body = $messages->forCommittee($event, $member->pledge, $member->title, $member->committee->name);
+        $result = $sms->sendSingle($body, $member->pledge->phone);
 
-        return redirect()->away('sms:'.rawurlencode($member->pledge->phone ?? '')."?body={$body}");
+        return back()->with('status', $result['successful']
+            ? "Notification sent to {$member->pledge->name}."
+            : 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
     }
 
     public function notifyWhatsApp(CommitteeMember $member, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse

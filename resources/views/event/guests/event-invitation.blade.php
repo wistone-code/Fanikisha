@@ -43,7 +43,10 @@
                                     <button class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-solid fa-paper-plane"></i> Send invite</button>
                                 </form>
                             @elseif ($p->invite_token)
-                                <a href="{{ route('guests.sms', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</a>
+                                <form method="POST" action="{{ route('guests.sms', $p) }}" class="inline">
+                                    @csrf
+                                    <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
+                                </form>
                                 <a href="{{ route('guests.whatsapp', $p) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
                             @endif
                         </td>

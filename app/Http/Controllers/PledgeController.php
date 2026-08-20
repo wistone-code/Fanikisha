@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AuthorizesEventOwnership;
 use App\Models\Pledge;
+use App\Services\BeemSmsService;
 use App\Services\MessageTemplateService;
 use App\Services\PhoneNumberService;
 use Illuminate\Http\RedirectResponse;
@@ -104,15 +105,17 @@ class PledgeController extends Controller
         return back()->with('status', 'Broadcast message saved');
     }
 
-    /** Opens the phone's own SMS app with the message pre-filled, via a redirect to an sms: URI. */
-    public function remindSms(Pledge $pledge, MessageTemplateService $messages): RedirectResponse
+    /** Sends the reminder directly via Beem SMS instead of opening the phone's Messages app. */
+    public function remindSms(Pledge $pledge, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
 
         $event = app('currentEvent');
-        $body = rawurlencode($messages->forReminder($event, $pledge));
+        $result = $sms->sendSingle($messages->forReminder($event, $pledge), $pledge->phone);
 
-        return redirect()->away('sms:'.rawurlencode($pledge->phone ?? '')."?body={$body}");
+        return back()->with('status', $result['successful']
+            ? "Reminder sent to {$pledge->name}."
+            : 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
     }
 
     public function remindWhatsApp(Pledge $pledge, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
@@ -126,8 +129,8 @@ class PledgeController extends Controller
         return redirect()->away("https://wa.me/{$digits}?text={$text}");
     }
 
-    /** SMS supports a comma-joined multi-recipient group text; WhatsApp does not (see GuestController for that limitation handled via a queue). */
-    public function remindAllSms(MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
+    /** Sends the broadcast to every outstanding pledger directly via Beem SMS. */
+    public function remindAllSms(MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $event = app('currentEvent');
         $message = $messages->forBroadcast($event);
@@ -137,15 +140,17 @@ class PledgeController extends Controller
         }
 
         $outstanding = $event->pledges()->whereColumn('paid', '<', 'amount')->whereNotNull('phone')->get();
-        $numbers = implode(',', $outstanding->pluck('phone')->filter()->all());
 
-        if ($numbers === '') {
+        if ($outstanding->isEmpty()) {
             return back()->withErrors(['broadcast_message' => 'No outstanding pledgers with a phone number to message.']);
         }
 
-        $body = rawurlencode($message);
+        $result = $sms->sendBulk($message, $outstanding);
 
-        return redirect()->away('sms:'.rawurlencode($numbers)."?body={$body}");
+        return back()->with('status', $result['successful']
+            ? "Reminder sent via SMS to {$result['valid']} pledger(s)."
+                .(($result['invalid'] ?? 0) > 0 ? " {$result['invalid']} number(s) were invalid." : '')
+            : 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
     }
 
     // ---- Export ----------------------------------------------------------------------

@@ -13,7 +13,10 @@
         <p class="text-sm text-gray-500">{{ $outstanding->count() }} pledge{{ $outstanding->count() === 1 ? '' : 's' }} with an outstanding balance.</p>
     </div>
     @if ($outstanding->count())
-    <a href="{{ route('pledges.remind-all.sms') }}" class="btn btn-ghost"><i class="fa-solid fa-comment-sms"></i> SMS all</a>
+    <form method="POST" action="{{ route('pledges.remind-all.sms') }}" onsubmit="return confirm('Send the broadcast SMS to everyone outstanding now?')">
+        @csrf
+        <button class="btn btn-ghost"><i class="fa-solid fa-comment-sms"></i> SMS all</button>
+    </form>
     @endif
 </div>
 
@@ -27,7 +30,10 @@
                 <td class="px-4 py-3">{{ $p->phone ?? '—' }}</td>
                 <td class="px-4 py-3">{{ number_format($p->remaining()) }}</td>
                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                    <a href="{{ route('pledges.remind.sms', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</a>
+                    <form method="POST" action="{{ route('pledges.remind.sms', $p) }}" class="inline">
+                        @csrf
+                        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
+                    </form>
                     <a href="{{ route('pledges.remind.whatsapp', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
                 </td>
             </tr>
