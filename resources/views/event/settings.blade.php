@@ -23,4 +23,30 @@
         <button class="btn btn-primary mt-2"><i class="fa-solid fa-check"></i> Save changes</button>
     </form>
 </div>
+
+<div class="card p-6 max-w-md mt-4">
+    <div class="text-sm font-semibold mb-1">Automatic reminders</div>
+    <p class="text-xs text-gray-500 mb-3">When enabled, the outstanding-pledge reminder broadcast (from the Pledges → Reminder page) sends itself automatically on this schedule — no need to tap "SMS all".</p>
+    <form method="POST" action="{{ route('event.settings.auto-reminder') }}" class="space-y-3">
+        @csrf @method('PATCH')
+        <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="reminder_auto_enabled" value="1" @checked($event->reminder_auto_enabled)>
+            Enable automatic sending
+        </label>
+        <div>
+            <label class="text-xs font-semibold">Every how many days</label>
+            <input type="number" name="reminder_auto_frequency_days" min="1" max="90" value="{{ $event->reminder_auto_frequency_days }}" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+            <label class="text-xs font-semibold">Time of day (24hr)</label>
+            <input type="time" name="reminder_auto_time" value="{{ substr($event->reminder_auto_time, 0, 5) }}" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        @error('reminder_auto_frequency_days')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+        @error('reminder_auto_time')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+        @if ($event->reminder_auto_last_sent_at)
+        <p class="text-xs text-gray-400">Last auto-sent: {{ $event->reminder_auto_last_sent_at->format('M j, Y g:i A') }}</p>
+        @endif
+        <button class="btn btn-primary mt-2"><i class="fa-solid fa-check"></i> Save automatic reminder settings</button>
+    </form>
+</div>
 @endsection

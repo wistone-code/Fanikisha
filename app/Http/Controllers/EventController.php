@@ -70,4 +70,24 @@ class EventController extends Controller
 
         return back()->with('status', 'Event settings saved');
     }
+
+    /** Saves the toggle/frequency/time for automatic recurring reminder broadcasts. */
+    public function updateAutoReminder(Request $request): RedirectResponse
+    {
+        $event = app('currentEvent');
+
+        $data = $request->validate([
+            'reminder_auto_enabled' => ['nullable', 'boolean'],
+            'reminder_auto_frequency_days' => ['required_if:reminder_auto_enabled,1', 'nullable', 'integer', 'min:1', 'max:90'],
+            'reminder_auto_time' => ['required_if:reminder_auto_enabled,1', 'nullable', 'date_format:H:i'],
+        ]);
+
+        $event->update([
+            'reminder_auto_enabled' => (bool) ($data['reminder_auto_enabled'] ?? false),
+            'reminder_auto_frequency_days' => $data['reminder_auto_frequency_days'] ?? $event->reminder_auto_frequency_days,
+            'reminder_auto_time' => $data['reminder_auto_time'] ?? $event->reminder_auto_time,
+        ]);
+
+        return back()->with('status', 'Automatic reminder settings saved');
+    }
 }

@@ -16,6 +16,7 @@ class Event extends Model
         'provider_message', 'reminder_message', 'broadcast_message',
         'invitation_message', 'meeting_message', 'announcement_message', 'committee_message',
         'schedule_message',
+        'reminder_auto_enabled', 'reminder_auto_frequency_days', 'reminder_auto_time', 'reminder_auto_last_sent_at',
     ];
 
     protected function casts(): array
@@ -23,6 +24,8 @@ class Event extends Model
         return [
             'event_date' => 'date',
             'pledge_deadline' => 'date',
+            'reminder_auto_enabled' => 'boolean',
+            'reminder_auto_last_sent_at' => 'datetime',
         ];
     }
 

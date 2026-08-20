@@ -124,6 +124,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
         Route::middleware('event_admin')->group(function () {
             Route::get('/settings', [EventController::class, 'editSettings'])->name('event.settings');
             Route::patch('/settings', [EventController::class, 'updateSettings'])->name('event.settings.update');
+            Route::patch('/settings/auto-reminder', [EventController::class, 'updateAutoReminder'])->name('event.settings.auto-reminder');
 
             Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');
             Route::patch('/pledges/{pledge}', [PledgeController::class, 'update'])->name('pledges.update');
