@@ -49,6 +49,9 @@ class ProviderController extends Controller
         $provider->update([
             ...$data,
             'phone' => $phones->normalize($data['phone'] ?? null),
+            // Left blank on the Edit form means "don't change it" — without this,
+            // a blank value gets saved into the decimal column and crashes.
+            'paid' => ($data['paid'] ?? '') !== '' ? $data['paid'] : $provider->paid,
         ]);
 
         $status = 'Provider updated';
