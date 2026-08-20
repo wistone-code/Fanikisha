@@ -63,6 +63,9 @@ class PledgeController extends Controller
         $pledge->update([
             ...$data,
             'phone' => $phones->normalize($data['phone'] ?? null),
+            // Left blank on the Edit form means "don't change it" — without this,
+            // an empty string gets saved into the decimal column and crashes.
+            'paid' => ($data['paid'] ?? '') !== '' ? $data['paid'] : $pledge->paid,
         ]);
 
         return back()->with('status', 'Updated');
