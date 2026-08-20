@@ -1,9 +1,9 @@
 # ---- Stage 1: build the frontend assets (compiled Tailwind CSS via Vite) ----
-FROM node:20-bookworm-slim AS assets
+FROM node:22-bookworm-slim AS assets
 
 WORKDIR /app
 COPY package.json ./
-RUN npm install -g npm@latest && npm install
+RUN npm install
 
 # Needs the full source since Tailwind scans .blade.php files to know which
 # classes are actually used.
