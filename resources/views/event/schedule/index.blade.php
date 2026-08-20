@@ -9,7 +9,7 @@
     </div>
     <div class="flex gap-2 flex-wrap">
         @if ($isAdmin && trim($broadcastMessage) !== '' && $pledgers->isNotEmpty())
-        <a href="sms:{{ $pledgers->map(fn ($p) => rawurlencode($p->phone))->implode(';') }}?body={{ rawurlencode($broadcastMessage) }}" class="btn btn-primary"><i class="fa-solid fa-tower-broadcast"></i> Share schedule</a>
+        <a href="sms:{{ $pledgers->map(fn ($p) => rawurlencode($p->phone))->implode(';') }}?body={{ rawurlencode($broadcastMessage) }}" class="btn btn-primary">Share schedule</a>
         @endif
         @if ($items->count())
         <a href="{{ route('schedule.export.excel') }}" class="btn btn-ghost"><i class="fa-solid fa-file-excel"></i> Excel</a>
