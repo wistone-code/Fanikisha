@@ -32,18 +32,44 @@
     </div>
 
     <div class="flex gap-2 w-full max-w-sm">
-        <button onclick="saveCardAsImage()" class="btn btn-primary flex-1"><i class="fa-solid fa-download"></i> Save as image</button>
+        <button onclick="shareCard()" class="btn btn-primary flex-1"><i class="fa-solid fa-share-nodes"></i> Share</button>
+        <button onclick="saveCardAsImage()" class="btn btn-ghost flex-1"><i class="fa-solid fa-download"></i> Save</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
+        const cardFileName = {{ Js::from(Str::slug($event->name).'-invitation.png') }};
+        const cardTitle = {{ Js::from("You're invited to ".$event->name) }};
+
+        function renderCard() {
+            return html2canvas(document.getElementById('card'), { backgroundColor: '#ffffff', scale: 2 });
+        }
+
         function saveCardAsImage() {
-            const card = document.getElementById('card');
-            html2canvas(card, { backgroundColor: '#ffffff', scale: 2 }).then(function (canvas) {
+            renderCard().then(function (canvas) {
                 const link = document.createElement('a');
-                link.download = {{ Js::from(Str::slug($event->name).'-invitation.png') }};
+                link.download = cardFileName;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
+            });
+        }
+
+        function shareCard() {
+            renderCard().then(function (canvas) {
+                canvas.toBlob(async function (blob) {
+                    const file = new File([blob], cardFileName, { type: 'image/png' });
+
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({ files: [file], title: cardTitle });
+                        } catch (e) {
+                            // Person cancelled the share sheet — nothing to do.
+                        }
+                    } else {
+                        // Browser can't share files directly (mostly desktop) — fall back to download.
+                        saveCardAsImage();
+                    }
+                }, 'image/png');
             });
         }
     </script>
