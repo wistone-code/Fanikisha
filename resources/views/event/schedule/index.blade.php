@@ -41,3 +41,65 @@
                 @endif
             </tr>
             @if ($isAdmin)
+            <div id="editItem{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+                    <h3 class="font-semibold mb-4">Edit schedule item</h3>
+                    <form method="POST" action="{{ route('schedule.update', $item) }}" class="space-y-3">
+                        @csrf @method('PATCH')
+                        <div><label class="text-xs font-semibold">Event</label><input type="text" name="title" value="{{ $item->title }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="text-xs font-semibold">Date</label><input type="date" name="date" value="{{ $item->date->format('Y-m-d') }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                            <div><label class="text-xs font-semibold">Time</label><input type="time" name="time" value="{{ $item->time }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <button type="button" onclick="document.getElementById('editItem{{ $item->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                            <button class="btn btn-primary flex-1 justify-center">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+        @empty
+            <tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">No schedule items yet.</td></tr>
+        @endforelse
+        </tbody>
+    </table>
+</div>
+
+@if ($isAdmin)
+<div class="card p-5 mb-4 max-w-xl">
+    <div class="text-xs font-semibold mb-2">Broadcast message <span class="text-gray-400 font-normal">— use {event}, {place}, {date}. Write your own — there's no starter text.</span></div>
+    <form method="POST" action="{{ route('schedule.message') }}" class="mb-4">
+        @csrf @method('PATCH')
+        <textarea name="schedule_message" rows="5" placeholder="Write the schedule announcement…" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('schedule') }}</textarea>
+        @error('schedule_message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save message</button>
+    </form>
+    @if (trim($broadcastMessage) === '')
+    <p class="text-xs text-gray-400 border-t pt-4">Save a message above, then use "Share schedule" at the top of the page to text all pledgers.</p>
+    @elseif ($pledgers->isEmpty())
+    <p class="text-xs text-gray-400 border-t pt-4">No contacts with a phone number to message.</p>
+    @endif
+</div>
+@endif
+
+@if ($isAdmin)
+<div id="addScheduleModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+        <h3 class="font-semibold mb-4">Add schedule item</h3>
+        <form method="POST" action="{{ route('schedule.store') }}" class="space-y-3">
+            @csrf
+            <div><label class="text-xs font-semibold">Event</label><input type="text" name="title" required placeholder="e.g. Vows, Reception" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div class="grid grid-cols-2 gap-2">
+                <div><label class="text-xs font-semibold">Date</label><input type="date" name="date" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                <div><label class="text-xs font-semibold">Time</label><input type="time" name="time" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('addScheduleModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                <button class="btn btn-primary flex-1 justify-center">Add item</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+@endsection
