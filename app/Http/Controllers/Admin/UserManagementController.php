@@ -15,7 +15,8 @@ class UserManagementController extends Controller
 {
     /**
      * The System Admin's only screen. Deliberately has zero visibility into any
-     * event's data — this query only ever touches `users` and `event_members.role`.
+     * event's data — this query only ever touches `users` and `event_members.role`,
+     * plus the event's SMS quota/usage numbers (cost-control figures, not content).
      */
     public function index(Request $request): View
     {
@@ -39,6 +40,11 @@ class UserManagementController extends Controller
                 $u->created_by_label = $u->creator
                     ? ($u->creator->is_super_user ? "{$u->creator->name} (System)" : $u->creator->name)
                     : '—';
+
+                $event = $u->currentEvent();
+                $u->event_id = $event?->id;
+                $u->sms_quota = $event?->sms_quota;
+                $u->sms_sent_count = $event?->sms_sent_count;
 
                 return $u;
             });
@@ -111,6 +117,23 @@ class UserManagementController extends Controller
         $user->delete();
 
         return back()->with('status', 'Account deleted');
+    }
+
+    /** Sets (or clears) the SMS send cap for this account's event. Null = unlimited. */
+    public function updateSmsQuota(Request $request, User $user): RedirectResponse
+    {
+        abort_if($user->is_super_user, 404);
+
+        $event = $user->currentEvent();
+        abort_unless($event, 404, 'This account has no event yet.');
+
+        $data = $request->validate([
+            'sms_quota' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $event->update(['sms_quota' => $data['sms_quota'] ?? null]);
+
+        return back()->with('status', 'SMS quota updated');
     }
 
     /** The System Admin's own account settings — separate from the accounts they manage. */

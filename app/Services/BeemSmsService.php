@@ -38,6 +38,17 @@ class BeemSmsService
             return ['successful' => false, 'error' => 'No recipients with a phone number.'];
         }
 
+        $event = app('currentEvent');
+
+        if ($event && ! $event->hasSmsCapacity(count($recipients))) {
+            $remaining = $event->smsRemaining();
+
+            return [
+                'successful' => false,
+                'error' => "SMS quota exceeded — {$remaining} message(s) remaining, but this would send ".count($recipients).'.',
+            ];
+        }
+
         try {
             $response = Http::withBasicAuth($apiKey, $secretKey)
                 ->acceptJson()
@@ -52,9 +63,15 @@ class BeemSmsService
             $data = $response->json() ?? [];
 
             if ($response->successful() && ($data['successful'] ?? false)) {
+                $sentCount = $data['valid'] ?? count($recipients);
+
+                if ($event) {
+                    $event->increment('sms_sent_count', $sentCount);
+                }
+
                 return [
                     'successful' => true,
-                    'valid' => $data['valid'] ?? count($recipients),
+                    'valid' => $sentCount,
                     'invalid' => $data['invalid'] ?? 0,
                     'request_id' => $data['request_id'] ?? null,
                 ];

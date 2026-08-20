@@ -17,6 +17,7 @@ class Event extends Model
         'invitation_message', 'meeting_message', 'announcement_message', 'committee_message',
         'schedule_message',
         'reminder_auto_enabled', 'reminder_auto_frequency_days', 'reminder_auto_time', 'reminder_auto_last_sent_at',
+        'sms_quota', 'sms_sent_count',
     ];
 
     protected function casts(): array
@@ -71,6 +72,17 @@ class Event extends Model
     public function isFuneral(): bool
     {
         return $this->event_type === 'Funeral';
+    }
+
+    /** Null quota means unlimited (System Admin hasn't capped this account). */
+    public function smsRemaining(): ?int
+    {
+        return $this->sms_quota === null ? null : max(0, $this->sms_quota - $this->sms_sent_count);
+    }
+
+    public function hasSmsCapacity(int $count = 1): bool
+    {
+        return $this->sms_quota === null || ($this->sms_sent_count + $count) <= $this->sms_quota;
     }
 
     public function showsCountdown(): bool

@@ -64,6 +64,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
         Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
         Route::patch('/users/{user}/email', [UserManagementController::class, 'updateEmail'])->name('users.email');
         Route::post('/users/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset-password');
+        Route::patch('/users/{user}/sms-quota', [UserManagementController::class, 'updateSmsQuota'])->name('users.sms-quota');
         Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/account', [UserManagementController::class, 'accountSettings'])->name('account');
