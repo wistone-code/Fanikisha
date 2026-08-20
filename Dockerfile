@@ -3,7 +3,7 @@ FROM node:20-bookworm-slim AS assets
 
 WORKDIR /app
 COPY package.json ./
-RUN npm install
+RUN npm install -g npm@latest && npm install
 
 # Needs the full source since Tailwind scans .blade.php files to know which
 # classes are actually used.
