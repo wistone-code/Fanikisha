@@ -21,6 +21,9 @@
         <a href="{{ route('pledges.export.pdf') }}" class="btn btn-ghost"><i class="fa-solid fa-file-pdf"></i> PDF</a>
         @endif
         @if ($isAdmin)
+        <button onclick="document.getElementById('importPledgesModal').classList.remove('hidden')" class="btn btn-ghost">
+            <i class="fa-solid fa-file-import"></i> Import
+        </button>
         <button onclick="document.getElementById('addPledgeModal').classList.remove('hidden')" class="btn btn-primary">
             <i class="fa-solid fa-plus"></i> Add {{ $isFuneral ? 'condolence' : 'pledge' }}
         </button>
@@ -118,6 +121,31 @@
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('addPledgeModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
                 <button class="btn btn-primary flex-1 justify-center">Add {{ $isFuneral ? 'condolence' : 'pledge' }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="importPledgesModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 max-h-[85vh] overflow-y-auto">
+        <h3 class="font-semibold mb-1">Import {{ $isFuneral ? 'condolences' : 'pledges' }}</h3>
+        <p class="text-xs text-gray-500 mb-4">Add many at once — upload a CSV file, or paste rows directly. Either way, each row should be: <strong>Name, Phone, Amount</strong> (phone is optional).</p>
+        <form method="POST" action="{{ route('pledges.import') }}" enctype="multipart/form-data" class="space-y-4">
+            @csrf
+            <div>
+                <label class="text-xs font-semibold">Upload a CSV file</label>
+                <input type="file" name="import_file" accept=".csv,.txt" class="w-full border rounded-lg px-3 py-2 text-sm">
+                @error('import_file')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+            </div>
+            <div class="text-center text-xs text-gray-400">— or —</div>
+            <div>
+                <label class="text-xs font-semibold">Paste rows</label>
+                <textarea name="import_text" rows="6" placeholder="Juma Ally, 0712345678, 100000&#10;Asha Said, 0765432198, 50000" class="w-full border rounded-lg px-3 py-2 text-sm font-mono"></textarea>
+                <p class="text-xs text-gray-400 mt-1">One person per line — copy straight from WhatsApp or a spreadsheet.</p>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('importPledgesModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                <button class="btn btn-primary flex-1 justify-center">Import</button>
             </div>
         </form>
     </div>

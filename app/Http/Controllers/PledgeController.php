@@ -90,6 +90,72 @@ class PledgeController extends Controller
         return back()->with('status', $status);
     }
 
+    /**
+     * Bulk-adds pledgers from either an uploaded CSV file or pasted text —
+     * both use the same column order: Name, Phone, Amount. Rows missing a
+     * name or a valid positive amount are skipped (this also naturally
+     * skips a header row, since "Amount" isn't a valid number).
+     */
+    public function import(Request $request, PhoneNumberService $phones): RedirectResponse
+    {
+        $event = app('currentEvent');
+
+        $request->validate([
+            'import_file' => ['nullable', 'file', 'mimes:csv,txt', 'max:2048'],
+            'import_text' => ['nullable', 'string'],
+        ]);
+
+        $rows = collect();
+
+        if ($request->hasFile('import_file')) {
+            $handle = fopen($request->file('import_file')->getRealPath(), 'r');
+
+            while (($line = fgetcsv($handle)) !== false) {
+                $rows->push($line);
+            }
+
+            fclose($handle);
+        } elseif ($request->filled('import_text')) {
+            $rows = collect(explode("\n", trim($request->input('import_text'))))
+                ->filter(fn ($line) => trim($line) !== '')
+                ->map(fn ($line) => preg_split('/\t|,/', trim($line)));
+        }
+
+        if ($rows->isEmpty()) {
+            return back()->withErrors(['import_file' => 'Upload a CSV file or paste some rows first.']);
+        }
+
+        $imported = 0;
+        $skipped = 0;
+
+        foreach ($rows as $row) {
+            $name = trim((string) ($row[0] ?? ''));
+            $phone = trim((string) ($row[1] ?? ''));
+            $amountRaw = str_replace([',', ' '], '', trim((string) ($row[2] ?? '')));
+            $amount = is_numeric($amountRaw) ? (float) $amountRaw : null;
+
+            if ($name === '' || $amount === null || $amount <= 0) {
+                $skipped++;
+
+                continue;
+            }
+
+            $event->pledges()->create([
+                'name' => $name,
+                'phone' => $phones->normalize($phone ?: null),
+                'amount' => $amount,
+                'paid' => 0,
+                'pay_token' => Str::random(32),
+            ]);
+
+            $imported++;
+        }
+
+        $noun = $event->isFuneral() ? 'condolence(s)' : 'pledge(s)';
+
+        return back()->with('status', "Imported {$imported} {$noun}".($skipped > 0 ? ", skipped {$skipped} invalid row(s)" : '').'.');
+    }
+
     public function destroy(Pledge $pledge): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
