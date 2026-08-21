@@ -119,4 +119,17 @@ class MessageTemplateService
             '{remain}' => number_format($provider->remaining()),
         ]);
     }
+
+    /**
+     * Payment confirmation sent to a pledger after recording a payment.
+     * Fixed template (not user-editable via a saved message, unlike the others above).
+     */
+    public function forPledgePayment(Event $event, Pledge $pledge): string
+    {
+        return strtr('Habari {name}, Umepunguza kiasi cha {paid}, bado {remain}. Asante', [
+            '{name}' => $pledge->name,
+            '{paid}' => number_format((float) $pledge->paid),
+            '{remain}' => number_format($pledge->remaining()),
+        ]);
+    }
 }

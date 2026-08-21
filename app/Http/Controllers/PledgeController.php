@@ -58,11 +58,12 @@ class PledgeController extends Controller
         return back()->with('status', "{$noun} added");
     }
 
-    public function update(Request $request, Pledge $pledge, PhoneNumberService $phones): RedirectResponse
+    public function update(Request $request, Pledge $pledge, PhoneNumberService $phones, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
 
         $data = $this->validated($request);
+        $previousPaid = (float) $pledge->paid;
 
         $pledge->update([
             ...$data,
@@ -72,7 +73,21 @@ class PledgeController extends Controller
             'paid' => ($data['paid'] ?? '') !== '' ? $data['paid'] : $pledge->paid,
         ]);
 
-        return back()->with('status', 'Updated');
+        $status = 'Updated';
+
+        // Only fires when the paid amount actually went up (not on every save) and there's a phone to text.
+        if ((float) $pledge->paid > $previousPaid) {
+            $status = "Payment recorded for {$pledge->name} — Paid: ".number_format($pledge->paid).', Balance: '.number_format($pledge->remaining());
+
+            if ($pledge->phone) {
+                $event = app('currentEvent');
+                $result = $sms->sendSingle($messages->forPledgePayment($event, $pledge), $pledge->phone);
+
+                $status .= $result['successful'] ? ' (SMS sent)' : ' — but SMS failed: '.($result['error'] ?? 'unknown error');
+            }
+        }
+
+        return back()->with('status', $status);
     }
 
     public function destroy(Pledge $pledge): RedirectResponse
