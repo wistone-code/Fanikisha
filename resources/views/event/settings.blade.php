@@ -86,7 +86,7 @@
         </div>
         <div>
             <label class="text-xs font-semibold">Phone number</label>
-            <input type="tel" name="payout_phone" value="{{ $event->payout_phone }}" placeholder="0712 345 678" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <input type="tel" name="payout_phone" value="{{ $event->payout_phone }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm">
         </div>
         @error('payout_network')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
         <button class="btn btn-primary mt-2"><i class="fa-solid fa-check"></i> Save payout details</button>
