@@ -57,13 +57,15 @@ class ProviderController extends Controller
         $status = 'Provider updated';
 
         // Only fires when the paid amount actually went up (not on every save) and there's a phone to text.
-        if ((float) $provider->paid > $previousPaid && $provider->phone) {
-            $event = app('currentEvent');
-            $result = $sms->sendSingle($messages->forProviderPayment($event, $provider), $provider->phone);
+        if ((float) $provider->paid > $previousPaid) {
+            $status = "Payment recorded for {$provider->service} — Paid: ".number_format($provider->paid).', Balance: '.number_format($provider->remaining());
 
-            $status .= $result['successful']
-                ? ' — payment notification sent.'
-                : ' — but payment notification failed: '.($result['error'] ?? 'unknown error');
+            if ($provider->phone) {
+                $event = app('currentEvent');
+                $result = $sms->sendSingle($messages->forProviderPayment($event, $provider), $provider->phone);
+
+                $status .= $result['successful'] ? ' (SMS sent)' : ' — but SMS failed: '.($result['error'] ?? 'unknown error');
+            }
         }
 
         return back()->with('status', $status);

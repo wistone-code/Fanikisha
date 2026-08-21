@@ -28,7 +28,7 @@
     <table class="w-full text-sm sortable-table">
         <thead><tr class="text-left text-xs uppercase text-gray-400 border-b">
             <th class="px-4 py-3" data-sort="text">Name</th><th class="px-4 py-3" data-sort="text">Service</th><th class="px-4 py-3" data-sort="number">Budget</th><th class="px-4 py-3" data-sort="number">Paid</th><th class="px-4 py-3" data-sort="number">Balance</th>
-            @if ($isAdmin)<th class="px-4 py-3">Contact</th><th class="px-4 py-3"></th>@endif
+            @if ($isAdmin)<th class="px-4 py-3"></th>@endif
         </tr></thead>
         <tbody>
         @forelse ($providers as $p)
@@ -39,21 +39,6 @@
                 <td class="px-4 py-3">{{ number_format($p->paid) }}</td>
                 <td class="px-4 py-3">{{ number_format($p->remaining()) }}</td>
                 @if ($isAdmin)
-                <td class="px-4 py-3">
-                    @if ($p->phone)
-                    <form method="POST" action="{{ route('providers.sms', $p) }}" class="inline">
-                        @csrf
-                        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
-                    </form>
-                    <a href="{{ route('providers.whatsapp', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
-                    <form method="POST" action="{{ route('providers.confirm-payment.sms', $p) }}" class="inline" onsubmit="return confirm('Send payment confirmation SMS to {{ $p->name }}?')">
-                        @csrf
-                        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-circle-check"></i> Payment Notification</button>
-                    </form>
-                    @else
-                    <span class="text-gray-400 text-xs">No phone</span>
-                    @endif
-                </td>
                 <td class="px-4 py-3 text-right whitespace-nowrap">
                     <button onclick="document.getElementById('editProvider{{ $p->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i> Edit</button>
                     <form method="POST" action="{{ route('providers.destroy', $p) }}" class="inline" onsubmit="return confirm('Delete this provider?')">
@@ -88,7 +73,7 @@
             </div>
             @endif
         @empty
-            <tr><td colspan="7" class="px-4 py-10 text-center text-gray-400">No providers added yet.</td></tr>
+            <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">No providers added yet.</td></tr>
         @endforelse
         </tbody>
     </table>
