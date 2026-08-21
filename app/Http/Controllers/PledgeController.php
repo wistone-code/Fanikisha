@@ -9,6 +9,7 @@ use App\Services\MessageTemplateService;
 use App\Services\PhoneNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PledgeController extends Controller
@@ -47,6 +48,9 @@ class PledgeController extends Controller
             // longer asks for this (only "Edit" does), so don't assume the key is
             // present in $data at all.
             'paid' => $data['paid'] ?? 0,
+            // Always generated immediately (unlike invite_token, which only
+            // appears once paid in full) so the "Pay now" link works right away.
+            'pay_token' => Str::random(32),
         ]);
 
         $noun = $event->isFuneral() ? 'Condolence' : 'Pledge';

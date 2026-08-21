@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventMember;
+use App\Services\PhoneNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -127,5 +128,23 @@ class EventController extends Controller
         abort_unless($event->hasCardPhoto(), 404);
 
         return response($event->card_photo)->header('Content-Type', $event->card_photo_mime);
+    }
+
+    /** Saves the admin's own mobile money number/network so pledgers can pay them directly. */
+    public function updatePayout(Request $request, PhoneNumberService $phones): RedirectResponse
+    {
+        $event = app('currentEvent');
+
+        $data = $request->validate([
+            'payout_phone' => ['nullable', 'string', 'max:32'],
+            'payout_network' => ['nullable', 'string', 'in:'.implode(',', array_keys(Event::NETWORK_USSD_CODES))],
+        ]);
+
+        $event->update([
+            'payout_phone' => $phones->normalize($data['payout_phone'] ?? null),
+            'payout_network' => $data['payout_network'] ?? null,
+        ]);
+
+        return back()->with('status', 'Payout details saved');
     }
 }

@@ -69,4 +69,27 @@
         <button class="btn btn-primary mt-2"><i class="fa-solid fa-upload"></i> {{ $event->hasCardPhoto() ? 'Replace photo' : 'Upload photo' }}</button>
     </form>
 </div>
+
+<div class="card p-6 max-w-md mt-4">
+    <div class="text-sm font-semibold mb-1">Your mobile money number</div>
+    <p class="text-xs text-gray-500 mb-3">Shown on each pledger's "Pay now" page so they can send payment directly to you. Fanikisha never handles the money — this just makes it easy for them to find your number and open the right menu.</p>
+    <form method="POST" action="{{ route('event.settings.payout') }}" class="space-y-3">
+        @csrf @method('PATCH')
+        <div>
+            <label class="text-xs font-semibold">Network</label>
+            <select name="payout_network" class="w-full border rounded-lg px-3 py-2 text-sm">
+                <option value="">Select network</option>
+                @foreach (\App\Models\Event::NETWORK_USSD_CODES as $network => $code)
+                <option value="{{ $network }}" @selected($event->payout_network === $network)>{{ $network }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-semibold">Phone number</label>
+            <input type="tel" name="payout_phone" value="{{ $event->payout_phone }}" placeholder="0712 345 678" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        @error('payout_network')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+        <button class="btn btn-primary mt-2"><i class="fa-solid fa-check"></i> Save payout details</button>
+    </form>
+</div>
 @endsection

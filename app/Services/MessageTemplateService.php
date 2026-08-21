@@ -20,6 +20,7 @@ class MessageTemplateService
             '{pledged}' => number_format((float) $pledge->amount),
             '{paid}' => number_format((float) $pledge->paid),
             '{remain}' => number_format($pledge->remaining()),
+            '{pay_link}' => $pledge->payLink(),
         ]);
     }
 

@@ -18,6 +18,15 @@ class Event extends Model
         'schedule_message',
         'reminder_auto_enabled', 'reminder_auto_frequency_days', 'reminder_auto_time', 'reminder_auto_last_sent_at',
         'sms_quota', 'sms_sent_count', 'card_photo', 'card_photo_mime',
+        'payout_phone', 'payout_network',
+    ];
+
+    /** Verified June 2026 against vodacom.co.tz, yas.co.tz/mixx-by-yas, airtel.co.tz, halotel.co.tz. */
+    public const NETWORK_USSD_CODES = [
+        'M-Pesa' => '*150*00#',
+        'Mixx by Yas' => '*150*01#',
+        'Airtel Money' => '*150*60#',
+        'HaloPesa' => '*150*88#',
     ];
 
     protected function casts(): array
@@ -90,6 +99,11 @@ class Event extends Model
         return ! empty($this->card_photo);
     }
 
+    public function hasPayoutNumber(): bool
+    {
+        return ! empty($this->payout_phone);
+    }
+
     public function showsCountdown(): bool
     {
         return ! in_array($this->event_type, self::NO_COUNTDOWN_TYPES, true);
@@ -129,7 +143,7 @@ class Event extends Model
 
         return $this->{$column} ?: match ($surface) {
             'provider' => 'Hello {name}, confirming your booking as our {service} provider for {event}. Budget: {budget}. Please reach out if you have any questions.',
-            'reminder' => 'Hi {name}, friendly reminder on {event} contribution: pledged {pledged}, paid {paid} so far, {remain} remaining. Thank you!',
+            'reminder' => 'Hi {name}, friendly reminder on {event} contribution: pledged {pledged}, paid {paid} so far, {remain} remaining. Pay here: {pay_link}. Thank you!',
             'invitation' => "You're invited to {event}! Join us on {date}".($this->place ? ' at {place}' : '').'. Tap your link to RSVP: {link}',
             'announcement' => 'Habari {name}, this is to inform you about {event}'.($this->place ? ' at {place}' : '').' on {date}. Your presence and support mean a lot to the family. Thank you.',
             'committee' => 'Hello {name}, you have been elected as {role} on {committee} committee.',

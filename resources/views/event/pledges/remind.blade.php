@@ -55,7 +55,7 @@
 </div>
 
 <div class="card p-5 mb-4">
-    <div class="text-xs font-semibold mb-2">Individual message <span class="text-gray-400 font-normal">— use {name}, {event}, {pledged}, {paid}, {remain}</span></div>
+    <div class="text-xs font-semibold mb-2">Individual message <span class="text-gray-400 font-normal">— use {name}, {event}, {pledged}, {paid}, {remain}, {pay_link}</span></div>
     <form method="POST" action="{{ route('pledges.message.reminder') }}">
         @csrf @method('PATCH')
         <textarea name="reminder_message" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('reminder') }}</textarea>

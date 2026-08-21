@@ -52,6 +52,16 @@ Route::get('/rsvp/{token}/photo', function (string $token) {
     return response($event->card_photo)->header('Content-Type', $event->card_photo_mime);
 })->name('guest.rsvp.photo');
 
+// Public "Pay now" page — shows the admin's own mobile money number so the pledger
+// can send payment directly, peer-to-peer. Fanikisha never touches the money.
+// Uses its own always-present pay_token (unlike invite_token, which only exists
+// after a pledge is already paid in full).
+Route::get('/pay/{token}', function (string $token) {
+    $pledge = \App\Models\Pledge::where('pay_token', $token)->firstOrFail();
+
+    return view('guest.pay', ['pledge' => $pledge, 'event' => $pledge->event]);
+})->name('guest.pay');
+
 // ---- Authenticated, but not yet past the forced password change ----------------------
 
 Route::middleware('auth')->group(function () {
@@ -141,6 +151,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::post('/settings/card-photo', [EventController::class, 'uploadCardPhoto'])->name('event.settings.card-photo.upload');
             Route::delete('/settings/card-photo', [EventController::class, 'removeCardPhoto'])->name('event.settings.card-photo.remove');
             Route::get('/settings/card-photo', [EventController::class, 'viewCardPhoto'])->name('event.settings.card-photo.view');
+            Route::patch('/settings/payout', [EventController::class, 'updatePayout'])->name('event.settings.payout');
 
             Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');
             Route::patch('/pledges/{pledge}', [PledgeController::class, 'update'])->name('pledges.update');

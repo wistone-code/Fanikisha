@@ -11,7 +11,7 @@ class Pledge extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['event_id', 'name', 'phone', 'amount', 'paid', 'invite_token'];
+    protected $fillable = ['event_id', 'name', 'phone', 'amount', 'paid', 'invite_token', 'pay_token'];
 
     protected function casts(): array
     {
@@ -58,5 +58,11 @@ class Pledge extends Model
     public function inviteLink(): ?string
     {
         return $this->invite_token ? route('guest.rsvp', $this->invite_token) : null;
+    }
+
+    /** Always available, unlike inviteLink() — pay_token exists from creation. */
+    public function payLink(): string
+    {
+        return route('guest.pay', $this->pay_token);
     }
 }
