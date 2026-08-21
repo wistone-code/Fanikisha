@@ -58,8 +58,10 @@ Route::get('/rsvp/{token}/photo', function (string $token) {
 // after a pledge is already paid in full).
 Route::get('/pay/{token}', function (string $token) {
     $pledge = \App\Models\Pledge::where('pay_token', $token)->firstOrFail();
+    $event = $pledge->event;
+    $theme = app(\App\Services\EventThemeService::class)->for($event->event_type);
 
-    return view('guest.pay', ['pledge' => $pledge, 'event' => $pledge->event]);
+    return view('guest.pay', ['pledge' => $pledge, 'event' => $event, 'theme' => $theme]);
 })->name('guest.pay');
 
 // ---- Authenticated, but not yet past the forced password change ----------------------
