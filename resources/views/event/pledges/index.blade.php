@@ -73,8 +73,14 @@
                     <h3 class="font-semibold mb-4">Edit {{ $isFuneral ? 'condolence' : 'pledge' }}</h3>
                     <form method="POST" action="{{ route('pledges.update', $p) }}" class="space-y-3">
                         @csrf @method('PATCH')
-                        <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ $p->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-                        <div><label class="text-xs font-semibold">Phone</label><input type="tel" name="phone" value="{{ $p->phone }}" placeholder="0712 345 678" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="text-xs font-semibold">Name</label><input type="text" id="name-edit-{{ $p->id }}" name="name" value="{{ $p->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div>
+                            <label class="text-xs font-semibold">Phone</label>
+                            <div class="flex gap-1">
+                                <input type="tel" id="phone-edit-{{ $p->id }}" name="phone" value="{{ $p->phone }}" placeholder="0712 345 678" class="w-full border rounded-lg px-3 py-2 text-sm">
+                                <button type="button" onclick="pickContact('phone-edit-{{ $p->id }}')" class="contact-pick-btn btn btn-ghost !px-2.5" title="Pick from contacts"><i class="fa-solid fa-address-book"></i></button>
+                            </div>
+                        </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div><label class="text-xs font-semibold">Pledge amount</label><input type="number" name="amount" value="{{ $p->amount }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                             <div><label class="text-xs font-semibold">Paid</label><input type="number" name="paid" value="{{ $p->paid }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
@@ -100,8 +106,14 @@
         <h3 class="font-semibold mb-4">Add {{ $isFuneral ? 'condolence' : 'pledge' }}</h3>
         <form method="POST" action="{{ route('pledges.store') }}" class="space-y-3">
             @csrf
-            <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="text-xs font-semibold">Phone</label><input type="tel" name="phone" placeholder="0712 345 678" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Name</label><input type="text" id="name-add" name="name" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div>
+                <label class="text-xs font-semibold">Phone</label>
+                <div class="flex gap-1">
+                    <input type="tel" id="phone-add" name="phone" placeholder="0712 345 678" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    <button type="button" onclick="pickContact('phone-add', 'name-add')" class="contact-pick-btn btn btn-ghost !px-2.5" title="Pick from contacts"><i class="fa-solid fa-address-book"></i></button>
+                </div>
+            </div>
             <div><label class="text-xs font-semibold">Pledge amount</label><input type="number" name="amount" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('addPledgeModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>

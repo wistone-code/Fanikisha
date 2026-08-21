@@ -73,7 +73,12 @@
                         <div><label class="text-xs font-semibold">Service</label><input type="text" name="service" value="{{ $p->service }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div><label class="text-xs font-semibold">Budget</label><input type="number" name="budget" value="{{ $p->budget }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div><label class="text-xs font-semibold">Paid</label><input type="number" name="paid" value="{{ $p->paid }}" step="0.01" min="0" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-                        <div><label class="text-xs font-semibold">Contact (phone)</label><input type="tel" name="phone" value="{{ $p->phone }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="text-xs font-semibold">Contact (phone)</label>
+                            <div class="flex gap-1">
+                                <input type="tel" id="phone-edit-{{ $p->id }}" name="phone" value="{{ $p->phone }}" class="w-full border rounded-lg px-3 py-2 text-sm">
+                                <button type="button" onclick="pickContact('phone-edit-{{ $p->id }}')" class="contact-pick-btn btn btn-ghost !px-2.5" title="Pick from contacts"><i class="fa-solid fa-address-book"></i></button>
+                            </div>
+                        </div>
                         <div class="flex gap-2 pt-2">
                             <button type="button" onclick="document.getElementById('editProvider{{ $p->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
                             <button class="btn btn-primary flex-1 justify-center">Save changes</button>
@@ -95,10 +100,15 @@
         <h3 class="font-semibold mb-4">Add provider</h3>
         <form method="POST" action="{{ route('providers.store') }}" class="space-y-3">
             @csrf
-            <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Name</label><input type="text" id="name-add" name="name" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Service</label><input type="text" name="service" required placeholder="e.g. Catering, Photography" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Budget</label><input type="number" name="budget" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="text-xs font-semibold">Contact (phone)</label><input type="tel" name="phone" placeholder="0712 345 678" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Contact (phone)</label>
+                <div class="flex gap-1">
+                    <input type="tel" id="phone-add" name="phone" placeholder="0712 345 678" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    <button type="button" onclick="pickContact('phone-add', 'name-add')" class="contact-pick-btn btn btn-ghost !px-2.5" title="Pick from contacts"><i class="fa-solid fa-address-book"></i></button>
+                </div>
+            </div>
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('addProviderModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
                 <button class="btn btn-primary flex-1 justify-center">Add provider</button>
