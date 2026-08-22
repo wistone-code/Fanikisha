@@ -54,7 +54,8 @@
 
     let html5QrCode;
     let scanning = false;
-    let scanLocked = false;
+    let lastScannedToken = null;
+    let lastScannedAt = 0;
 
     function escapeHtml(text) {
         const div = document.createElement('div');
@@ -135,22 +136,21 @@
             { fps: 10, qrbox: { width: 250, height: 250 } },
             function (decodedText) {
                 // The scanner keeps decoding the same code every ~100ms while it's
-                // in view. Without this guard, a rescan of an already-checked-in
-                // guest could fire several verify requests before the first one's
-                // database write lands — each one would read "not checked in yet"
-                // and none would ever surface the already-checked-in state. This
-                // flag silently drops repeat decodes while a request is in flight
-                // (and for a short cooldown after) without freezing the camera
-                // preview or showing any "paused" overlay — the video keeps running
-                // normally the whole time.
-                if (scanLocked) return;
-                scanLocked = true;
+                // in view. Without a guard, a rescan of an already-checked-in guest
+                // could fire several verify requests before the first one's database
+                // write lands — each one would read "not checked in yet" and none
+                // would ever surface the already-checked-in state. This debounces
+                // by the specific code scanned (not a global lock), so a genuinely
+                // different guest scanned moments later is never blocked — only
+                // rapid repeats of the exact same code within the cooldown are.
+                const now = Date.now();
+                if (decodedText === lastScannedToken && now - lastScannedAt < 2000) {
+                    return;
+                }
+                lastScannedToken = decodedText;
+                lastScannedAt = now;
 
-                verifyToken(decodedText).finally(function () {
-                    setTimeout(function () {
-                        scanLocked = false;
-                    }, 2000);
-                });
+                verifyToken(decodedText);
             },
             function () { /* ignore per-frame scan misses */ }
         ).then(function () {
@@ -165,7 +165,7 @@
     document.getElementById('stopScanBtn').addEventListener('click', function () {
         if (html5QrCode && scanning) {
             scanning = false;
-            scanLocked = false;
+            lastScannedToken = null;
             html5QrCode.stop().then(function () {
                 document.getElementById('startScanBtn').classList.remove('hidden');
                 document.getElementById('stopScanBtn').classList.add('hidden');
