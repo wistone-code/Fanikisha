@@ -63,7 +63,7 @@
     let html5QrCode;
     let scanning = false;
     let lastScannedToken = null;
-    let lastScannedAt = 0;
+    let missStreak = 0;
     let scanStruggleTimer;
 
     function escapeHtml(text) {
@@ -202,25 +202,36 @@
             },
             function (decodedText) {
                 // The scanner keeps decoding the same code every ~100ms while it's
-                // in view. Without a guard, a rescan of an already-checked-in guest
-                // could fire several verify requests before the first one's database
-                // write lands — each one would read "not checked in yet" and none
-                // would ever surface the already-checked-in state. This debounces
-                // by the specific code scanned (not a global lock), so a genuinely
-                // different guest scanned moments later is never blocked — only
-                // rapid repeats of the exact same code within the cooldown are.
+                // in view. This fires the check only once per "presentation" of a
+                // card — from when it enters view until it's pulled away — rather
+                // than on a fixed timer. A timer-based cooldown alone caused the
+                // alert to keep re-popping every couple of seconds for as long as
+                // an operator held a card steady in frame, with no real break.
+                // The miss callback below tracks when the code briefly drops out
+                // of view (card removed), which is what actually clears the lock —
+                // holding it continuously in view now only triggers one request.
                 armStruggleHint(); // a successful decode resets the "stuck" clock
+                missStreak = 0;
 
-                const now = Date.now();
-                if (decodedText === lastScannedToken && now - lastScannedAt < 2000) {
+                if (decodedText === lastScannedToken) {
                     return;
                 }
                 lastScannedToken = decodedText;
-                lastScannedAt = now;
 
                 verifyToken(decodedText);
             },
-            function () { /* ignore per-frame scan misses */ }
+            function () {
+                // Per-frame scan miss. A few consecutive misses (roughly half a
+                // second at 10fps) means the code has actually left the frame —
+                // e.g. the operator pulled the card away — so the same card can
+                // trigger a fresh check the next time it's shown. A single stray
+                // miss (a blurry frame, brief motion) doesn't count, to avoid
+                // resetting the lock while a card is still genuinely in view.
+                missStreak += 1;
+                if (missStreak > 5) {
+                    lastScannedToken = null;
+                }
+            }
         ).then(function () {
             scanning = true;
             document.getElementById('startScanBtn').classList.add('hidden');
@@ -235,6 +246,7 @@
         if (html5QrCode && scanning) {
             scanning = false;
             lastScannedToken = null;
+            missStreak = 0;
             clearTimeout(scanStruggleTimer);
             document.getElementById('scanStruggleHint').classList.add('hidden');
             html5QrCode.stop().then(function () {
