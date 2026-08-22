@@ -20,6 +20,7 @@
         <button id="startScanBtn" class="btn btn-primary w-full justify-center mt-3"><i class="fa-solid fa-camera"></i> Start camera</button>
         <button id="stopScanBtn" class="btn btn-ghost w-full justify-center mt-2 hidden"><i class="fa-solid fa-stop"></i> Stop camera</button>
         <p class="text-xs text-gray-400 mt-2">Point the camera at the QR code on the guest's e-card.</p>
+        <p id="scanStruggleHint" class="hidden text-xs text-amber-600 mt-2"><i class="fa-solid fa-triangle-exclamation"></i> Having trouble scanning? Move closer, raise the guest's screen brightness, or use search instead.</p>
     </div>
 
     <div class="card p-5">
@@ -56,6 +57,7 @@
     let scanning = false;
     let lastScannedToken = null;
     let lastScannedAt = 0;
+    let scanStruggleTimer;
 
     function escapeHtml(text) {
         const div = document.createElement('div');
@@ -77,6 +79,32 @@
         }
     }
 
+    function showScanToast(message, kind) {
+        // A fixed-position toast at the top of the screen, so the operator gets
+        // an unmissable notification regardless of scroll position — the camera
+        // preview can push the inline result card below the fold, and this
+        // doesn't depend on looking at any particular part of the page.
+        const existing = document.getElementById('scanToast');
+        if (existing) existing.remove();
+
+        const styles = {
+            success: 'bg-green-600 text-white',
+            warning: 'bg-red-600 text-white animate-pulse text-base',
+            error: 'bg-gray-800 text-white',
+        };
+
+        const toast = document.createElement('div');
+        toast.id = 'scanToast';
+        toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-lg shadow-lg font-semibold text-center max-w-[90%] '
+            + (styles[kind] || styles.success);
+        toast.innerHTML = message;
+        document.body.appendChild(toast);
+
+        setTimeout(function () {
+            if (toast.parentNode) toast.remove();
+        }, kind === 'warning' ? 5000 : 3000);
+    }
+
     function renderResult(data) {
         const el = document.getElementById('resultCard');
         el.classList.remove('hidden');
@@ -84,6 +112,7 @@
 
         if (!data.found) {
             el.innerHTML = '<div class="text-red-600 font-semibold"><i class="fa-solid fa-circle-xmark"></i> No matching invitation found.</div>';
+            showScanToast('<i class="fa-solid fa-circle-xmark"></i> No matching invitation found', 'error');
             return;
         }
 
@@ -93,12 +122,14 @@
                 + '<div class="text-red-600 font-semibold mb-2">at ' + escapeHtml(data.checked_in_at) + '</div>'
                 + '<div class="text-lg font-semibold">' + escapeHtml(data.name) + '</div>'
                 + '<div class="text-xs text-gray-500 mt-1">Pledged ' + escapeHtml(data.amount) + ' — Paid ' + escapeHtml(data.paid) + ' — Balance ' + escapeHtml(data.remain) + '</div>';
+            showScanToast('<i class="fa-solid fa-triangle-exclamation"></i> ALREADY CHECKED IN — ' + escapeHtml(data.name), 'warning');
             return;
         }
 
         el.innerHTML = '<div class="text-green-600 font-semibold mb-1"><i class="fa-solid fa-circle-check"></i> Checked in at ' + escapeHtml(data.checked_in_at) + '</div>'
             + '<div class="text-lg font-semibold">' + escapeHtml(data.name) + '</div>'
             + '<div class="text-xs text-gray-500 mt-1">Pledged ' + escapeHtml(data.amount) + ' — Paid ' + escapeHtml(data.paid) + ' — Balance ' + escapeHtml(data.remain) + '</div>';
+        showScanToast('<i class="fa-solid fa-circle-check"></i> Checked in — ' + escapeHtml(data.name), 'success');
 
         addArrival(data.name, data.checked_in_at);
         bumpCheckedInCount();
@@ -131,9 +162,29 @@
         }
 
         html5QrCode = new Html5Qrcode('qr-reader');
+
+        function armStruggleHint() {
+            clearTimeout(scanStruggleTimer);
+            document.getElementById('scanStruggleHint').classList.add('hidden');
+            scanStruggleTimer = setTimeout(function () {
+                document.getElementById('scanStruggleHint').classList.remove('hidden');
+            }, 6000);
+        }
+
         html5QrCode.start(
             { facingMode: 'environment' },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
+            {
+                fps: 10,
+                qrbox: { width: 280, height: 280 },
+                // Uses the phone's native barcode detector when the browser
+                // supports one (most current Android Chrome) instead of the
+                // pure-JS decoder — meaningfully faster and more reliable,
+                // especially for screen-to-camera scans (glare, moiré from a
+                // guest's own phone screen) where the JS decoder alone often
+                // fails silently. Falls back to the JS decoder automatically
+                // wherever the native API isn't available.
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+            },
             function (decodedText) {
                 // The scanner keeps decoding the same code every ~100ms while it's
                 // in view. Without a guard, a rescan of an already-checked-in guest
@@ -143,6 +194,8 @@
                 // by the specific code scanned (not a global lock), so a genuinely
                 // different guest scanned moments later is never blocked — only
                 // rapid repeats of the exact same code within the cooldown are.
+                armStruggleHint(); // a successful decode resets the "stuck" clock
+
                 const now = Date.now();
                 if (decodedText === lastScannedToken && now - lastScannedAt < 2000) {
                     return;
@@ -157,6 +210,7 @@
             scanning = true;
             document.getElementById('startScanBtn').classList.add('hidden');
             document.getElementById('stopScanBtn').classList.remove('hidden');
+            armStruggleHint();
         }).catch(function (err) {
             alert('Could not start the camera: ' + (err && err.message ? err.message : err) + '\n\nCheck camera permissions and try again, or use the search box instead.');
         });
@@ -166,6 +220,8 @@
         if (html5QrCode && scanning) {
             scanning = false;
             lastScannedToken = null;
+            clearTimeout(scanStruggleTimer);
+            document.getElementById('scanStruggleHint').classList.add('hidden');
             html5QrCode.stop().then(function () {
                 document.getElementById('startScanBtn').classList.remove('hidden');
                 document.getElementById('stopScanBtn').classList.add('hidden');
