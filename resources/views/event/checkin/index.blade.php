@@ -2,6 +2,12 @@
 @section('title', 'Entrance Check-in — '.config('app.name'))
 
 @section('content')
+<div class="flex gap-6 border-b mb-5 text-sm font-semibold">
+    <a href="{{ route('guests.index') }}" class="pb-3 border-b-2 border-transparent text-gray-400">Event invitation</a>
+    <a href="{{ route('guests.index', ['tab' => 'meeting']) }}" class="pb-3 border-b-2 border-transparent text-gray-400">Meeting invitation</a>
+    <span class="pb-3 border-b-2" style="border-color:var(--primary);color:var(--primary);">Check-in</span>
+</div>
+
 <div class="mb-4">
     <h2 class="text-xl font-semibold">Entrance Check-in</h2>
     <p class="text-sm text-gray-500">{{ $checkedInCount }} of {{ $eligibleCount }} invited guests checked in</p>

@@ -61,10 +61,6 @@ class NavLabelService
             $items[] = ['id' => 'team', 'label' => $labels['team'], 'icon' => 'user-group'];
         }
 
-        if ($isAdmin) {
-            $items[] = ['id' => 'checkin', 'label' => 'Check-in', 'icon' => 'qrcode'];
-        }
-
         $items[] = ['id' => 'invitations', 'label' => $labels['invitations'], 'icon' => 'envelope-open-text'];
 
         if ($isAdmin) {
