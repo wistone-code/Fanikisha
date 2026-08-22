@@ -252,5 +252,57 @@ document.querySelectorAll('table.sortable-table thead th[data-sort]').forEach(fu
 </script>
 @endauth
 
+<div id="confirmModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+        <h3 id="confirmModalTitle" class="font-semibold text-lg mb-2">Are you sure?</h3>
+        <p id="confirmModalMessage" class="text-sm text-gray-500 mb-5"></p>
+        <div class="flex gap-2">
+            <button type="button" id="confirmModalCancel" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+            <button type="button" id="confirmModalOk" class="btn btn-danger flex-1 justify-center"><i class="fa-solid fa-trash"></i> Delete</button>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const modal = document.getElementById('confirmModal');
+    const titleEl = document.getElementById('confirmModalTitle');
+    const messageEl = document.getElementById('confirmModalMessage');
+    const okBtn = document.getElementById('confirmModalOk');
+    const cancelBtn = document.getElementById('confirmModalCancel');
+    let pendingForm = null;
+
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (form instanceof HTMLFormElement && form.hasAttribute('data-confirm') && !form.dataset.confirmed) {
+            e.preventDefault();
+            pendingForm = form;
+            titleEl.textContent = form.getAttribute('data-confirm-title') || 'Are you sure?';
+            messageEl.textContent = form.getAttribute('data-confirm');
+            modal.classList.remove('hidden');
+        }
+    }, true);
+
+    function close() {
+        modal.classList.add('hidden');
+        pendingForm = null;
+    }
+
+    cancelBtn.addEventListener('click', close);
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+
+    okBtn.addEventListener('click', function () {
+        if (!pendingForm) return;
+        pendingForm.dataset.confirmed = '1';
+        modal.classList.add('hidden');
+        if (pendingForm.requestSubmit) {
+            pendingForm.requestSubmit();
+        } else {
+            pendingForm.submit();
+        }
+        pendingForm = null;
+    });
+})();
+</script>
+
 </body>
 </html>

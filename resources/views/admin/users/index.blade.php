@@ -53,7 +53,7 @@
                         @csrf
                         <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-key"></i> Reset password</button>
                     </form>
-                    <form method="POST" action="{{ route('admin.users.destroy', $account) }}" class="inline" onsubmit="return confirm('Delete {{ $account->name }}? This removes their account and all event memberships.')">
+                    <form method="POST" action="{{ route('admin.users.destroy', $account) }}" class="inline" data-confirm="Delete {{ $account->name }}? This removes their account and all event memberships." data-confirm-title="Delete account?">
                         @csrf @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i></button>
                     </form>

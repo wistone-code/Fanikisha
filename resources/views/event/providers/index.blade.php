@@ -41,7 +41,7 @@
                 @if ($isAdmin)
                 <td class="px-4 py-3 text-right whitespace-nowrap">
                     <button onclick="document.getElementById('editProvider{{ $p->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i> Edit</button>
-                    <form method="POST" action="{{ route('providers.destroy', $p) }}" class="inline" onsubmit="return confirm('Delete this provider?')">
+                    <form method="POST" action="{{ route('providers.destroy', $p) }}" class="inline" data-confirm="Delete this provider?" data-confirm-title="Delete provider?">
                         @csrf @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i> Delete</button>
                     </form>

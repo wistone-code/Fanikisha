@@ -73,7 +73,7 @@
     <div class="mb-3">
         <img src="{{ route('event.settings.card-photo.view') }}" class="w-24 h-24 rounded-full object-cover border" alt="Current card photo">
     </div>
-    <form method="POST" action="{{ route('event.settings.card-photo.remove') }}" class="mb-4" onsubmit="return confirm('Remove the card photo?')">
+    <form method="POST" action="{{ route('event.settings.card-photo.remove') }}" class="mb-4" data-confirm="Remove the card photo?" data-confirm-title="Remove photo?">
         @csrf @method('DELETE')
         <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i> Remove photo</button>
     </form>

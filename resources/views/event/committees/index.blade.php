@@ -43,7 +43,7 @@
                 @if ($isAdmin)
                 <td class="px-4 py-3 text-right"><button onclick="document.getElementById('editCommittee{{ $committee->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i> Edit</button></td>
                 <td class="px-4 py-3 text-right">
-                    <form method="POST" action="{{ route('committees.destroy', $committee) }}" onsubmit="return confirm('Delete this committee?')">
+                    <form method="POST" action="{{ route('committees.destroy', $committee) }}" data-confirm="Delete this committee?" data-confirm-title="Delete committee?">
                         @csrf @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i> Delete</button>
                     </form>
@@ -65,7 +65,7 @@
                 </td>
                 @if ($isAdmin)
                 <td class="px-4 py-3 text-right">
-                    <form method="POST" action="{{ route('committees.members.destroy', $member) }}" onsubmit="return confirm('Remove this member from the committee?')">
+                    <form method="POST" action="{{ route('committees.members.destroy', $member) }}" data-confirm="Remove this member from the committee?" data-confirm-title="Remove member?">
                         @csrf @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i> Delete</button>
                     </form>

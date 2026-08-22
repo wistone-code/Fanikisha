@@ -62,7 +62,7 @@
                 @if ($isAdmin)
                 <td class="px-4 py-3 text-right whitespace-nowrap">
                     <button onclick="document.getElementById('editPledge{{ $p->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i></button>
-                    <form method="POST" action="{{ route('pledges.destroy', $p) }}" class="inline" onsubmit="return confirm('Delete this pledge? This cannot be undone.')">
+                    <form method="POST" action="{{ route('pledges.destroy', $p) }}" class="inline" data-confirm="Delete this pledge? This cannot be undone." data-confirm-title="Delete pledge?">
                         @csrf @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i></button>
                     </form>

@@ -36,7 +36,7 @@
                 @if ($isAdmin)
                 <td class="px-4 py-3 text-right whitespace-nowrap">
                     <button onclick="document.getElementById('editItem{{ $item->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i> Edit</button>
-                    <form method="POST" action="{{ route('schedule.destroy', $item) }}" class="inline" onsubmit="return confirm('Delete this schedule item?')">
+                    <form method="POST" action="{{ route('schedule.destroy', $item) }}" class="inline" data-confirm="Delete this schedule item?" data-confirm-title="Delete item?">
                         @csrf @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i> Delete</button>
                     </form>

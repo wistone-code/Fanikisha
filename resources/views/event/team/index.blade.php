@@ -32,7 +32,7 @@
                         </form>
                     @endif
                     @unless ($member->isOwner())
-                    <form method="POST" action="{{ route('team.destroy', $member) }}" class="inline" onsubmit="return confirm('Remove this member from the event?')">
+                    <form method="POST" action="{{ route('team.destroy', $member) }}" class="inline" data-confirm="Remove this member from the event?" data-confirm-title="Remove member?">
                         @csrf @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-user-minus"></i> Remove</button>
                     </form>
