@@ -51,6 +51,9 @@ class PledgeController extends Controller
             // Always generated immediately (unlike invite_token, which only
             // appears once paid in full) so the "Pay now" link works right away.
             'pay_token' => Str::random(32),
+            // Set once here, at save time — not re-evaluated if the threshold
+            // changes later, so existing pledges keep whatever type they got.
+            'card_type' => $this->cardTypeFor($event, (float) $data['amount']),
         ]);
 
         $noun = $event->isFuneral() ? 'Condolence' : 'Pledge';
@@ -71,6 +74,10 @@ class PledgeController extends Controller
             // Left blank on the Edit form means "don't change it" — without this,
             // an empty string gets saved into the decimal column and crashes.
             'paid' => ($data['paid'] ?? '') !== '' ? $data['paid'] : $pledge->paid,
+            // Re-evaluated against the new amount every time this is saved —
+            // but only using the CURRENT threshold, not retroactively applied
+            // if the threshold itself changes without this pledge being re-saved.
+            'card_type' => $this->cardTypeFor($pledge->event, (float) $data['amount']),
         ]);
 
         $status = 'Updated';
@@ -146,6 +153,7 @@ class PledgeController extends Controller
                 'amount' => $amount,
                 'paid' => 0,
                 'pay_token' => Str::random(32),
+                'card_type' => $this->cardTypeFor($event, $amount),
             ]);
 
             $imported++;
@@ -173,6 +181,14 @@ class PledgeController extends Controller
             'amount' => ['required', 'numeric', 'min:0.01'],
             'paid' => ['nullable', 'numeric', 'min:0'],
         ]);
+    }
+
+    /** Null threshold means the feature is off — every pledge is "single". */
+    private function cardTypeFor(\App\Models\Event $event, float $amount): string
+    {
+        $threshold = $event->couple_threshold_amount;
+
+        return ($threshold !== null && $amount >= (float) $threshold) ? 'double' : 'single';
     }
 
     // ---- Reminder: individual + broadcast messaging --------------------------------
