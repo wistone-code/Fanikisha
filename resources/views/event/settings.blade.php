@@ -4,6 +4,22 @@
 @section('content')
 <div class="mb-4"><h2 class="text-xl font-semibold">Event Setting</h2><p class="text-sm text-gray-500">Only admins can update event details.</p></div>
 
+<div class="card p-6 max-w-md mb-4">
+    <div class="text-sm font-semibold mb-1"><i class="fa-solid fa-comment-sms"></i> SMS quota</div>
+    @if ($event->sms_quota === null)
+        <p class="text-sm text-gray-600">{{ $event->sms_sent_count }} sent — no cap set (unlimited).</p>
+    @else
+        <p class="text-sm {{ $event->sms_sent_count >= $event->sms_quota ? 'text-red-600 font-semibold' : 'text-gray-600' }}">
+            {{ $event->sms_sent_count }} of {{ $event->sms_quota }} sent
+            ({{ max(0, $event->sms_quota - $event->sms_sent_count) }} remaining)
+        </p>
+        @if ($event->sms_sent_count >= $event->sms_quota)
+        <p class="text-xs text-red-500 mt-1">Quota reached — SMS sending is paused until it's raised.</p>
+        @endif
+    @endif
+    <p class="text-xs text-gray-400 mt-2">This cap is set by the system admin. Contact them to request a change.</p>
+</div>
+
 <div class="card p-6 max-w-md">
     <form method="POST" action="{{ route('event.settings.update') }}" class="space-y-3">
         @csrf @method('PATCH')
