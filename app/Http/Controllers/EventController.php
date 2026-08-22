@@ -147,4 +147,24 @@ class EventController extends Controller
 
         return back()->with('status', 'Payout details saved');
     }
+
+    /**
+     * Saves the amount threshold that decides Single vs Double/Couple e-card type.
+     * This only affects pledges saved from now on — existing pledges keep
+     * whatever card_type they were already assigned.
+     */
+    public function updateCoupleThreshold(Request $request): RedirectResponse
+    {
+        $event = app('currentEvent');
+
+        $data = $request->validate([
+            'couple_threshold_amount' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $event->update([
+            'couple_threshold_amount' => $data['couple_threshold_amount'] ?? null,
+        ]);
+
+        return back()->with('status', 'Couple threshold saved');
+    }
 }

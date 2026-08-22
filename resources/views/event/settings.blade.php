@@ -92,4 +92,15 @@
         <button class="btn btn-primary mt-2"><i class="fa-solid fa-check"></i> Save payout details</button>
     </form>
 </div>
+
+<div class="card p-6 max-w-md mt-4">
+    <div class="text-sm font-semibold mb-1">Couple threshold amount</div>
+    <p class="text-xs text-gray-500 mb-3">When a pledge amount is at or above this figure, their e-card is generated as a "Double/Couple" card instead of "Single". Leave blank to always use Single cards. Changing this only affects pledges saved from now on — existing e-cards keep their current type.</p>
+    <form method="POST" action="{{ route('event.settings.couple-threshold') }}" class="space-y-3">
+        @csrf @method('PATCH')
+        <input type="number" name="couple_threshold_amount" value="{{ $event->couple_threshold_amount }}" step="0.01" min="0" placeholder="e.g. 100000" class="w-full border rounded-lg px-3 py-2 text-sm">
+        @error('couple_threshold_amount')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+        <button class="btn btn-primary mt-2"><i class="fa-solid fa-check"></i> Save threshold</button>
+    </form>
+</div>
 @endsection

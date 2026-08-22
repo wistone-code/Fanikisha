@@ -18,7 +18,7 @@ class Event extends Model
         'schedule_message',
         'reminder_auto_enabled', 'reminder_auto_frequency_days', 'reminder_auto_time', 'reminder_auto_last_sent_at',
         'sms_quota', 'sms_sent_count', 'card_photo', 'card_photo_mime',
-        'payout_phone', 'payout_network',
+        'payout_phone', 'payout_network', 'couple_threshold_amount',
     ];
 
     /** Verified June 2026 against vodacom.co.tz, yas.co.tz/mixx-by-yas, airtel.co.tz, halotel.co.tz. */
