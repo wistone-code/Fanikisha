@@ -19,7 +19,7 @@ class CheckinController extends Controller
         $arrivals = $event->pledges()
             ->whereNotNull('checked_in_at')
             ->orderByDesc('checked_in_at')
-            ->get(['name', 'checked_in_at']);
+            ->get(['id', 'name', 'checked_in_at']);
 
         return view('event.checkin.index', compact('checkedInCount', 'eligibleCount', 'arrivals'));
     }
@@ -67,12 +67,24 @@ class CheckinController extends Controller
         return response()->json([
             'found' => true,
             'already' => $wasAlready,
+            'id' => $pledge->id,
             'name' => $pledge->name,
             'checked_in_at' => $pledge->checked_in_at->format('g:i A, M j'),
             'amount' => number_format($pledge->amount),
             'paid' => number_format($pledge->paid),
             'remain' => number_format($pledge->remaining()),
         ]);
+    }
+
+    /** Undo an accidental or mistaken check-in, so the guest shows as not-yet-arrived again. */
+    public function undoCheckin(\App\Models\Pledge $pledge): \Illuminate\Http\RedirectResponse
+    {
+        $event = app('currentEvent');
+        abort_unless($pledge->event_id === $event->id, 404);
+
+        $pledge->update(['checked_in_at' => null]);
+
+        return back()->with('status', 'Check-in removed for '.$pledge->name);
     }
 
     /** Manual name search fallback, for guests without a smartphone/QR to scan. */

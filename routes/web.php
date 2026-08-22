@@ -158,6 +158,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::get('/checkin', [CheckinController::class, 'index'])->name('checkin.index');
             Route::post('/checkin/verify', [CheckinController::class, 'verify'])->name('checkin.verify');
             Route::get('/checkin/search', [CheckinController::class, 'search'])->name('checkin.search');
+            Route::delete('/checkin/{pledge}', [CheckinController::class, 'undoCheckin'])->name('checkin.undo');
             Route::patch('/settings/payout', [EventController::class, 'updatePayout'])->name('event.settings.payout');
             Route::patch('/settings/couple-threshold', [EventController::class, 'updateCoupleThreshold'])->name('event.settings.couple-threshold');
 

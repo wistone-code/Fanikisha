@@ -39,7 +39,13 @@
         @forelse ($arrivals as $arrival)
             <div class="flex justify-between items-center border rounded-lg px-3 py-2">
                 <span class="text-sm">{{ $arrival->name }}</span>
-                <span class="text-xs text-gray-500">{{ $arrival->checked_in_at->format('g:i A, M j') }}</span>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">{{ $arrival->checked_in_at->format('g:i A, M j') }}</span>
+                    <form method="POST" action="{{ route('checkin.undo', $arrival) }}" data-confirm="Remove {{ $arrival->name }}'s check-in? They'll show as not-yet-arrived again." data-confirm-title="Undo check-in?">
+                        @csrf @method('DELETE')
+                        <button class="btn btn-ghost !py-1 !px-2 text-xs text-red-600" title="Undo check-in"><i class="fa-solid fa-rotate-left"></i></button>
+                    </form>
+                </div>
             </div>
         @empty
             <p id="noArrivals" class="text-xs text-gray-400">No one checked in yet.</p>
@@ -52,6 +58,7 @@
     const csrfToken = {{ Js::from(csrf_token()) }};
     const verifyUrl = {{ Js::from(route('checkin.verify')) }};
     const searchUrl = {{ Js::from(route('checkin.search')) }};
+    const undoUrlTemplate = {{ Js::from(route('checkin.undo', ['pledge' => '__ID__'])) }};
 
     let html5QrCode;
     let scanning = false;
@@ -131,19 +138,27 @@
             + '<div class="text-xs text-gray-500 mt-1">Pledged ' + escapeHtml(data.amount) + ' — Paid ' + escapeHtml(data.paid) + ' — Balance ' + escapeHtml(data.remain) + '</div>';
         showScanToast('<i class="fa-solid fa-circle-check"></i> Checked in — ' + escapeHtml(data.name), 'success');
 
-        addArrival(data.name, data.checked_in_at);
+        addArrival(data.id, data.name, data.checked_in_at);
         bumpCheckedInCount();
     }
 
-    function addArrival(name, checkedInAt) {
+    function addArrival(id, name, checkedInAt) {
         const list = document.getElementById('arrivalsList');
         const empty = document.getElementById('noArrivals');
         if (empty) empty.remove();
 
+        const undoUrl = undoUrlTemplate.replace('__ID__', id);
         const row = document.createElement('div');
         row.className = 'flex justify-between items-center border rounded-lg px-3 py-2';
         row.innerHTML = '<span class="text-sm">' + escapeHtml(name) + '</span>'
-            + '<span class="text-xs text-gray-500">' + escapeHtml(checkedInAt) + '</span>';
+            + '<div class="flex items-center gap-2">'
+            + '<span class="text-xs text-gray-500">' + escapeHtml(checkedInAt) + '</span>'
+            + '<form method="POST" action="' + undoUrl + '" data-confirm="Remove ' + escapeHtml(name) + '\'s check-in? They\'ll show as not-yet-arrived again." data-confirm-title="Undo check-in?">'
+            + '<input type="hidden" name="_token" value="' + csrfToken + '">'
+            + '<input type="hidden" name="_method" value="DELETE">'
+            + '<button class="btn btn-ghost !py-1 !px-2 text-xs text-red-600" title="Undo check-in"><i class="fa-solid fa-rotate-left"></i></button>'
+            + '</form>'
+            + '</div>';
         list.prepend(row);
     }
 
