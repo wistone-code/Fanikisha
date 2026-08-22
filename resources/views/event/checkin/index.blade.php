@@ -122,6 +122,8 @@
     }
 
     document.getElementById('startScanBtn').addEventListener('click', function () {
+        if (scanning) return; // already running — ignore a stray second tap
+
         if (typeof Html5Qrcode === 'undefined') {
             alert('The QR scanner library failed to load (likely a network/ad-blocker issue). Try refreshing the page, or use the search box instead.');
             return;
@@ -136,18 +138,17 @@
                 // in view. Without this guard, a rescan of an already-checked-in
                 // guest could fire several verify requests before the first one's
                 // database write lands — each one would read "not checked in yet"
-                // and none would ever surface the already-checked-in state. Locking
-                // ensures only one request is in flight at a time, and the short
-                // cooldown after it resolves gives the operator a moment to move
-                // the card away before scanning resumes.
+                // and none would ever surface the already-checked-in state. This
+                // flag silently drops repeat decodes while a request is in flight
+                // (and for a short cooldown after) without freezing the camera
+                // preview or showing any "paused" overlay — the video keeps running
+                // normally the whole time.
                 if (scanLocked) return;
                 scanLocked = true;
-                if (html5QrCode) html5QrCode.pause(true);
 
                 verifyToken(decodedText).finally(function () {
                     setTimeout(function () {
                         scanLocked = false;
-                        if (html5QrCode && scanning) html5QrCode.resume();
                     }, 2000);
                 });
             },
