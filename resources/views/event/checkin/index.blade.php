@@ -80,6 +80,11 @@
     }
 
     document.getElementById('startScanBtn').addEventListener('click', function () {
+        if (typeof Html5Qrcode === 'undefined') {
+            alert('The QR scanner library failed to load (likely a network/ad-blocker issue). Try refreshing the page, or use the search box instead.');
+            return;
+        }
+
         html5QrCode = new Html5Qrcode('qr-reader');
         html5QrCode.start(
             { facingMode: 'environment' },
@@ -92,8 +97,8 @@
             scanning = true;
             document.getElementById('startScanBtn').classList.add('hidden');
             document.getElementById('stopScanBtn').classList.remove('hidden');
-        }).catch(function () {
-            alert('Could not start the camera. Check camera permissions and try again, or use the search box instead.');
+        }).catch(function (err) {
+            alert('Could not start the camera: ' + (err && err.message ? err.message : err) + '\n\nCheck camera permissions and try again, or use the search box instead.');
         });
     });
 
