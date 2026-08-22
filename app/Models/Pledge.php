@@ -11,13 +11,14 @@ class Pledge extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['event_id', 'name', 'phone', 'amount', 'paid', 'invite_token', 'pay_token'];
+    protected $fillable = ['event_id', 'name', 'phone', 'amount', 'paid', 'invite_token', 'pay_token', 'checked_in_at'];
 
     protected function casts(): array
     {
         return [
             'amount' => 'decimal:2',
             'paid' => 'decimal:2',
+            'checked_in_at' => 'datetime',
         ];
     }
 
@@ -39,6 +40,11 @@ class Pledge extends Model
     public function isPaidInFull(): bool
     {
         return (float) $this->amount > 0 && $this->remaining() <= 0;
+    }
+
+    public function isCheckedIn(): bool
+    {
+        return ! empty($this->checked_in_at);
     }
 
     /** Completed / Overdue / Pending — used by the Pledge status donut chart. */
