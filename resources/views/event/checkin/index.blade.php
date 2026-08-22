@@ -78,24 +78,28 @@
     function renderResult(data) {
         const el = document.getElementById('resultCard');
         el.classList.remove('hidden');
+        el.className = 'card p-5 mt-4'; // reset any alert styling from a previous scan
 
         if (!data.found) {
             el.innerHTML = '<div class="text-red-600 font-semibold"><i class="fa-solid fa-circle-xmark"></i> No matching invitation found.</div>';
             return;
         }
 
-        const status = data.already
-            ? '<div class="text-amber-600 font-semibold mb-1"><i class="fa-solid fa-triangle-exclamation"></i> Already checked in at ' + escapeHtml(data.checked_in_at) + '</div>'
-            : '<div class="text-green-600 font-semibold mb-1"><i class="fa-solid fa-circle-check"></i> Checked in at ' + escapeHtml(data.checked_in_at) + '</div>';
+        if (data.already) {
+            el.classList.add('border-4', 'border-red-600', 'bg-red-50', 'animate-pulse');
+            el.innerHTML = '<div class="text-red-700 font-extrabold text-2xl mb-1"><i class="fa-solid fa-triangle-exclamation"></i> ALREADY CHECKED IN</div>'
+                + '<div class="text-red-600 font-semibold mb-2">at ' + escapeHtml(data.checked_in_at) + '</div>'
+                + '<div class="text-lg font-semibold">' + escapeHtml(data.name) + '</div>'
+                + '<div class="text-xs text-gray-500 mt-1">Pledged ' + escapeHtml(data.amount) + ' — Paid ' + escapeHtml(data.paid) + ' — Balance ' + escapeHtml(data.remain) + '</div>';
+            return;
+        }
 
-        el.innerHTML = status
+        el.innerHTML = '<div class="text-green-600 font-semibold mb-1"><i class="fa-solid fa-circle-check"></i> Checked in at ' + escapeHtml(data.checked_in_at) + '</div>'
             + '<div class="text-lg font-semibold">' + escapeHtml(data.name) + '</div>'
             + '<div class="text-xs text-gray-500 mt-1">Pledged ' + escapeHtml(data.amount) + ' — Paid ' + escapeHtml(data.paid) + ' — Balance ' + escapeHtml(data.remain) + '</div>';
 
-        if (!data.already) {
-            addArrival(data.name, data.checked_in_at);
-            bumpCheckedInCount();
-        }
+        addArrival(data.name, data.checked_in_at);
+        bumpCheckedInCount();
     }
 
     function addArrival(name, checkedInAt) {
