@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordChangeController;
+use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
@@ -153,6 +154,10 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::post('/settings/card-photo', [EventController::class, 'uploadCardPhoto'])->name('event.settings.card-photo.upload');
             Route::delete('/settings/card-photo', [EventController::class, 'removeCardPhoto'])->name('event.settings.card-photo.remove');
             Route::get('/settings/card-photo', [EventController::class, 'viewCardPhoto'])->name('event.settings.card-photo.view');
+
+            Route::get('/checkin', [CheckinController::class, 'index'])->name('checkin.index');
+            Route::post('/checkin/verify', [CheckinController::class, 'verify'])->name('checkin.verify');
+            Route::get('/checkin/search', [CheckinController::class, 'search'])->name('checkin.search');
             Route::patch('/settings/payout', [EventController::class, 'updatePayout'])->name('event.settings.payout');
 
             Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');

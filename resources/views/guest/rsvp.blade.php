@@ -29,6 +29,10 @@
             <p class="text-sm text-gray-500 mb-1">{{ $event->event_date->format('l, F j, Y') }}</p>
             @if ($event->place)<p class="text-sm text-gray-500 mb-4">{{ $event->place }}</p>@endif
             <p class="text-sm mt-4">Dear {{ $pledge->name }}, thank you for your contribution — we look forward to celebrating with you!</p>
+            <div class="border-t mt-6 pt-5">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={{ urlencode($pledge->inviteLink()) }}" alt="Entrance check-in QR code" class="mx-auto rounded-lg border">
+                <p class="text-xs text-gray-400 mt-2">Show this at the entrance for check-in</p>
+            </div>
         </div>
     </div>
 
