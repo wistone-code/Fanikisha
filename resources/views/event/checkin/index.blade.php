@@ -54,6 +54,7 @@
 
     let html5QrCode;
     let scanning = false;
+    let scanLocked = false;
 
     function escapeHtml(text) {
         const div = document.createElement('div');
@@ -131,7 +132,24 @@
             { facingMode: 'environment' },
             { fps: 10, qrbox: { width: 250, height: 250 } },
             function (decodedText) {
-                verifyToken(decodedText);
+                // The scanner keeps decoding the same code every ~100ms while it's
+                // in view. Without this guard, a rescan of an already-checked-in
+                // guest could fire several verify requests before the first one's
+                // database write lands — each one would read "not checked in yet"
+                // and none would ever surface the already-checked-in state. Locking
+                // ensures only one request is in flight at a time, and the short
+                // cooldown after it resolves gives the operator a moment to move
+                // the card away before scanning resumes.
+                if (scanLocked) return;
+                scanLocked = true;
+                if (html5QrCode) html5QrCode.pause(true);
+
+                verifyToken(decodedText).finally(function () {
+                    setTimeout(function () {
+                        scanLocked = false;
+                        if (html5QrCode && scanning) html5QrCode.resume();
+                    }, 2000);
+                });
             },
             function () { /* ignore per-frame scan misses */ }
         ).then(function () {
@@ -145,8 +163,9 @@
 
     document.getElementById('stopScanBtn').addEventListener('click', function () {
         if (html5QrCode && scanning) {
+            scanning = false;
+            scanLocked = false;
             html5QrCode.stop().then(function () {
-                scanning = false;
                 document.getElementById('startScanBtn').classList.remove('hidden');
                 document.getElementById('stopScanBtn').classList.add('hidden');
             });

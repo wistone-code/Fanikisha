@@ -44,10 +44,24 @@ class CheckinController extends Controller
             return response()->json(['found' => false], 404);
         }
 
-        $wasAlready = $pledge->isCheckedIn();
+        // Atomic claim: only the request that actually flips checked_in_at from
+        // null wins the "first check-in" outcome. This is correct even if two
+        // check-in stations scan the same guest at the exact same instant —
+        // the read-then-write version above this comment used to have a race
+        // where both requests could read "not checked in yet" and both report
+        // success, since the check and the write were two separate steps.
+        $now = now();
+        $wonCheckin = $event->pledges()
+            ->where('id', $pledge->id)
+            ->whereNull('checked_in_at')
+            ->update(['checked_in_at' => $now]) > 0;
 
-        if (! $wasAlready) {
-            $pledge->update(['checked_in_at' => now()]);
+        if ($wonCheckin) {
+            $pledge->checked_in_at = $now;
+            $wasAlready = false;
+        } else {
+            $pledge->refresh();
+            $wasAlready = true;
         }
 
         return response()->json([
