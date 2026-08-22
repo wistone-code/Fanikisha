@@ -75,6 +75,40 @@ class CheckinController extends Controller
         ]);
     }
 
+    /**
+     * TEMPORARY diagnostic route — safe to remove once we've confirmed what's
+     * actually stored. Dumps every pledge's raw invite_token/checked_in_at for
+     * the current event, plus a check for duplicate invite_tokens, so we can
+     * see the real data instead of guessing from application-level behavior.
+     */
+    public function debug(): JsonResponse
+    {
+        $event = app('currentEvent');
+
+        $pledges = $event->pledges()
+            ->orderBy('name')
+            ->get(['id', 'name', 'invite_token', 'checked_in_at']);
+
+        $duplicateTokens = $event->pledges()
+            ->whereNotNull('invite_token')
+            ->select('invite_token')
+            ->groupBy('invite_token')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('invite_token');
+
+        return response()->json([
+            'pledges' => $pledges->map(fn ($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'invite_token' => $p->invite_token,
+                'checked_in_at_raw' => $p->getRawOriginal('checked_in_at'),
+                'checked_in_at_cast' => $p->checked_in_at?->toDateTimeString(),
+                'is_checked_in' => $p->isCheckedIn(),
+            ]),
+            'duplicate_invite_tokens' => $duplicateTokens,
+        ]);
+    }
+
     /** Manual name search fallback, for guests without a smartphone/QR to scan. */
     public function search(Request $request): JsonResponse
     {
