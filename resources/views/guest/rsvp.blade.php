@@ -17,16 +17,14 @@
 <body class="min-h-screen flex flex-col items-center justify-center p-6 gap-4" style="background:radial-gradient(120% 140% at 20% 0%, {{ $theme['primary_dark'] }} 0%, #0A1319 70%);">
 
     <div id="card" class="bg-white rounded-2xl shadow-2xl max-w-sm w-full text-center overflow-hidden">
-        <div class="pt-10 pb-8 px-8" style="background:linear-gradient(160deg, {{ $theme['primary'] }} 0%, {{ $theme['primary_dark'] }} 100%);">
+        <div class="pt-10 pb-8 px-8 relative" style="background:linear-gradient(160deg, {{ $theme['primary'] }} 0%, {{ $theme['primary_dark'] }} 100%);">
+            <span class="absolute top-3 right-3 text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full" style="background:{{ $theme['accent'] }}; color:{{ $theme['primary_dark'] }};">{{ ucfirst($pledge->card_type) }} Card</span>
             @if ($event->hasCardPhoto())
             <img src="{{ route('guest.rsvp.photo', $pledge->invite_token) }}" class="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg mx-auto mb-4" alt="">
             @endif
             <div class="text-xs uppercase tracking-widest font-semibold mb-2" style="color:{{ $theme['accent'] }};">You're invited to</div>
             <h1 class="text-2xl font-semibold text-white">{{ $event->name }}</h1>
-            <div class="flex items-center justify-center gap-2 mt-1">
-                <div class="text-sm font-medium" style="color:{{ $theme['accent'] }};">{{ $event->event_type }}</div>
-                <span class="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full" style="background:{{ $theme['accent'] }}; color:{{ $theme['primary_dark'] }};">{{ ucfirst($pledge->card_type) }}</span>
-            </div>
+            <div class="text-sm font-medium mt-1" style="color:{{ $theme['accent'] }};">{{ $event->event_type }}</div>
         </div>
         <div class="p-8">
             <p class="text-sm text-gray-500 mb-1">{{ $event->event_date->format('l, F j, Y') }}</p>
