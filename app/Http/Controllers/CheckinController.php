@@ -16,7 +16,12 @@ class CheckinController extends Controller
         $checkedInCount = $event->pledges()->whereNotNull('checked_in_at')->count();
         $eligibleCount = $event->pledges()->whereNotNull('invite_token')->count();
 
-        return view('event.checkin.index', compact('checkedInCount', 'eligibleCount'));
+        $arrivals = $event->pledges()
+            ->whereNotNull('checked_in_at')
+            ->orderByDesc('checked_in_at')
+            ->get(['name', 'checked_in_at']);
+
+        return view('event.checkin.index', compact('checkedInCount', 'eligibleCount', 'arrivals'));
     }
 
     /**

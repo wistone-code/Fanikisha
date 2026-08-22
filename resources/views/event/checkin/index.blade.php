@@ -10,7 +10,7 @@
 
 <div class="mb-4">
     <h2 class="text-xl font-semibold">Entrance Check-in</h2>
-    <p class="text-sm text-gray-500">{{ $checkedInCount }} of {{ $eligibleCount }} invited guests checked in</p>
+    <p class="text-sm text-gray-500"><span id="checkinCount">{{ $checkedInCount }}</span> of {{ $eligibleCount }} invited guests checked in</p>
 </div>
 
 <div class="grid md:grid-cols-2 gap-4">
@@ -31,6 +31,20 @@
 </div>
 
 <div id="resultCard" class="hidden card p-5 mt-4"></div>
+
+<div class="card p-5 mt-4">
+    <div class="text-sm font-semibold mb-3">Arrival log</div>
+    <div id="arrivalsList" class="space-y-2 max-h-96 overflow-y-auto">
+        @forelse ($arrivals as $arrival)
+            <div class="flex justify-between items-center border rounded-lg px-3 py-2">
+                <span class="text-sm">{{ $arrival->name }}</span>
+                <span class="text-xs text-gray-500">{{ $arrival->checked_in_at->format('g:i A, M j') }}</span>
+            </div>
+        @empty
+            <p id="noArrivals" class="text-xs text-gray-400">No one checked in yet.</p>
+        @endforelse
+    </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js"></script>
 <script>
@@ -77,6 +91,29 @@
         el.innerHTML = status
             + '<div class="text-lg font-semibold">' + escapeHtml(data.name) + '</div>'
             + '<div class="text-xs text-gray-500 mt-1">Pledged ' + escapeHtml(data.amount) + ' — Paid ' + escapeHtml(data.paid) + ' — Balance ' + escapeHtml(data.remain) + '</div>';
+
+        if (!data.already) {
+            addArrival(data.name, data.checked_in_at);
+            bumpCheckedInCount();
+        }
+    }
+
+    function addArrival(name, checkedInAt) {
+        const list = document.getElementById('arrivalsList');
+        const empty = document.getElementById('noArrivals');
+        if (empty) empty.remove();
+
+        const row = document.createElement('div');
+        row.className = 'flex justify-between items-center border rounded-lg px-3 py-2';
+        row.innerHTML = '<span class="text-sm">' + escapeHtml(name) + '</span>'
+            + '<span class="text-xs text-gray-500">' + escapeHtml(checkedInAt) + '</span>';
+        list.prepend(row);
+    }
+
+    function bumpCheckedInCount() {
+        const el = document.getElementById('checkinCount');
+        if (!el) return;
+        el.textContent = String(parseInt(el.textContent, 10) + 1);
     }
 
     document.getElementById('startScanBtn').addEventListener('click', function () {
