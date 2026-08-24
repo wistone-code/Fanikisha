@@ -25,7 +25,7 @@
         @endif
         @if ($isAdmin)
         <button onclick="document.getElementById('importScheduleModal').classList.remove('hidden')" class="btn btn-ghost"><i class="fa-solid fa-file-import"></i> Import</button>
-        @if (config('services.anthropic.api_key'))
+        @if (config('services.gemini.api_key'))
         <button onclick="document.getElementById('importPhotoModal').classList.remove('hidden')" class="btn btn-ghost"><i class="fa-solid fa-camera"></i> Import from photo</button>
         @endif
         <button onclick="document.getElementById('addScheduleModal').classList.remove('hidden')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add item</button>
@@ -122,7 +122,7 @@
     </div>
 </div>
 
-@if (config('services.anthropic.api_key'))
+@if (config('services.gemini.api_key'))
 <div id="importPhotoModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6">
         <h3 class="font-semibold mb-1">Import from photo</h3>

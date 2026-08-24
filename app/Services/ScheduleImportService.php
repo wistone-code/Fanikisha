@@ -13,26 +13,28 @@ class ScheduleImportService
     /**
      * Extract candidate schedule items (title/date/time) from one or more
      * photos of a schedule — handwritten, printed, or a screenshot — using
-     * Claude's vision capability. Nothing is saved here; this only returns
-     * candidates for the review screen to confirm or edit.
+     * Google Gemini's vision capability. Nothing is saved here; this only
+     * returns candidates for the review screen to confirm or edit.
+     *
+     * Uses Gemini rather than Claude specifically because Gemini has a
+     * genuinely free, ongoing API tier (no credit card, no expiration) —
+     * see config('services.gemini.api_key').
      *
      * @param  UploadedFile[]  $photos
      * @return array{successful: bool, items?: array<int, array{title: string, date: string, time: ?string}>, error?: string}
      */
     public function extract(array $photos, Event $event): array
     {
-        $apiKey = config('services.anthropic.api_key');
+        $apiKey = config('services.gemini.api_key');
 
         if (! $apiKey) {
-            return ['successful' => false, 'error' => 'Photo import is not configured — missing Anthropic API key.'];
+            return ['successful' => false, 'error' => 'Photo import is not configured — missing Gemini API key.'];
         }
 
         try {
-            $imageBlocks = array_map(fn (UploadedFile $photo) => [
-                'type' => 'image',
-                'source' => [
-                    'type' => 'base64',
-                    'media_type' => $photo->getMimeType(),
+            $imageParts = array_map(fn (UploadedFile $photo) => [
+                'inline_data' => [
+                    'mime_type' => $photo->getMimeType(),
                     'data' => base64_encode(file_get_contents($photo->getRealPath())),
                 ],
             ], $photos);
@@ -53,25 +55,41 @@ class ScheduleImportService
                   date appears anywhere in the photo, use this event's date: {$eventDate}
                 - "time": the time in 24-hour HH:MM format if shown, otherwise null
 
-                Respond with ONLY a raw JSON array of these objects — no markdown code
-                fences, no explanation, no other text before or after it. If the
-                image contains no identifiable schedule items, respond with exactly: []
+                Return a JSON array of these objects. If the image contains no
+                identifiable schedule items, return an empty array: []
                 TEXT;
 
-            $response = Http::withHeaders([
-                'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
-            ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
-                'model' => 'claude-sonnet-5',
-                'max_tokens' => 2000,
-                'messages' => [[
-                    'role' => 'user',
-                    'content' => [...$imageBlocks, ['type' => 'text', 'text' => $instructions]],
-                ]],
-            ]);
+            $model = 'gemini-2.5-flash';
+
+            $response = Http::timeout(60)->post(
+                "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}",
+                [
+                    'contents' => [[
+                        'parts' => [...$imageParts, ['text' => $instructions]],
+                    ]],
+                    // Gemini's native JSON mode — the response is guaranteed to be
+                    // parseable JSON matching this shape, rather than relying on
+                    // the model to follow a "respond with only JSON" instruction.
+                    'generationConfig' => [
+                        'responseMimeType' => 'application/json',
+                        'responseSchema' => [
+                            'type' => 'ARRAY',
+                            'items' => [
+                                'type' => 'OBJECT',
+                                'properties' => [
+                                    'title' => ['type' => 'STRING'],
+                                    'date' => ['type' => 'STRING'],
+                                    'time' => ['type' => 'STRING', 'nullable' => true],
+                                ],
+                                'required' => ['title', 'date'],
+                            ],
+                        ],
+                    ],
+                ]
+            );
 
             if (! $response->successful()) {
-                Log::warning('Schedule photo import: Anthropic API error', [
+                Log::warning('Schedule photo import: Gemini API error', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
@@ -79,13 +97,7 @@ class ScheduleImportService
                 return ['successful' => false, 'error' => 'Could not reach the extraction service. Try again.'];
             }
 
-            $text = trim($response->json('content.0.text') ?? '');
-
-            // The model occasionally wraps the array in a markdown fence despite
-            // being told not to — stripping it defensively costs nothing.
-            $text = preg_replace('/^```(?:json)?|```$/m', '', $text);
-            $text = trim($text);
-
+            $text = trim($response->json('candidates.0.content.parts.0.text') ?? '');
             $items = json_decode($text, true);
 
             if (! is_array($items)) {
