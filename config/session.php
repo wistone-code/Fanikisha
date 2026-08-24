@@ -6,7 +6,13 @@ return [
 
     'driver' => env('SESSION_DRIVER', 'database'),
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 30),
+    // Falls back to 480 (8 hours) rather than Laravel's usual 120 if
+    // SESSION_LIFETIME isn't set in the environment — this app is used
+    // through hours-long live events (check-in, team management, etc.)
+    // where a page can genuinely sit open and idle for a long stretch
+    // between interactions, and a short session meant a stale form
+    // submit would hit a blank, confusing "419 Page Expired" error.
+    'lifetime' => (int) env('SESSION_LIFETIME', 480),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

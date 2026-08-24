@@ -151,15 +151,27 @@
     const LOGIN_URL = "{{ route('login') }}";
     const KEEP_ALIVE_URL = "{{ route('keep-alive') }}";
 
+    // Wall-clock timestamps (not just setTimeout delays) for when the warning
+    // and the actual expiry are due. Browsers throttle or fully pause
+    // setTimeout/setInterval in a backgrounded tab (e.g. the person switches
+    // to WhatsApp mid-form at a live event) — the server's session clock keeps
+    // running regardless, so a purely timer-based approach can silently miss
+    // the warning entirely and let a stale submit hit a raw 419 error. The
+    // visibilitychange check below re-validates against real elapsed time the
+    // moment the tab comes back to the foreground, catching exactly that case.
+    let warnAt = Date.now() + (SESSION_LIFETIME_MINUTES * 60 - WARNING_SECONDS) * 1000;
+    let expireAt = Date.now() + SESSION_LIFETIME_MINUTES * 60 * 1000;
+
     let warningTimer, countdownInterval, secondsLeft;
 
     function showWarning() {
-        secondsLeft = WARNING_SECONDS;
+        secondsLeft = Math.max(0, Math.round((expireAt - Date.now()) / 1000));
         document.getElementById('sessionCountdown').textContent = secondsLeft;
         document.getElementById('sessionWarningModal').classList.remove('hidden');
+        clearInterval(countdownInterval);
         countdownInterval = setInterval(function () {
-            secondsLeft--;
-            document.getElementById('sessionCountdown').textContent = Math.max(0, secondsLeft);
+            secondsLeft = Math.max(0, Math.round((expireAt - Date.now()) / 1000));
+            document.getElementById('sessionCountdown').textContent = secondsLeft;
             if (secondsLeft <= 0) {
                 clearInterval(countdownInterval);
                 // The session has already expired server-side by this point (this
@@ -171,17 +183,29 @@
     }
 
     function scheduleWarning() {
-        const msUntilWarning = Math.max(0, (SESSION_LIFETIME_MINUTES * 60 - WARNING_SECONDS) * 1000);
+        warnAt = Date.now() + (SESSION_LIFETIME_MINUTES * 60 - WARNING_SECONDS) * 1000;
+        expireAt = Date.now() + SESSION_LIFETIME_MINUTES * 60 * 1000;
         clearTimeout(warningTimer);
-        warningTimer = setTimeout(showWarning, msUntilWarning);
+        clearInterval(countdownInterval);
+        document.getElementById('sessionWarningModal').classList.add('hidden');
+        warningTimer = setTimeout(showWarning, Math.max(0, warnAt - Date.now()));
     }
 
     document.getElementById('staySignedInBtn').addEventListener('click', function () {
-        fetch(KEEP_ALIVE_URL, { credentials: 'same-origin' }).finally(function () {
-            clearInterval(countdownInterval);
-            document.getElementById('sessionWarningModal').classList.add('hidden');
-            scheduleWarning();
-        });
+        fetch(KEEP_ALIVE_URL, { credentials: 'same-origin' }).finally(scheduleWarning);
+    });
+
+    // Catches a backgrounded tab whose setTimeout got throttled/paused: the
+    // instant the tab is foregrounded again, compare against the real
+    // wall-clock deadlines rather than trusting the timer to have fired on
+    // schedule while hidden.
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState !== 'visible') return;
+        if (Date.now() >= expireAt) {
+            window.location.href = LOGIN_URL + '?timeout=1';
+        } else if (Date.now() >= warnAt && document.getElementById('sessionWarningModal').classList.contains('hidden')) {
+            showWarning();
+        }
     });
 
     scheduleWarning();
