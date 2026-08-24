@@ -190,6 +190,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::get('/committees/members/{member}/whatsapp', [CommitteeController::class, 'notifyWhatsApp'])->name('committees.members.whatsapp');
 
             Route::post('/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
+            Route::post('/schedule/import-photo', [ScheduleController::class, 'importPhoto'])->name('schedule.import-photo');
             Route::patch('/schedule/message', [ScheduleController::class, 'updateMessage'])->name('schedule.message');
             Route::post('/schedule/broadcast', [ScheduleController::class, 'broadcast'])->name('schedule.broadcast');
             Route::patch('/schedule/{item}', [ScheduleController::class, 'update'])->name('schedule.update');

@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\AuthorizesEventOwnership;
 use App\Models\ScheduleItem;
 use App\Services\BeemSmsService;
 use App\Services\MessageTemplateService;
+use App\Services\ScheduleImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -60,6 +61,24 @@ class ScheduleController extends Controller
             'date' => ['required', 'date'],
             'time' => ['nullable', 'date_format:H:i'],
         ]);
+    }
+
+    // ---- Import from photo -------------------------------------------------------------
+
+    public function importPhoto(Request $request, ScheduleImportService $importer): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'photos' => ['required', 'array', 'min:1', 'max:4'],
+            'photos.*' => ['required', 'image', 'max:10240'], // 10MB each
+        ]);
+
+        $result = $importer->extract($request->file('photos'), app('currentEvent'));
+
+        if (! $result['successful']) {
+            return response()->json(['error' => $result['error']], 422);
+        }
+
+        return response()->json(['items' => $result['items']]);
     }
 
     // ---- Broadcast SMS ----------------------------------------------------------------
