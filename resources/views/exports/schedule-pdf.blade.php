@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>{{ $event->name }} — Ceremony Schedule</title>
+<title>{{ $event->name }} — Schedule</title>
 <style>
     body{font-family:Helvetica,Arial,sans-serif;padding:32px;color:#1a1a1a;}
     h1{font-size:20px;margin:0 0 4px;}
@@ -13,7 +13,7 @@
 </style>
 </head>
 <body>
-    <h1>{{ $event->name }} — Ceremony Schedule</h1>
+    <h1>{{ $event->name }} — Schedule</h1>
     <div class="sub">{{ $items->count() }} item{{ $items->count() === 1 ? '' : 's' }} &middot; Generated {{ now()->format('M j, Y') }}</div>
     <table>
         <thead><tr><th>Event</th><th>Date</th><th>Time</th></tr></thead>

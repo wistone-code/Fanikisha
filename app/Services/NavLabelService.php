@@ -16,7 +16,7 @@ class NavLabelService
         'pledges' => 'Pledges',
         'providers' => 'Service Provider',
         'committees' => 'Event Management',
-        'schedule' => 'Ceremony Schedule',
+        'schedule' => 'Schedule',
         'team' => 'Team Management',
         'invitations' => 'Guest Management',
         'settings' => 'Event Setting',
@@ -31,7 +31,6 @@ class NavLabelService
             $labels['pledges'] = 'Contribution';
         } elseif ($type === 'Funeral') {
             $labels['pledges'] = 'Condolences';
-            $labels['schedule'] = 'Schedule';
             $labels['invitations'] = 'Announcement';
         }
 

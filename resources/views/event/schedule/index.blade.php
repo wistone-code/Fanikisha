@@ -1,22 +1,27 @@
 @extends('layouts.app')
-@section('title', 'Ceremony Schedule — '.config('app.name'))
+@section('title', 'Schedule — '.config('app.name'))
 
 @section('content')
 <div class="flex justify-between items-start mb-4 flex-wrap gap-3">
     <div>
-        <h2 class="text-xl font-semibold">Ceremony schedule</h2>
+        <h2 class="text-xl font-semibold">Schedule</h2>
         @if ($isAdmin)<p class="text-sm text-gray-500">Plan out the run of show — event and time for each item.</p>@endif
     </div>
     <div class="flex gap-2 flex-wrap">
         @if ($isAdmin && trim($broadcastMessage) !== '' && $pledgers->isNotEmpty())
         <form method="POST" action="{{ route('schedule.broadcast') }}" class="inline" onsubmit="return confirm('Send this schedule via SMS to all pledgers now?')">
             @csrf
-            <button class="btn btn-primary">Share schedule</button>
+            <button class="btn btn-primary">Share</button>
         </form>
         @endif
         @if ($items->count())
-        <a href="{{ route('schedule.export.excel') }}" class="btn btn-ghost"><i class="fa-solid fa-file-excel"></i> Excel</a>
-        <a href="{{ route('schedule.export.pdf') }}" class="btn btn-ghost"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+        <div class="relative inline-block">
+            <button onclick="document.getElementById('exportMenu').classList.toggle('hidden')" class="btn btn-ghost"><i class="fa-solid fa-download"></i> Export <i class="fa-solid fa-chevron-down text-xs"></i></button>
+            <div id="exportMenu" class="hidden absolute right-0 mt-1 w-36 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40">
+                <a href="{{ route('schedule.export.excel') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-file-excel"></i> Excel</a>
+                <a href="{{ route('schedule.export.pdf') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+            </div>
+        </div>
         @endif
         @if ($isAdmin)
         @if (config('services.anthropic.api_key'))
@@ -82,7 +87,7 @@
         <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save message</button>
     </form>
     @if (trim($broadcastMessage) === '')
-    <p class="text-xs text-gray-400 border-t pt-4">Save a message above, then use "Share schedule" at the top of the page to text all pledgers.</p>
+    <p class="text-xs text-gray-400 border-t pt-4">Save a message above, then use "Share" at the top of the page to text all pledgers.</p>
     @elseif ($pledgers->isEmpty())
     <p class="text-xs text-gray-400 border-t pt-4">No contacts with a phone number to message.</p>
     @endif

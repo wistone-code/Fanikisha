@@ -221,11 +221,15 @@
 document.addEventListener('click', function (e) {
     const navMenu = document.getElementById('navMenu');
     const userMenu = document.getElementById('userMenu');
+    const exportMenu = document.getElementById('exportMenu');
     if (navMenu && !navMenu.classList.contains('hidden') && !e.target.closest('#navMenu') && !e.target.closest('button[onclick*="navMenu"]')) {
         navMenu.classList.add('hidden');
     }
     if (userMenu && !userMenu.classList.contains('hidden') && !e.target.closest('#userMenu') && !e.target.closest('button[onclick*="userMenu"]')) {
         userMenu.classList.add('hidden');
+    }
+    if (exportMenu && !exportMenu.classList.contains('hidden') && !e.target.closest('#exportMenu') && !e.target.closest('button[onclick*="exportMenu"]')) {
+        exportMenu.classList.add('hidden');
     }
 });
 // Auto-refresh every 30s — skipped while typing into a field or while any modal
