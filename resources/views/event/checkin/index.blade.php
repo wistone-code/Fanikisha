@@ -96,13 +96,13 @@
 
         const styles = {
             success: 'bg-green-600 text-white',
-            warning: 'bg-red-600 text-white animate-pulse text-base',
+            warning: 'bg-red-600 text-white',
             error: 'bg-gray-800 text-white',
         };
 
         const toast = document.createElement('div');
         toast.id = 'scanToast';
-        toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-lg shadow-lg font-semibold text-center max-w-[90%] '
+        toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-lg shadow-lg text-sm font-semibold text-center max-w-[90%] '
             + (styles[kind] || styles.success);
         toast.innerHTML = message;
         document.body.appendChild(toast);
@@ -124,22 +124,23 @@
         }
 
         if (data.already) {
-            el.classList.add('border-4', 'border-red-600', 'bg-red-50', 'animate-pulse');
-            el.innerHTML = '<div class="text-red-700 font-extrabold text-2xl mb-1"><i class="fa-solid fa-triangle-exclamation"></i> ALREADY CHECKED IN</div>'
-                + '<div class="text-red-600 font-semibold mb-2">at ' + escapeHtml(data.checked_in_at) + '</div>'
-                + '<div class="text-lg font-semibold">' + escapeHtml(data.name) + '</div>'
-                + '<div class="text-xs text-gray-500 mt-1">Pledged ' + escapeHtml(data.amount) + ' — Paid ' + escapeHtml(data.paid) + ' — Balance ' + escapeHtml(data.remain) + '</div>';
-            showScanToast('<i class="fa-solid fa-triangle-exclamation"></i> ALREADY CHECKED IN — ' + escapeHtml(data.name), 'warning');
+            el.classList.add('border-2', 'border-red-600', 'bg-red-50');
+            el.innerHTML = '<div class="text-red-700 font-bold text-lg"><i class="fa-solid fa-triangle-exclamation"></i> ALREADY CHECKED IN</div>'
+                + '<div class="text-red-600 text-sm mt-1">at ' + escapeHtml(data.checked_in_at) + '</div>';
+            showScanToast('<i class="fa-solid fa-triangle-exclamation"></i> ALREADY CHECKED IN', 'warning');
             return;
         }
 
-        el.innerHTML = '<div class="text-green-600 font-semibold mb-1"><i class="fa-solid fa-circle-check"></i> Checked in at ' + escapeHtml(data.checked_in_at) + '</div>'
-            + '<div class="text-lg font-semibold">' + escapeHtml(data.name) + '</div>'
-            + '<div class="text-xs text-gray-500 mt-1">Pledged ' + escapeHtml(data.amount) + ' — Paid ' + escapeHtml(data.paid) + ' — Balance ' + escapeHtml(data.remain) + '</div>';
-        showScanToast('<i class="fa-solid fa-circle-check"></i> Checked in — ' + escapeHtml(data.name), 'success');
+        el.innerHTML = '<div class="text-green-600 font-bold text-lg"><i class="fa-solid fa-circle-check"></i> Checked in</div>'
+            + '<div class="text-gray-600 text-sm mt-1">at ' + escapeHtml(data.checked_in_at) + '</div>';
+        showScanToast('<i class="fa-solid fa-circle-check"></i> Checked in', 'success');
 
         addArrival(data.id, data.name, data.checked_in_at);
         bumpCheckedInCount();
+        stopScanning(); // close the camera after a genuine new check-in — the
+                         // operator taps "Start camera" again for the next guest,
+                         // rather than it staying open and possibly catching a
+                         // stray scan before they're ready.
     }
 
     function addArrival(id, name, checkedInAt) {
@@ -242,7 +243,7 @@
         });
     });
 
-    document.getElementById('stopScanBtn').addEventListener('click', function () {
+    function stopScanning() {
         if (html5QrCode && scanning) {
             scanning = false;
             lastScannedToken = null;
@@ -254,7 +255,9 @@
                 document.getElementById('stopScanBtn').classList.add('hidden');
             });
         }
-    });
+    }
+
+    document.getElementById('stopScanBtn').addEventListener('click', stopScanning);
 
     let searchTimer;
     document.getElementById('searchInput').addEventListener('input', function (e) {
