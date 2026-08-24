@@ -94,7 +94,10 @@ class ScheduleImportService
                     'body' => $response->body(),
                 ]);
 
-                return ['successful' => false, 'error' => 'Could not reach the extraction service. Try again.'];
+                // TEMPORARY: surfacing the real API error directly in the UI while we
+                // diagnose the first-run failure — revert to the generic message once
+                // this is confirmed working.
+                return ['successful' => false, 'error' => 'Gemini error ('.$response->status().'): '.str($response->body())->limit(300)];
             }
 
             $text = trim($response->json('candidates.0.content.parts.0.text') ?? '');
@@ -129,7 +132,8 @@ class ScheduleImportService
         } catch (Throwable $e) {
             Log::error('Schedule photo import exception', ['message' => $e->getMessage()]);
 
-            return ['successful' => false, 'error' => 'Could not reach the extraction service. Try again.'];
+            // TEMPORARY: see note above — revert to the generic message once confirmed working.
+            return ['successful' => false, 'error' => 'Exception: '.$e->getMessage()];
         }
     }
 }
