@@ -19,7 +19,9 @@
         <a href="{{ route('schedule.export.pdf') }}" class="btn btn-ghost"><i class="fa-solid fa-file-pdf"></i> PDF</a>
         @endif
         @if ($isAdmin)
+        @if (config('services.anthropic.api_key'))
         <button onclick="document.getElementById('importPhotoModal').classList.remove('hidden')" class="btn btn-ghost"><i class="fa-solid fa-camera"></i> Import from photo</button>
+        @endif
         <button onclick="document.getElementById('addScheduleModal').classList.remove('hidden')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add item</button>
         @endif
     </div>
@@ -106,6 +108,7 @@
     </div>
 </div>
 
+@if (config('services.anthropic.api_key'))
 <div id="importPhotoModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6">
         <h3 class="font-semibold mb-1">Import from photo</h3>
@@ -212,5 +215,6 @@
         }
     }
 </script>
-@endif
+@endif{{-- api key configured --}}
+@endif{{-- isAdmin --}}
 @endsection
