@@ -1,8 +1,8 @@
 @extends('layouts.app')
-@section('title', 'Event Setting — '.config('app.name'))
+@section('title', 'Setting — '.config('app.name'))
 
 @section('content')
-<div class="mb-4"><h2 class="text-xl font-semibold">Event Setting</h2><p class="text-sm text-gray-500">Only admins can update event details.</p></div>
+<div class="mb-4"><h2 class="text-xl font-semibold">Setting</h2><p class="text-sm text-gray-500">Only admins can update event details.</p></div>
 
 <div class="card p-6 max-w-md mb-4">
     <div class="text-sm font-semibold mb-1"><i class="fa-solid fa-comment-sms"></i> SMS quota</div>

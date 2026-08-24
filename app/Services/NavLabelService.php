@@ -19,7 +19,7 @@ class NavLabelService
         'schedule' => 'Schedule',
         'team' => 'Team Management',
         'invitations' => 'Guest Management',
-        'settings' => 'Event Setting',
+        'settings' => 'Setting',
     ];
 
     public function for(?Event $event): array
