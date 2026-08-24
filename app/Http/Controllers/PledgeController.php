@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AuthorizesEventOwnership;
 use App\Models\Pledge;
 use App\Services\BeemSmsService;
+use App\Services\DocxTextExtractor;
 use App\Services\MessageTemplateService;
 use App\Services\PhoneNumberService;
+use App\Services\PledgeImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -113,30 +115,43 @@ class PledgeController extends Controller
     }
 
     /**
-     * Bulk-adds pledgers from either an uploaded CSV file or pasted text —
-     * both use the same column order: Name, Phone, Amount. Rows missing a
+     * Bulk-adds pledgers from an uploaded CSV/text/Word file, or pasted text —
+     * all use the same column order: Name, Phone, Amount. Rows missing a
      * name or a valid positive amount are skipped (this also naturally
      * skips a header row, since "Amount" isn't a valid number).
      */
-    public function import(Request $request, PhoneNumberService $phones): RedirectResponse
+    public function import(Request $request, PhoneNumberService $phones, DocxTextExtractor $docx): RedirectResponse
     {
         $event = app('currentEvent');
 
         $request->validate([
-            'import_file' => ['nullable', 'file', 'mimes:csv,txt', 'max:2048'],
+            'import_file' => ['nullable', 'file', 'mimes:csv,txt,docx', 'max:5120'],
             'import_text' => ['nullable', 'string'],
         ]);
 
         $rows = collect();
 
         if ($request->hasFile('import_file')) {
-            $handle = fopen($request->file('import_file')->getRealPath(), 'r');
+            $file = $request->file('import_file');
+            $extension = strtolower($file->getClientOriginalExtension());
 
-            while (($line = fgetcsv($handle)) !== false) {
-                $rows->push($line);
+            if ($extension === 'docx') {
+                $rows = collect(explode("\n", trim($docx->extract($file->getRealPath()))))
+                    ->map(fn ($line) => trim($line))
+                    ->filter(fn ($line) => $line !== '')
+                    ->map(fn ($line) => preg_split('/\t|,/', $line));
+            } else {
+                // A real CSV reader (rather than a plain comma-split) correctly
+                // handles a quoted field that itself contains a comma, e.g. a
+                // name written "Doe, Jr.".
+                $handle = fopen($file->getRealPath(), 'r');
+
+                while (($line = fgetcsv($handle)) !== false) {
+                    $rows->push($line);
+                }
+
+                fclose($handle);
             }
-
-            fclose($handle);
         } elseif ($request->filled('import_text')) {
             $rows = collect(explode("\n", trim($request->input('import_text'))))
                 ->filter(fn ($line) => trim($line) !== '')
@@ -144,7 +159,7 @@ class PledgeController extends Controller
         }
 
         if ($rows->isEmpty()) {
-            return back()->withErrors(['import_file' => 'Upload a CSV file or paste some rows first.']);
+            return back()->withErrors(['import_file' => 'Upload a file or paste some rows first.']);
         }
 
         $imported = 0;
@@ -177,6 +192,28 @@ class PledgeController extends Controller
         $noun = $event->isFuneral() ? 'condolence(s)' : 'pledge(s)';
 
         return back()->with('status', "Imported {$imported} {$noun}".($skipped > 0 ? ", skipped {$skipped} invalid row(s)" : '').'.');
+    }
+
+    /**
+     * Extract candidate pledgers (name/phone/amount) from one or more photos of
+     * a written or printed pledge list — using Gemini's vision capability, the
+     * same as the Schedule page's photo import. Nothing is saved here; this
+     * only returns candidates for the review screen to confirm or edit.
+     */
+    public function importPhoto(Request $request, PledgeImportService $importer): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'photos' => ['required', 'array', 'min:1', 'max:4'],
+            'photos.*' => ['required', 'image', 'max:10240'], // 10MB each
+        ]);
+
+        $result = $importer->extract($request->file('photos'));
+
+        if (! $result['successful']) {
+            return response()->json(['error' => $result['error']], 422);
+        }
+
+        return response()->json(['items' => $result['items']]);
     }
 
     public function destroy(Pledge $pledge): RedirectResponse

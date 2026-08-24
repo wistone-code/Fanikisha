@@ -164,6 +164,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
 
             Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');
             Route::post('/pledges/import', [PledgeController::class, 'import'])->name('pledges.import');
+            Route::post('/pledges/import-photo', [PledgeController::class, 'importPhoto'])->name('pledges.import-photo');
             Route::patch('/pledges/{pledge}', [PledgeController::class, 'update'])->name('pledges.update');
             Route::delete('/pledges/{pledge}', [PledgeController::class, 'destroy'])->name('pledges.destroy');
             Route::patch('/pledges/message/reminder', [PledgeController::class, 'updateReminderMessage'])->name('pledges.message.reminder');

@@ -29,6 +29,9 @@
         <button onclick="document.getElementById('importPledgesModal').classList.remove('hidden')" class="btn btn-ghost">
             <i class="fa-solid fa-file-import"></i> Import
         </button>
+        @if (config('services.gemini.api_key'))
+        <button onclick="document.getElementById('importPledgePhotoModal').classList.remove('hidden')" class="btn btn-ghost"><i class="fa-solid fa-camera"></i> Import from photo</button>
+        @endif
         <button onclick="document.getElementById('addPledgeModal').classList.remove('hidden')" class="btn btn-primary">
             <i class="fa-solid fa-plus"></i> Add {{ $isFuneral ? 'condolence' : 'pledge' }}
         </button>
@@ -131,21 +134,23 @@
     </div>
 </div>
 
-<div id="importPledgesModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+<div id="importPledgesModal" class="{{ $errors->has('import_file') ? '' : 'hidden' }} fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 max-h-[85vh] overflow-y-auto">
         <h3 class="font-semibold mb-1">Import {{ $isFuneral ? 'condolences' : 'pledges' }}</h3>
-        <p class="text-xs text-gray-500 mb-4">Add many at once — upload a CSV file, or paste rows directly. Either way, each row should be: <strong>Name, Phone, Amount</strong> (phone is optional).</p>
+        <p class="text-xs text-gray-500 mb-4">Add many at once — upload a CSV, plain text, or Word (.docx) file, or paste rows directly. Either way, each row should be: <strong>Name, Phone, Amount</strong> (phone is optional).</p>
+        @error('import_file')
+        <div class="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2 mb-3">{{ $message }}</div>
+        @enderror
         <form method="POST" action="{{ route('pledges.import') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <div>
-                <label class="text-xs font-semibold">Upload a CSV file</label>
-                <input type="file" name="import_file" accept=".csv,.txt" class="w-full border rounded-lg px-3 py-2 text-sm">
-                @error('import_file')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                <label class="text-xs font-semibold">Upload a file</label>
+                <input type="file" name="import_file" accept=".csv,.txt,.docx" class="w-full border rounded-lg px-3 py-2 text-sm">
             </div>
             <div class="text-center text-xs text-gray-400">— or —</div>
             <div>
                 <label class="text-xs font-semibold">Paste rows</label>
-                <textarea name="import_text" rows="6" placeholder="Juma Ally, 0712345678, 100000&#10;Asha Said, 0765432198, 50000" class="w-full border rounded-lg px-3 py-2 text-sm font-mono"></textarea>
+                <textarea name="import_text" rows="6" placeholder="Juma Ally, 0712345678, 100000&#10;Asha Said, 0765432198, 50000" class="w-full border rounded-lg px-3 py-2 text-sm font-mono">{{ old('import_text') }}</textarea>
                 <p class="text-xs text-gray-400 mt-1">One person per line — copy straight from WhatsApp or a spreadsheet.</p>
             </div>
             <div class="flex gap-2 pt-2">
@@ -155,5 +160,114 @@
         </form>
     </div>
 </div>
+
+@if (config('services.gemini.api_key'))
+<div id="importPledgePhotoModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+        <h3 class="font-semibold mb-1">Import from photo</h3>
+        <p class="text-xs text-gray-500 mb-4">Upload a photo of a pledge list — handwritten, printed, or a screenshot — and it'll be read automatically. Up to 4 photos, 10MB each.</p>
+
+        <div id="importPledgePhotoStep1">
+            <input type="file" id="importPledgePhotoInput" accept="image/*" multiple class="w-full border rounded-lg px-3 py-2 text-sm mb-3">
+            <div id="importPledgePhotoError" class="hidden text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3"></div>
+            <div class="flex gap-2 pt-1">
+                <button type="button" onclick="closeImportPledgePhotoModal()" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                <button type="button" onclick="extractPledgePhoto()" class="btn btn-primary flex-1 justify-center"><i class="fa-solid fa-wand-magic-sparkles"></i> Extract</button>
+            </div>
+        </div>
+
+        <div id="importPledgePhotoLoading" class="hidden text-center py-6">
+            <i class="fa-solid fa-spinner fa-spin text-2xl text-gray-400"></i>
+            <p class="text-sm text-gray-500 mt-2">Reading the pledge list…</p>
+        </div>
+
+        <!-- Temporary raw preview — editable review + confirm/save lands in the next phase, matching the Schedule page's photo import. -->
+        <div id="importPledgePhotoResults" class="hidden">
+            <p class="text-xs text-gray-500 mb-2">Found these pledgers (review &amp; edit coming next):</p>
+            <div id="importPledgePhotoResultsList" class="space-y-1 text-sm max-h-64 overflow-y-auto mb-3"></div>
+            <button type="button" onclick="closeImportPledgePhotoModal()" class="btn btn-ghost w-full justify-center">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const importPledgePhotoUrl = {{ Js::from(route('pledges.import-photo')) }};
+
+    function closeImportPledgePhotoModal() {
+        document.getElementById('importPledgePhotoModal').classList.add('hidden');
+        document.getElementById('importPledgePhotoInput').value = '';
+        document.getElementById('importPledgePhotoError').classList.add('hidden');
+        document.getElementById('importPledgePhotoStep1').classList.remove('hidden');
+        document.getElementById('importPledgePhotoLoading').classList.add('hidden');
+        document.getElementById('importPledgePhotoResults').classList.add('hidden');
+    }
+
+    async function extractPledgePhoto() {
+        const input = document.getElementById('importPledgePhotoInput');
+        const errorEl = document.getElementById('importPledgePhotoError');
+        errorEl.classList.add('hidden');
+
+        if (!input.files || input.files.length === 0) {
+            errorEl.textContent = 'Choose at least one photo first.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        if (input.files.length > 4) {
+            errorEl.textContent = 'Up to 4 photos at a time.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        const formData = new FormData();
+        for (const file of input.files) formData.append('photos[]', file);
+
+        document.getElementById('importPledgePhotoStep1').classList.add('hidden');
+        document.getElementById('importPledgePhotoLoading').classList.remove('hidden');
+
+        try {
+            const res = await fetch(importPledgePhotoUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': {{ Js::from(csrf_token()) }}, 'Accept': 'application/json' },
+                body: formData,
+            });
+            const data = await res.json();
+
+            document.getElementById('importPledgePhotoLoading').classList.add('hidden');
+
+            if (!res.ok) {
+                document.getElementById('importPledgePhotoStep1').classList.remove('hidden');
+                errorEl.textContent = data.error || 'Something went wrong reading that photo. Try again.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            const list = document.getElementById('importPledgePhotoResultsList');
+            list.innerHTML = '';
+            data.items.forEach(function (item) {
+                const row = document.createElement('div');
+                row.className = 'border rounded-lg px-3 py-2';
+
+                const name = document.createElement('div');
+                name.className = 'font-medium';
+                name.textContent = item.name;
+
+                const meta = document.createElement('div');
+                meta.className = 'text-xs text-gray-500';
+                meta.textContent = Number(item.amount).toLocaleString() + (item.phone ? ' — ' + item.phone : '');
+
+                row.appendChild(name);
+                row.appendChild(meta);
+                list.appendChild(row);
+            });
+            document.getElementById('importPledgePhotoResults').classList.remove('hidden');
+        } catch (e) {
+            document.getElementById('importPledgePhotoLoading').classList.add('hidden');
+            document.getElementById('importPledgePhotoStep1').classList.remove('hidden');
+            errorEl.textContent = 'Could not reach the server. Check your connection and try again.';
+            errorEl.classList.remove('hidden');
+        }
+    }
+</script>
+@endif{{-- gemini api key configured --}}
 @endif
 @endsection

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\AuthorizesEventOwnership;
 use App\Models\ScheduleItem;
 use App\Services\BeemSmsService;
+use App\Services\DocxTextExtractor;
 use App\Services\MessageTemplateService;
 use App\Services\ScheduleImportService;
 use Illuminate\Http\RedirectResponse;
@@ -90,7 +91,7 @@ class ScheduleController extends Controller
      * parsed) are skipped rather than blocking the whole import, and the result is reported
      * back the same way pledge imports are.
      */
-    public function importText(Request $request): RedirectResponse
+    public function importText(Request $request, DocxTextExtractor $docx): RedirectResponse
     {
         $event = app('currentEvent');
 
@@ -105,7 +106,7 @@ class ScheduleController extends Controller
             $file = $request->file('import_file');
 
             $rawText = strtolower($file->getClientOriginalExtension()) === 'docx'
-                ? $this->extractDocxText($file->getRealPath())
+                ? $docx->extract($file->getRealPath())
                 : file_get_contents($file->getRealPath());
         } elseif ($request->filled('import_text')) {
             $rawText = $request->input('import_text');
@@ -157,34 +158,6 @@ class ScheduleController extends Controller
 
         return back()->with('status', "Imported {$imported} schedule item(s)"
             .($skipped > 0 ? ", skipped {$skipped} invalid row(s)" : '').'.');
-    }
-
-    /**
-     * Word .docx files are a zip archive of XML — this reads word/document.xml directly via
-     * PHP's built-in ZipArchive (already available; the Dockerfile installs the zip
-     * extension) rather than pulling in a new composer dependency just for this. Paragraph
-     * breaks become newlines before stripping tags, so each line of the original document
-     * comes through as one line of text.
-     */
-    private function extractDocxText(string $path): string
-    {
-        $zip = new \ZipArchive;
-
-        if ($zip->open($path) !== true) {
-            return '';
-        }
-
-        $xml = $zip->getFromName('word/document.xml');
-        $zip->close();
-
-        if ($xml === false) {
-            return '';
-        }
-
-        $xml = str_replace(['</w:p>', '<w:br/>', '<w:br />'], "\n", $xml);
-        $text = strip_tags($xml);
-
-        return html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 
     // ---- Broadcast SMS ----------------------------------------------------------------
