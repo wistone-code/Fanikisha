@@ -59,7 +59,7 @@ class ScheduleImportService
                 identifiable schedule items, return an empty array: []
                 TEXT;
 
-            $model = 'gemini-2.5-flash';
+            $model = 'gemini-3.6-flash';
 
             $response = Http::timeout(60)->post(
                 "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}",
@@ -94,10 +94,7 @@ class ScheduleImportService
                     'body' => $response->body(),
                 ]);
 
-                // TEMPORARY: surfacing the real API error directly in the UI while we
-                // diagnose the first-run failure — revert to the generic message once
-                // this is confirmed working.
-                return ['successful' => false, 'error' => 'Gemini error ('.$response->status().'): '.str($response->body())->limit(300)];
+                return ['successful' => false, 'error' => 'Could not reach the extraction service. Try again.'];
             }
 
             $text = trim($response->json('candidates.0.content.parts.0.text') ?? '');
@@ -132,8 +129,7 @@ class ScheduleImportService
         } catch (Throwable $e) {
             Log::error('Schedule photo import exception', ['message' => $e->getMessage()]);
 
-            // TEMPORARY: see note above — revert to the generic message once confirmed working.
-            return ['successful' => false, 'error' => 'Exception: '.$e->getMessage()];
+            return ['successful' => false, 'error' => 'Could not reach the extraction service. Try again.'];
         }
     }
 }
