@@ -117,6 +117,13 @@
         el.classList.remove('hidden');
         el.className = 'card p-5 mt-4'; // reset any alert styling from a previous scan
 
+        // Every result closes the camera — one scan attempt per guest, whether
+        // it succeeds, is a duplicate, or isn't recognized at all. The operator
+        // deliberately taps "Start camera" again for the next attempt, rather
+        // than it staying open and possibly catching a stray scan before
+        // they're ready to move on.
+        stopScanning();
+
         if (!data.found) {
             el.innerHTML = '<div class="text-red-600 font-semibold"><i class="fa-solid fa-circle-xmark"></i> No matching invitation found.</div>';
             showScanToast('<i class="fa-solid fa-circle-xmark"></i> No matching invitation found', 'error');
@@ -137,10 +144,6 @@
 
         addArrival(data.id, data.name, data.checked_in_at);
         bumpCheckedInCount();
-        stopScanning(); // close the camera after a genuine new check-in — the
-                         // operator taps "Start camera" again for the next guest,
-                         // rather than it staying open and possibly catching a
-                         // stray scan before they're ready.
     }
 
     function addArrival(id, name, checkedInAt) {
