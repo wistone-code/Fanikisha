@@ -73,7 +73,12 @@
                             @php($isAdmin = $event && auth()->user()->isAdminOn($event))
                             @if ($event)
                                 @php($routeNames = ['home' => 'dashboard', 'financial' => 'financial.index', 'pledges' => 'pledges.index', 'providers' => 'providers.index', 'committees' => 'committees.index', 'schedule' => 'schedule.index', 'team' => 'team.index', 'invitations' => 'guests.index', 'settings' => 'event.settings'])
+                                @php($lastGroup = null)
                                 @foreach (app(\App\Services\NavLabelService::class)->itemsFor($event, $isAdmin) as $item)
+                                    @if ($item['group'] !== $lastGroup && $item['group'] !== null)
+                                        <div class="px-3 {{ $lastGroup === null ? 'pt-2' : 'pt-3' }} pb-1 text-[10px] font-bold tracking-wider text-gray-400">{{ strtoupper($item['group']) }}</div>
+                                    @endif
+                                    @php($lastGroup = $item['group'])
                                     <a href="{{ route($routeNames[$item['id']]) }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">{{ $item['label'] }}</a>
                                 @endforeach
                             @endif
