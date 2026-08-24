@@ -191,7 +191,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
 
             Route::post('/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
             Route::post('/schedule/import-photo', [ScheduleController::class, 'importPhoto'])->name('schedule.import-photo');
-            Route::patch('/schedule/message', [ScheduleController::class, 'updateMessage'])->name('schedule.message');
+            Route::post('/schedule/import-text', [ScheduleController::class, 'importText'])->name('schedule.import-text');
             Route::post('/schedule/broadcast', [ScheduleController::class, 'broadcast'])->name('schedule.broadcast');
             Route::patch('/schedule/{item}', [ScheduleController::class, 'update'])->name('schedule.update');
             Route::delete('/schedule/{item}', [ScheduleController::class, 'destroy'])->name('schedule.destroy');

@@ -62,14 +62,26 @@ class MessageTemplateService
         ]);
     }
 
-    /** Placeholders: {event} {place} {date} */
+    /** Formats every schedule item as a text list — this is what "Share" sends. */
     public function forSchedule(Event $event): string
     {
-        return strtr($event->messageOrDefault('schedule'), [
-            '{event}' => $event->name,
-            '{place}' => $event->place ?? '',
-            '{date}' => $event->event_date->format('d.m.Y'),
-        ]);
+        $items = $event->scheduleItems;
+
+        if ($items->isEmpty()) {
+            return '';
+        }
+
+        $list = $items->map(function ($item) {
+            $line = $item->date->format('d.m.Y').' — '.$item->title;
+
+            if ($item->time) {
+                $line .= ' at '.\Carbon\Carbon::parse($item->time)->format('g:i A');
+            }
+
+            return $line;
+        })->implode("\n");
+
+        return "{$event->name} — Schedule:\n{$list}";
     }
 
     /** Funeral announcement. Pass null $pledge for the group-broadcast case ("Everyone"). */

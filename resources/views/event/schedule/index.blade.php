@@ -24,6 +24,7 @@
         </div>
         @endif
         @if ($isAdmin)
+        <button onclick="document.getElementById('importScheduleModal').classList.remove('hidden')" class="btn btn-ghost"><i class="fa-solid fa-file-import"></i> Import</button>
         @if (config('services.anthropic.api_key'))
         <button onclick="document.getElementById('importPhotoModal').classList.remove('hidden')" class="btn btn-ghost"><i class="fa-solid fa-camera"></i> Import from photo</button>
         @endif
@@ -78,23 +79,6 @@
 </div>
 
 @if ($isAdmin)
-<div class="card p-5 mb-4 max-w-xl">
-    <div class="text-xs font-semibold mb-2">Broadcast message <span class="text-gray-400 font-normal">— use {event}, {place}, {date}. Write your own — there's no starter text.</span></div>
-    <form method="POST" action="{{ route('schedule.message') }}" class="mb-4">
-        @csrf @method('PATCH')
-        <textarea name="schedule_message" rows="5" placeholder="Write the schedule announcement…" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('schedule') }}</textarea>
-        @error('schedule_message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
-        <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save message</button>
-    </form>
-    @if (trim($broadcastMessage) === '')
-    <p class="text-xs text-gray-400 border-t pt-4">Save a message above, then use "Share" at the top of the page to text all pledgers.</p>
-    @elseif ($pledgers->isEmpty())
-    <p class="text-xs text-gray-400 border-t pt-4">No contacts with a phone number to message.</p>
-    @endif
-</div>
-@endif
-
-@if ($isAdmin)
 <div id="addScheduleModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6">
         <h3 class="font-semibold mb-4">Add schedule item</h3>
@@ -108,6 +92,31 @@
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('addScheduleModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
                 <button class="btn btn-primary flex-1 justify-center">Add item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="importScheduleModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 max-h-[85vh] overflow-y-auto">
+        <h3 class="font-semibold mb-1">Import schedule</h3>
+        <p class="text-xs text-gray-500 mb-4">Add many at once — upload a CSV, plain text, or Word (.docx) file, or paste rows directly. Either way, each line should be: <strong>Title, Date, Time</strong> (time is optional).</p>
+        <form method="POST" action="{{ route('schedule.import-text') }}" enctype="multipart/form-data" class="space-y-4">
+            @csrf
+            <div>
+                <label class="text-xs font-semibold">Upload a file</label>
+                <input type="file" name="import_file" accept=".csv,.txt,.docx" class="w-full border rounded-lg px-3 py-2 text-sm">
+                @error('import_file')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+            </div>
+            <div class="text-center text-xs text-gray-400">— or —</div>
+            <div>
+                <label class="text-xs font-semibold">Paste rows</label>
+                <textarea name="import_text" rows="6" placeholder="Reception, 16 Aug 2026, 15:00&#10;Dinner, 16 Aug 2026, 18:30" class="w-full border rounded-lg px-3 py-2 text-sm font-mono"></textarea>
+                <p class="text-xs text-gray-400 mt-1">One item per line — copy straight from WhatsApp or a spreadsheet.</p>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('importScheduleModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                <button class="btn btn-primary flex-1 justify-center">Import</button>
             </div>
         </form>
     </div>
