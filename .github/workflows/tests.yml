@@ -37,4 +37,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t fanikisha-build-check .
+        # --progress=plain forces BuildKit to print each RUN command's full
+        # stdout/stderr into the log. Without it, a failing step (like the
+        # composer install below) often only shows a generic "did not
+        # complete successfully" summary, with no way to see what composer
+        # actually said the problem was.
+        run: docker build --progress=plain -t fanikisha-build-check .
