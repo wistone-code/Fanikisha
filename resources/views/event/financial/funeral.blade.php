@@ -13,6 +13,7 @@
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-sack-dollar"></i> Funeral budget</div><div class="text-xl font-semibold mt-1">{{ number_format($stats['budget']) }}</div><div class="text-xs text-gray-400 mt-1">sum of providers</div></div>
+    <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-money-bill-wave"></i> Expenditure</div><div class="text-xl font-semibold mt-1">{{ number_format($stats['expenditure']) }}</div><div class="text-xs text-gray-400 mt-1">paid to providers</div></div>
     <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-vault"></i> Total condolences collected</div><div class="text-xl font-semibold mt-1">{{ number_format($stats['collected']) }}</div></div>
     <div class="card p-5">
         <div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-arrows-left-right"></i> Budget variance</div>

@@ -115,12 +115,14 @@ class Event extends Model
         $totalPledged = $this->pledges()->sum('amount');
         $collected = $this->pledges()->sum('paid');
         $budget = $this->providers()->sum('budget');
+        $expenditure = $this->providers()->sum('paid');
 
         return [
             'total_pledged' => (float) $totalPledged,
             'collected' => (float) $collected,
             'remain' => (float) ($totalPledged - $collected),
             'budget' => (float) $budget,
+            'expenditure' => (float) $expenditure,
             'variance' => (float) ($budget - $collected),
             'pledge_count' => $this->pledges()->count(),
         ];
