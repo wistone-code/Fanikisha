@@ -11,7 +11,7 @@ class Pledge extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['event_id', 'name', 'phone', 'amount', 'paid', 'invite_token', 'pay_token', 'checked_in_at', 'card_type'];
+    protected $fillable = ['event_id', 'name', 'phone', 'amount', 'paid', 'invite_token', 'pay_token', 'checked_in_at', 'card_type', 'rsvp_status', 'rsvp_at'];
 
     protected function casts(): array
     {
@@ -19,6 +19,7 @@ class Pledge extends Model
             'amount' => 'decimal:2',
             'paid' => 'decimal:2',
             'checked_in_at' => 'datetime',
+            'rsvp_at' => 'datetime',
         ];
     }
 
@@ -45,6 +46,16 @@ class Pledge extends Model
     public function isCheckedIn(): bool
     {
         return ! empty($this->checked_in_at);
+    }
+
+    /** "Attending" / "Not attending" / "Awaiting response" — for display, e.g. on the Pledges list. */
+    public function rsvpLabel(): string
+    {
+        return match ($this->rsvp_status) {
+            'attending' => 'Attending',
+            'not_attending' => 'Not attending',
+            default => 'Awaiting response',
+        };
     }
 
     /** Completed / Overdue / Pending — used by the Pledge status donut chart. */

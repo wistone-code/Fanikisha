@@ -30,7 +30,39 @@
             <p class="text-sm text-gray-500 mb-1">{{ $event->event_date->format('l, F j, Y') }}</p>
             @if ($event->place)<p class="text-sm text-gray-500 mb-4">{{ $event->place }}</p>@endif
             <p class="text-sm mt-4">Dear {{ $pledge->name }}, thank you for your contribution — we look forward to celebrating with you!</p>
+
             <div class="border-t mt-6 pt-5">
+                @if (! $pledge->rsvp_status)
+                <p class="text-sm font-semibold text-gray-700 mb-3">Will you be attending?</p>
+                <form method="POST" action="{{ route('guest.rsvp.respond', $pledge->invite_token) }}" class="flex gap-2">
+                    @csrf
+                    <button name="response" value="attending" class="btn btn-primary flex-1"><i class="fa-solid fa-check"></i> Yes, I'll be there</button>
+                    <button name="response" value="not_attending" class="btn btn-ghost flex-1">Can't make it</button>
+                </form>
+                @elseif ($pledge->rsvp_status === 'attending')
+                <div id="rsvpConfirmed">
+                    <p class="text-sm font-semibold" style="color:{{ $theme['primary'] }};"><i class="fa-solid fa-circle-check"></i> You're confirmed as attending!</p>
+                    <button onclick="document.getElementById('rsvpConfirmed').classList.add('hidden');document.getElementById('rsvpChange').classList.remove('hidden');" class="text-xs text-gray-400 underline mt-2">Change response</button>
+                </div>
+                <form id="rsvpChange" class="hidden flex gap-2 mt-2" method="POST" action="{{ route('guest.rsvp.respond', $pledge->invite_token) }}">
+                    @csrf
+                    <button name="response" value="attending" class="btn btn-primary flex-1"><i class="fa-solid fa-check"></i> Yes, I'll be there</button>
+                    <button name="response" value="not_attending" class="btn btn-ghost flex-1">Can't make it</button>
+                </form>
+                @else
+                <div id="rsvpConfirmed">
+                    <p class="text-sm font-semibold text-gray-500">Thanks for letting us know — you'll be missed!</p>
+                    <button onclick="document.getElementById('rsvpConfirmed').classList.add('hidden');document.getElementById('rsvpChange').classList.remove('hidden');" class="text-xs text-gray-400 underline mt-2">Change response</button>
+                </div>
+                <form id="rsvpChange" class="hidden flex gap-2 mt-2" method="POST" action="{{ route('guest.rsvp.respond', $pledge->invite_token) }}">
+                    @csrf
+                    <button name="response" value="attending" class="btn btn-primary flex-1"><i class="fa-solid fa-check"></i> Yes, I'll be there</button>
+                    <button name="response" value="not_attending" class="btn btn-ghost flex-1">Can't make it</button>
+                </form>
+                @endif
+            </div>
+
+            <div class="border-t mt-5 pt-5">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=20&ecc=H&data={{ urlencode($pledge->inviteLink()) }}" alt="Entrance check-in QR code" class="mx-auto rounded-lg border" style="max-width:220px;width:100%;height:auto;">
                 <p class="text-xs text-gray-400 mt-2">Show this at the entrance for check-in</p>
             </div>

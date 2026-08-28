@@ -52,6 +52,7 @@
                     <th class="px-4 py-3" data-sort="number">Remain</th>
                     <th class="px-4 py-3" data-sort="text">Phone</th>
                 @endif
+                <th class="px-4 py-3" data-sort="text">RSVP</th>
                 @if ($isAdmin)<th class="px-4 py-3"></th>@endif
             </tr>
         </thead>
@@ -67,6 +68,17 @@
                     <td class="px-4 py-3">{{ number_format($p->remaining()) }}</td>
                     <td class="px-4 py-3">{{ $p->phone ?? '—' }}</td>
                 @endif
+                <td class="px-4 py-3">
+                    @if (! $p->invite_token)
+                    <span class="text-gray-400 text-xs">—</span>
+                    @elseif ($p->rsvp_status === 'attending')
+                    <span class="badge badge-admin"><i class="fa-solid fa-check text-[9px]"></i> Attending</span>
+                    @elseif ($p->rsvp_status === 'not_attending')
+                    <span class="text-xs text-gray-500">Not attending</span>
+                    @else
+                    <span class="text-xs text-gray-400">Awaiting response</span>
+                    @endif
+                </td>
                 @if ($isAdmin)
                 <td class="px-4 py-3 text-right whitespace-nowrap">
                     <button onclick="document.getElementById('editPledge{{ $p->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i></button>
@@ -105,7 +117,7 @@
             </div>
             @endif
             @empty
-            <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">No {{ strtolower($label) }} yet.</td></tr>
+            <tr><td colspan="7" class="px-4 py-10 text-center text-gray-400">No {{ strtolower($label) }} yet.</td></tr>
             @endforelse
         </tbody>
     </table>

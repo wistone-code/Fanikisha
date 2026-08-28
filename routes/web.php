@@ -43,6 +43,21 @@ Route::get('/rsvp/{token}', function (string $token) {
     return view('guest.rsvp', ['pledge' => $pledge, 'event' => $event, 'theme' => $theme]);
 })->name('guest.rsvp');
 
+// The guest's own attendance response — no auth, since the guest isn't a logged-in
+// user. The invite_token itself is the only "authorization" here, same as the RSVP
+// page and the check-in QR code both already rely on.
+Route::post('/rsvp/{token}/respond', function (string $token, \Illuminate\Http\Request $request) {
+    $pledge = \App\Models\Pledge::where('invite_token', $token)->firstOrFail();
+
+    $data = $request->validate([
+        'response' => ['required', 'in:attending,not_attending'],
+    ]);
+
+    $pledge->update(['rsvp_status' => $data['response'], 'rsvp_at' => now()]);
+
+    return redirect()->route('guest.rsvp', $token);
+})->name('guest.rsvp.respond');
+
 // Publicly servable event card photo (no auth — guests view this on the RSVP page above).
 Route::get('/rsvp/{token}/photo', function (string $token) {
     $pledge = \App\Models\Pledge::where('invite_token', $token)->firstOrFail();
