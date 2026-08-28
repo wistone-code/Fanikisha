@@ -16,23 +16,47 @@ class UserManagementController extends Controller
     /**
      * The System Admin's only screen. Deliberately has zero visibility into any
      * event's data — this query only ever touches `users` and `event_members.role`,
-     * plus the event's SMS quota/usage numbers (cost-control figures, not content).
+     * plus each event's name/type/date (identifying metadata, not content) and its
+     * SMS quota/usage numbers (cost-control figures, not content).
      */
     public function index(Request $request): View
     {
         $search = trim((string) $request->get('q'));
+        $status = $request->get('status', 'all'); // all | attention | no_event
 
-        $accounts = User::query()
-            ->where('is_super_user', false)
-            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+        $base = User::query()->where('is_super_user', false);
+
+        if ($search) {
+            $base->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('username', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
-            }))
-            ->with(['creator', 'eventMemberships'])
+            });
+        }
+
+        $atQuota = function ($q) {
+            $q->whereNotNull('sms_quota')->whereColumn('sms_sent_count', '>=', 'sms_quota');
+        };
+
+        // Counted against the search-filtered set but BEFORE the status filter below,
+        // so the KPI strip always reflects true totals regardless of which chip is
+        // currently active — clicking "Needs attention" narrows the table, not the
+        // numbers above it that tell you it's worth clicking.
+        $totalAccounts = (clone $base)->count();
+        $atQuotaCount = (clone $base)->whereHas('eventMemberships.event', $atQuota)->count();
+        $noEventCount = (clone $base)->whereDoesntHave('eventMemberships')->count();
+
+        if ($status === 'attention') {
+            $base->whereHas('eventMemberships.event', $atQuota);
+        } elseif ($status === 'no_event') {
+            $base->whereDoesntHave('eventMemberships');
+        }
+
+        $accounts = $base->with(['creator', 'eventMemberships.event'])
             ->latest()
-            ->get()
-            ->map(function (User $u) {
+            ->paginate(20)
+            ->withQueryString()
+            ->through(function (User $u) {
                 $membership = $u->eventMemberships->first();
                 $u->role_label = $membership
                     ? ($membership->role === 'admin' ? 'Admin' : 'Viewer')
@@ -41,15 +65,21 @@ class UserManagementController extends Controller
                     ? ($u->creator->is_super_user ? "{$u->creator->name} (System)" : $u->creator->name)
                     : '—';
 
-                $event = $u->currentEvent();
+                $event = $membership?->event;
                 $u->event_id = $event?->id;
+                $u->event_name = $event?->name;
+                $u->event_type = $event?->event_type;
+                $u->event_date = $event?->event_date;
                 $u->sms_quota = $event?->sms_quota;
                 $u->sms_sent_count = $event?->sms_sent_count;
+                $u->at_quota = $event && $event->sms_quota !== null && $event->sms_sent_count >= $event->sms_quota;
 
                 return $u;
             });
 
-        return view('admin.users.index', compact('accounts', 'search'));
+        return view('admin.users.index', compact(
+            'accounts', 'search', 'status', 'totalAccounts', 'atQuotaCount', 'noEventCount'
+        ));
     }
 
     public function store(Request $request, PasswordGeneratorService $passwords): RedirectResponse
