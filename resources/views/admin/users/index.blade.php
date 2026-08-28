@@ -12,36 +12,65 @@
     </button>
 </div>
 
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-users"></i> Total accounts</div><div class="text-xl font-semibold mt-1">{{ $totalAccounts }}</div></div>
+    <a href="{{ route('admin.users.index', ['status' => 'attention', 'q' => $search ?: null]) }}" class="card p-5 block {{ $atQuotaCount > 0 ? 'ring-1 ring-red-200' : '' }}">
+        <div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> Needs attention</div>
+        <div class="text-xl font-semibold mt-1 {{ $atQuotaCount > 0 ? 'text-red-600' : '' }}">{{ $atQuotaCount }}</div>
+        <div class="text-xs text-gray-400 mt-1">at/over SMS quota</div>
+    </a>
+    <a href="{{ route('admin.users.index', ['status' => 'no_event', 'q' => $search ?: null]) }}" class="card p-5 block">
+        <div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-hourglass-half"></i> No event yet</div>
+        <div class="text-xl font-semibold mt-1">{{ $noEventCount }}</div>
+    </a>
+</div>
+
 <div class="card p-4 mb-4">
-    <form method="GET">
-        <input type="text" name="q" value="{{ $search }}" placeholder="Search by name or username…" class="w-full border rounded-lg px-3 py-2 text-sm">
+    <form method="GET" class="flex flex-wrap items-center gap-3">
+        <input type="hidden" name="status" value="{{ $status }}">
+        <input type="text" name="q" value="{{ $search }}" placeholder="Search by name or username…" class="flex-1 min-w-[200px] border rounded-lg px-3 py-2 text-sm">
+        <div class="flex gap-1 text-xs font-semibold">
+            <a href="{{ route('admin.users.index', ['q' => $search ?: null]) }}" class="px-3 py-1.5 rounded-full {{ $status === 'all' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500' }}">All</a>
+            <a href="{{ route('admin.users.index', ['status' => 'attention', 'q' => $search ?: null]) }}" class="px-3 py-1.5 rounded-full {{ $status === 'attention' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500' }}">Needs attention</a>
+            <a href="{{ route('admin.users.index', ['status' => 'no_event', 'q' => $search ?: null]) }}" class="px-3 py-1.5 rounded-full {{ $status === 'no_event' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500' }}">No event yet</a>
+        </div>
     </form>
 </div>
 
 <div class="card overflow-x-auto">
-    <table class="w-full text-sm">
+    <table class="w-full text-sm sortable-table">
         <thead>
             <tr class="text-left text-xs uppercase text-gray-400 border-b">
-                <th class="px-4 py-3">Username</th>
-                <th class="px-4 py-3">Email</th>
-                <th class="px-4 py-3">Role</th>
-                <th class="px-4 py-3">SMS Quota</th>
-                <th class="px-4 py-3">Created by</th>
+                <th class="px-4 py-3" data-sort="text">Username</th>
+                <th class="px-4 py-3" data-sort="text">Email</th>
+                <th class="px-4 py-3" data-sort="text">Role</th>
+                <th class="px-4 py-3">Event</th>
+                <th class="px-4 py-3" data-sort="number">SMS Quota</th>
+                <th class="px-4 py-3" data-sort="text">Created by</th>
                 <th class="px-4 py-3"></th>
             </tr>
         </thead>
         <tbody>
             @forelse ($accounts as $account)
-            <tr class="border-b last:border-0">
+            <tr class="border-b last:border-0 {{ $account->at_quota ? 'bg-red-50' : '' }}">
                 <td class="px-4 py-3 font-semibold">{{ $account->username }}</td>
                 <td class="px-4 py-3">{{ $account->email }}</td>
                 <td class="px-4 py-3"><span class="badge {{ $account->role_label === 'Admin' ? 'badge-admin' : 'badge-viewer' }}">{{ $account->role_label }}</span></td>
                 <td class="px-4 py-3">
+                    @if ($account->event_name)
+                    <div class="font-medium">{{ $account->event_name }}</div>
+                    <div class="text-xs text-gray-400">{{ $account->event_type }} @if($account->event_date) &middot; {{ $account->event_date->format('M j, Y') }} @endif</div>
+                    @else
+                    <span class="text-gray-400 text-xs">—</span>
+                    @endif
+                </td>
+                <td class="px-4 py-3">
                     @if (! $account->event_id)
                     <span class="text-gray-400 text-xs">No event yet</span>
                     @else
-                    <span class="text-xs {{ $account->sms_quota !== null && $account->sms_sent_count >= $account->sms_quota ? 'text-red-600 font-semibold' : 'text-gray-600' }}">
+                    <span class="text-xs {{ $account->at_quota ? 'text-red-600 font-semibold' : 'text-gray-600' }}">
                         {{ $account->sms_sent_count }} / {{ $account->sms_quota ?? '∞' }}
+                        @if ($account->at_quota)<i class="fa-solid fa-triangle-exclamation ml-1"></i>@endif
                     </span>
                     <button onclick="document.getElementById('editQuota{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1 !px-2 ml-1"><i class="fa-solid fa-pen text-xs"></i></button>
                     @endif
@@ -92,11 +121,35 @@
             </div>
             @endif
             @empty
-            <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">No accounts yet. Create the first one to get started.</td></tr>
+            <tr><td colspan="7" class="px-4 py-10 text-center text-gray-400">
+                @if ($status !== 'all' || $search)
+                No accounts match this filter.
+                @else
+                No accounts yet. Create the first one to get started.
+                @endif
+            </td></tr>
             @endforelse
         </tbody>
     </table>
 </div>
+
+@if ($accounts->hasPages())
+<div class="flex justify-between items-center mt-4 text-sm">
+    <div class="text-xs text-gray-400">Showing {{ $accounts->firstItem() }}–{{ $accounts->lastItem() }} of {{ $accounts->total() }}</div>
+    <div class="flex gap-2">
+        @if ($accounts->onFirstPage())
+        <span class="btn btn-ghost opacity-40 cursor-not-allowed">Previous</span>
+        @else
+        <a href="{{ $accounts->previousPageUrl() }}" class="btn btn-ghost">Previous</a>
+        @endif
+        @if ($accounts->hasMorePages())
+        <a href="{{ $accounts->nextPageUrl() }}" class="btn btn-ghost">Next</a>
+        @else
+        <span class="btn btn-ghost opacity-40 cursor-not-allowed">Next</span>
+        @endif
+    </div>
+</div>
+@endif
 
 <div id="newAccountModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6">
