@@ -5,6 +5,7 @@
 <div class="flex gap-6 border-b mb-5 text-sm font-semibold">
     <span class="pb-3 border-b-2" style="border-color:var(--primary);color:var(--primary);">Event invitation</span>
     <a href="{{ route('guests.index', ['tab' => 'meeting']) }}" class="pb-3 border-b-2 border-transparent text-gray-400">Meeting invitation</a>
+    <a href="{{ route('guests.index', ['tab' => 'rsvp']) }}" class="pb-3 border-b-2 border-transparent text-gray-400">RSVP</a>
     @if ($isAdmin)<a href="{{ route('checkin.index') }}" class="pb-3 border-b-2 border-transparent text-gray-400">Check-in</a>@endif
 </div>
 

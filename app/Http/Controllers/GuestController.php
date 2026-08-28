@@ -34,6 +34,16 @@ class GuestController extends Controller
             ]);
         }
 
+        if ($tab === 'rsvp') {
+            $invited = $event->pledges()->whereNotNull('invite_token')->get();
+
+            return view('event.guests.rsvp-status', [
+                'event' => $event,
+                'invited' => $invited,
+                'isAdmin' => $isAdmin,
+            ]);
+        }
+
         $pledges = $isAdmin ? $event->pledges : $event->pledges()->whereColumn('paid', '>=', 'amount')->where('amount', '>', 0)->get();
 
         return view('event.guests.event-invitation', compact('event', 'pledges', 'isAdmin'));

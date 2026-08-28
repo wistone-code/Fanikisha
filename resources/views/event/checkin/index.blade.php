@@ -5,6 +5,7 @@
 <div class="flex gap-6 border-b mb-5 text-sm font-semibold">
     <a href="{{ route('guests.index') }}" class="pb-3 border-b-2 border-transparent text-gray-400">Event invitation</a>
     <a href="{{ route('guests.index', ['tab' => 'meeting']) }}" class="pb-3 border-b-2 border-transparent text-gray-400">Meeting invitation</a>
+    <a href="{{ route('guests.index', ['tab' => 'rsvp']) }}" class="pb-3 border-b-2 border-transparent text-gray-400">RSVP</a>
     <span class="pb-3 border-b-2" style="border-color:var(--primary);color:var(--primary);">Check-in</span>
 </div>
 
