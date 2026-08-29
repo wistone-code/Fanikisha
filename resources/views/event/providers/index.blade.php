@@ -62,7 +62,15 @@
                         <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ $p->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div><label class="text-xs font-semibold">Service</label><input type="text" name="service" value="{{ $p->service }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div><label class="text-xs font-semibold">Budget</label><input type="number" name="budget" value="{{ $p->budget }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-                        <div><label class="text-xs font-semibold">Paid</label><input type="number" name="paid" value="{{ $p->paid }}" step="0.01" min="0" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="text-xs font-semibold">Add payment</label><input type="number" name="add_payment" placeholder="0" step="0.01" min="0" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div class="text-xs text-gray-400">
+                            Already paid: {{ number_format($p->paid) }}.
+                            <button type="button" onclick="document.getElementById('correctPaidProvider{{ $p->id }}').classList.toggle('hidden')" class="underline">Made a mistake? Correct total instead</button>
+                        </div>
+                        <div id="correctPaidProvider{{ $p->id }}" class="hidden">
+                            <label class="text-xs font-semibold">Correct total paid</label>
+                            <input type="number" name="paid_correction" value="{{ $p->paid }}" step="0.01" min="0" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
                         <div><label class="text-xs font-semibold">Contact (phone)</label>
                             <div class="flex gap-1">
                                 <input type="tel" id="phone-edit-{{ $p->id }}" name="phone" value="{{ $p->phone }}" class="w-full border rounded-lg px-3 py-2 text-sm">

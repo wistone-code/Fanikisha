@@ -46,12 +46,24 @@ class ProviderController extends Controller
         $data = $this->validated($request);
         $previousPaid = (float) $provider->paid;
 
+        // "Add payment" is the normal path — the field is blank on the Edit
+        // form and whatever's typed there is added on top of what's already
+        // paid, so the admin never has to re-type or remember the running
+        // total. "Correct total" is a separate, deliberate override for
+        // fixing a mistaken entry, and wins if both somehow arrive at once.
+        $newPaid = $previousPaid;
+        if (($data['paid_correction'] ?? '') !== '') {
+            $newPaid = (float) $data['paid_correction'];
+        } elseif (($data['add_payment'] ?? '') !== '') {
+            $newPaid = $previousPaid + (float) $data['add_payment'];
+        }
+
         $provider->update([
-            ...$data,
+            'name' => $data['name'],
+            'service' => $data['service'],
+            'budget' => $data['budget'],
             'phone' => $phones->normalize($data['phone'] ?? null),
-            // Left blank on the Edit form means "don't change it" — without this,
-            // a blank value gets saved into the decimal column and crashes.
-            'paid' => ($data['paid'] ?? '') !== '' ? $data['paid'] : $provider->paid,
+            'paid' => $newPaid,
         ]);
 
         $status = 'Provider updated';
@@ -86,7 +98,8 @@ class ProviderController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'service' => ['required', 'string', 'max:255'],
             'budget' => ['required', 'numeric', 'min:0'],
-            'paid' => ['nullable', 'numeric', 'min:0'],
+            'add_payment' => ['nullable', 'numeric', 'min:0'],
+            'paid_correction' => ['nullable', 'numeric', 'min:0'],
             'phone' => ['nullable', 'string', 'max:32'],
         ]);
     }

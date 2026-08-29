@@ -106,7 +106,15 @@
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div><label class="text-xs font-semibold">Pledge amount</label><input type="number" name="amount" value="{{ $p->amount }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-                            <div><label class="text-xs font-semibold">Paid</label><input type="number" name="paid" value="{{ $p->paid }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                            <div><label class="text-xs font-semibold">Add payment</label><input type="number" name="add_payment" placeholder="0" min="0" step="0.01" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            Already paid: {{ number_format($p->paid) }}.
+                            <button type="button" onclick="document.getElementById('correctPaid{{ $p->id }}').classList.toggle('hidden')" class="underline">Made a mistake? Correct total instead</button>
+                        </div>
+                        <div id="correctPaid{{ $p->id }}" class="hidden">
+                            <label class="text-xs font-semibold">Correct total paid</label>
+                            <input type="number" name="paid_correction" value="{{ $p->paid }}" min="0" step="0.01" class="w-full border rounded-lg px-3 py-2 text-sm">
                         </div>
                         <div class="flex gap-2 pt-2">
                             <button type="button" onclick="document.getElementById('editPledge{{ $p->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
