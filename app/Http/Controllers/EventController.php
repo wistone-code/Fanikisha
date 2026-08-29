@@ -167,4 +167,23 @@ class EventController extends Controller
 
         return back()->with('status', 'Couple threshold saved');
     }
+
+    /**
+     * Which language the automated SMS templates use (payment confirmations,
+     * reminders, invitations, etc.) — a saved custom message is always sent
+     * exactly as written regardless of this setting; it only picks which
+     * default text is used when the admin hasn't written their own.
+     */
+    public function updateSmsLanguage(Request $request): RedirectResponse
+    {
+        $event = app('currentEvent');
+
+        $data = $request->validate([
+            'sms_language' => ['required', 'in:en,sw'],
+        ]);
+
+        $event->update(['sms_language' => $data['sms_language']]);
+
+        return back()->with('status', 'SMS language saved');
+    }
 }

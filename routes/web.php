@@ -176,6 +176,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
             Route::delete('/checkin/{pledge}', [CheckinController::class, 'undoCheckin'])->name('checkin.undo');
             Route::patch('/settings/payout', [EventController::class, 'updatePayout'])->name('event.settings.payout');
             Route::patch('/settings/couple-threshold', [EventController::class, 'updateCoupleThreshold'])->name('event.settings.couple-threshold');
+            Route::patch('/settings/sms-language', [EventController::class, 'updateSmsLanguage'])->name('event.settings.sms-language');
 
             Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');
             Route::post('/pledges/import', [PledgeController::class, 'import'])->name('pledges.import');

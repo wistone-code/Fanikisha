@@ -119,4 +119,18 @@
         <button class="btn btn-primary mt-2"><i class="fa-solid fa-check"></i> Save</button>
     </form>
 </div>
+
+<div class="card p-6 max-w-md mt-4">
+    <div class="text-sm font-semibold mb-1">SMS language</div>
+    <p class="text-xs text-gray-500 mb-3">Which language the automated SMS messages use — payment confirmations, reminders, invitations, and the rest. Only affects the default wording; any message you've already customized yourself keeps its own wording either way. (This is separate from the app's own interface language.)</p>
+    <form method="POST" action="{{ route('event.settings.sms-language') }}" class="space-y-3">
+        @csrf @method('PATCH')
+        <select name="sms_language" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="en" @selected($event->sms_language === 'en')>English</option>
+            <option value="sw" @selected($event->sms_language === 'sw')>Swahili</option>
+        </select>
+        @error('sms_language')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+        <button class="btn btn-primary mt-2"><i class="fa-solid fa-check"></i> Save</button>
+    </form>
+</div>
 @endsection

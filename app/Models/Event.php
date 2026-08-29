@@ -18,7 +18,7 @@ class Event extends Model
         'schedule_message',
         'reminder_auto_enabled', 'reminder_auto_frequency_days', 'reminder_auto_time', 'reminder_auto_last_sent_at',
         'sms_quota', 'sms_sent_count', 'card_photo', 'card_photo_mime',
-        'payout_phone', 'payout_network', 'couple_threshold_amount',
+        'payout_phone', 'payout_network', 'couple_threshold_amount', 'sms_language',
     ];
 
     /** Verified June 2026 against vodacom.co.tz, yas.co.tz/mixx-by-yas, airtel.co.tz, halotel.co.tz. */
@@ -138,17 +138,32 @@ class Event extends Model
      * starter text — the admin must write their own before sending, rather than
      * silently defaulting to placeholder content (which previously included a
      * hardcoded example bank account, easy to send by accident without editing it).
+     *
+     * Default text (only used when the admin hasn't written their own) follows
+     * sms_language — English or Swahili. A saved custom message is sent exactly
+     * as written either way, since the admin already chose its wording/language.
      */
     public function messageOrDefault(string $surface): string
     {
         $column = "{$surface}_message";
+        $sw = $this->sms_language === 'sw';
 
         return $this->{$column} ?: match ($surface) {
-            'provider' => 'Hello {name}, confirming your booking as our {service} provider for {event}. Budget: {budget}. Please reach out if you have any questions.',
-            'reminder' => 'Hi {name}, friendly reminder on {event} contribution: pledged {pledged}, paid {paid} so far, {remain} remaining. Pay here: {pay_link}. Thank you!',
-            'invitation' => "You're invited to {event}! Join us on {date}".($this->place ? ' at {place}' : '').'. Tap your link to RSVP: {link}',
-            'announcement' => 'Habari {name}, this is to inform you about {event}'.($this->place ? ' at {place}' : '').' on {date}. Your presence and support mean a lot to the family. Thank you.',
-            'committee' => 'Hello {name}, you have been elected as {role} on {committee} committee.',
+            'provider' => $sw
+                ? 'Habari {name}, tunathibitisha uteuzi wako kama mtoa huduma wa {service} kwa ajili ya {event}. Bajeti: {budget}. Wasiliana nasi endapo utakuwa na maswali.'
+                : 'Dear {name}, confirming your booking as our {service} provider for {event}. Budget: {budget}. Please reach out if you have any questions.',
+            'reminder' => $sw
+                ? 'Habari {name}, kikumbusho cha mchango wako wa {event}: uliahidi {pledged}, umeshalipa {paid}, umebakiza {remain}. Lipa hapa: {pay_link}. Asante!'
+                : 'Dear {name}, friendly reminder on {event} contribution: pledged {pledged}, paid {paid} so far, {remain} remaining. Pay here: {pay_link}. Thank you!',
+            'invitation' => $sw
+                ? 'Habari {name}, umealikwa kwenye {event}! Tujiunge tarehe {date}'.($this->place ? ' katika {place}' : '').'. Bofya kiungo chako kuthibitisha: {link}'
+                : "Dear {name}, you're invited to {event}! Join us on {date}".($this->place ? ' at {place}' : '').'. Tap your link to RSVP: {link}',
+            'announcement' => $sw
+                ? 'Habari {name}, hii ni taarifa kuhusu {event}'.($this->place ? ' katika {place}' : '').' tarehe {date}. Uwepo na msaada wako una maana kubwa kwa familia. Asante.'
+                : 'Dear {name}, this is to inform you about {event}'.($this->place ? ' at {place}' : '').' on {date}. Your presence and support mean a lot to the family. Thank you.',
+            'committee' => $sw
+                ? 'Habari {name}, umechaguliwa kuwa {role} katika kamati ya {committee}.'
+                : 'Dear {name}, you have been elected as {role} on {committee} committee.',
             default => '',
         };
     }

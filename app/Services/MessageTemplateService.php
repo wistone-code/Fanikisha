@@ -118,11 +118,16 @@ class MessageTemplateService
 
     /**
      * Payment confirmation sent to a provider after recording a payment.
-     * Fixed template (not user-editable via a saved message, unlike the others above).
+     * Fixed structure (not user-editable via a saved message, unlike the others
+     * above), but the language still follows the event's sms_language setting.
      */
     public function forProviderPayment(Event $event, Provider $provider): string
     {
-        return strtr('Dear {name}, we confirm receipt of your payment for {service} ({event}). Paid: {paid} of {budget}. Remaining: {remain}. Thank you!', [
+        $template = $event->sms_language === 'sw'
+            ? 'Habari {name}, tunathibitisha malipo yako kwa ajili ya {service} ({event}). Umelipa: {paid} kati ya {budget}. Kilichobaki: {remain}. Asante!'
+            : 'Dear {name}, we confirm receipt of your payment for {service} ({event}). Paid: {paid} of {budget}. Remaining: {remain}. Thank you!';
+
+        return strtr($template, [
             '{name}' => $provider->name,
             '{service}' => $provider->service,
             '{event}' => $event->name,
@@ -134,11 +139,16 @@ class MessageTemplateService
 
     /**
      * Payment confirmation sent to a pledger after recording a payment.
-     * Fixed template (not user-editable via a saved message, unlike the others above).
+     * Fixed structure (not user-editable via a saved message, unlike the others
+     * above), but the language still follows the event's sms_language setting.
      */
     public function forPledgePayment(Event $event, Pledge $pledge): string
     {
-        return strtr('Habari {name}, Umepunguza kiasi cha {paid}, bado {remain}. Asante', [
+        $template = $event->sms_language === 'sw'
+            ? 'Habari {name}, umepunguza kiasi cha {paid}, bado {remain}. Asante'
+            : "Dear {name}, thank you! We've recorded your payment of {paid}. Remaining balance: {remain}.";
+
+        return strtr($template, [
             '{name}' => $pledge->name,
             '{paid}' => number_format((float) $pledge->paid),
             '{remain}' => number_format($pledge->remaining()),
