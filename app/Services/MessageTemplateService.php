@@ -124,8 +124,8 @@ class MessageTemplateService
     public function forProviderPayment(Event $event, Provider $provider): string
     {
         $template = $event->sms_language === 'sw'
-            ? 'Habari {name}, tunathibitisha malipo yako kwa ajili ya {service} ({event}). Umelipa: {paid} kati ya {budget}. Kilichobaki: {remain}. Asante!'
-            : 'Dear {name}, we confirm receipt of your payment for {service} ({event}). Paid: {paid} of {budget}. Remaining: {remain}. Thank you!';
+            ? 'Habari {name}, kimelipwa kiasi cha {paid} kwa ajili ya {service} ({event}), kiasi kilichobaki {remain}. Asante!'
+            : 'Hello {name}, an amount of {paid} has been paid for {service} ({event}), remaining amount {remain}. Thank you!';
 
         return strtr($template, [
             '{name}' => $provider->name,
@@ -145,11 +145,12 @@ class MessageTemplateService
     public function forPledgePayment(Event $event, Pledge $pledge): string
     {
         $template = $event->sms_language === 'sw'
-            ? 'Habari {name}, umepunguza kiasi cha {paid}, bado {remain}. Asante'
-            : "Dear {name}, thank you! We've recorded your payment of {paid}. Remaining balance: {remain}.";
+            ? 'Habari {name}, umepunguza kiasi cha {paid} kwa ajili ya {event}, bado {remain}. Asante'
+            : "Dear {name}, thank you! We've recorded your payment of {paid} for {event}. Remaining balance: {remain}.";
 
         return strtr($template, [
             '{name}' => $pledge->name,
+            '{event}' => $event->name,
             '{paid}' => number_format((float) $pledge->paid),
             '{remain}' => number_format($pledge->remaining()),
         ]);
