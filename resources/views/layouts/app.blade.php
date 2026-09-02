@@ -99,17 +99,9 @@
             <div class="flex-1"></div>
 
             @auth
-            <div class="relative">
-                <button onclick="document.getElementById('userMenu').classList.toggle('hidden')" class="text-right px-2 py-1 rounded-lg hover:bg-white/10">
-                    <div class="text-sm font-semibold">{{ auth()->user()->name }}</div>
-                    <div class="text-xs opacity-75">{{ auth()->user()->is_super_user ? 'Admin' : ucfirst(app('currentEvent') ? auth()->user()->roleOn(app('currentEvent')) : '') }}</div>
-                </button>
-                <div id="userMenu" class="hidden absolute right-0 mt-1 w-48 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40">
-                    <button onclick="document.getElementById('changePasswordModal').classList.remove('hidden')" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Change password</button>
-                    <form method="POST" action="{{ route('logout') }}">@csrf
-                        <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">Logout</button>
-                    </form>
-                </div>
+            <div class="text-right px-2 py-1">
+                <div class="text-sm font-semibold">{{ auth()->user()->name }}</div>
+                <div class="text-xs opacity-75">{{ auth()->user()->is_super_user ? 'Admin' : ucfirst(app('currentEvent') ? auth()->user()->roleOn(app('currentEvent')) : '') }}</div>
             </div>
             @endauth
         </div>
