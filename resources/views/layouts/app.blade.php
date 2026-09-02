@@ -130,7 +130,7 @@
 </div>
 
 @auth
-<div id="accountSettingsModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
+<div id="accountSettingsModal" onclick="if(event.target===this) this.classList.add('hidden')" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6 my-8 space-y-6">
         <div class="flex justify-between items-center">
             <h3 class="font-semibold text-lg">Account settings</h3>
