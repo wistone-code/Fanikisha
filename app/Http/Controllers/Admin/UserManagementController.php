@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EventMember;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\PasswordGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -102,6 +103,8 @@ class UserManagementController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
+        ActivityLogger::log('account.created', "Created account for {$user->name} ({$user->username})", $user);
+
         return redirect()->route('admin.users.index')->with([
             'status' => 'Account created',
             'reveal_credentials' => ['name' => $user->name, 'username' => $user->username, 'password' => $plainPassword],
@@ -118,7 +121,15 @@ class UserManagementController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
         ]);
 
+        $before = $user->only(['name', 'username', 'email']);
+
         $user->update($data);
+
+        $changes = array_filter($data, fn ($value, $key) => $before[$key] !== $value, ARRAY_FILTER_USE_BOTH);
+        if ($changes) {
+            $summary = collect($changes)->map(fn ($v, $k) => "{$k}: \"{$before[$k]}\" → \"{$v}\"")->implode(', ');
+            ActivityLogger::log('account.updated', "Updated account for {$user->name} — {$summary}", $user);
+        }
 
         return back()->with('status', 'Account updated');
     }
@@ -134,6 +145,8 @@ class UserManagementController extends Controller
             'must_change_password' => true,
         ])->save();
 
+        ActivityLogger::log('account.password_reset', "Reset password for {$user->name} ({$user->username})", $user);
+
         return back()->with([
             'status' => 'Password reset',
             'reveal_credentials' => ['name' => $user->name, 'username' => $user->username, 'password' => $plainPassword],
@@ -146,6 +159,7 @@ class UserManagementController extends Controller
 
         // event_members rows cascade-delete via the FK, matching the prototype's
         // "removes their account and all event memberships" behaviour.
+        ActivityLogger::log('account.deleted', "Deleted account for {$user->name} ({$user->username})", $user);
         $user->delete();
 
         return back()->with('status', 'Account deleted');
@@ -164,6 +178,8 @@ class UserManagementController extends Controller
         ]);
 
         $event->update(['sms_quota' => $data['sms_quota'] ?? null]);
+
+        ActivityLogger::log('account.sms_quota_updated', "Set SMS quota for {$user->name}'s event to ".($data['sms_quota'] ?? 'unlimited'), $user, $event);
 
         return back()->with('status', 'SMS quota updated');
     }

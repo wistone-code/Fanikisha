@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -109,6 +110,8 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
 
         Route::get('/account', [UserManagementController::class, 'accountSettings'])->name('account');
         Route::patch('/account/email', [UserManagementController::class, 'updateOwnEmail'])->name('account.email');
+
+        Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');
     });
 
     // Event self-service creation (accounts are limited to a single event).

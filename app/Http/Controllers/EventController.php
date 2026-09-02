@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventMember;
+use App\Services\ActivityLogger;
 use App\Services\PhoneNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +47,8 @@ class EventController extends Controller
             'user_id' => $request->user()->id,
             'role' => 'admin',
         ]);
+
+        ActivityLogger::log('event.created', "{$request->user()->name} created event \"{$event->name}\" ({$event->event_type})", $request->user(), $event);
 
         return redirect()->route('dashboard')->with('status', 'Event created — you are its admin');
     }
