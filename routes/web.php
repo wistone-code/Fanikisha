@@ -163,6 +163,9 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
         });
 
         Route::middleware('event_admin')->group(function () {
+            Route::patch('/account/username', [EventController::class, 'updateOwnUsername'])->name('account.username.update');
+            Route::patch('/account/email', [EventController::class, 'updateOwnEmail'])->name('account.email.update');
+
             Route::get('/settings', [EventController::class, 'editSettings'])->name('event.settings');
             Route::patch('/settings', [EventController::class, 'updateSettings'])->name('event.settings.update');
             Route::patch('/settings/auto-reminder', [EventController::class, 'updateAutoReminder'])->name('event.settings.auto-reminder');

@@ -24,7 +24,7 @@
                 </td>
                 <td class="px-4 py-3 text-right whitespace-nowrap">
                     @if ($member->user_id === auth()->id())
-                        <button onclick="document.getElementById('changePasswordModal').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-key"></i> Change password</button>
+                        <button onclick="document.getElementById('accountSettingsModal').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-key"></i> Change password</button>
                     @else
                         <form method="POST" action="{{ route('team.reset-password', $member) }}" class="inline" onsubmit="return confirm('Reset this member\'s password? A new temporary password will be generated.')">
                             @csrf

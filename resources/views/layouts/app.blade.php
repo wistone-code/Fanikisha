@@ -99,10 +99,27 @@
             <div class="flex-1"></div>
 
             @auth
+            @php($rightEvent = app('currentEvent'))
+            @php($isEventAdmin = ! auth()->user()->is_super_user && $rightEvent && auth()->user()->isAdminOn($rightEvent))
+            @if ($isEventAdmin)
+            <div class="relative">
+                <button onclick="document.getElementById('accountMenu').classList.toggle('hidden')" class="flex items-center gap-2 text-right px-2 py-1 rounded-lg hover:bg-white/10">
+                    <div>
+                        <div class="text-sm font-semibold">{{ auth()->user()->name }}</div>
+                        <div class="text-xs opacity-75">{{ ucfirst(auth()->user()->roleOn($rightEvent)) }}</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </button>
+                <div id="accountMenu" class="hidden absolute right-0 mt-1 w-48 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40">
+                    <button onclick="document.getElementById('accountSettingsModal').classList.remove('hidden'); document.getElementById('accountMenu').classList.add('hidden')" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Account settings</button>
+                </div>
+            </div>
+            @else
             <div class="text-right px-2 py-1">
                 <div class="text-sm font-semibold">{{ auth()->user()->name }}</div>
-                <div class="text-xs opacity-75">{{ auth()->user()->is_super_user ? 'Admin' : ucfirst(app('currentEvent') ? auth()->user()->roleOn(app('currentEvent')) : '') }}</div>
+                <div class="text-xs opacity-75">{{ auth()->user()->is_super_user ? 'Admin' : ucfirst($rightEvent ? auth()->user()->roleOn($rightEvent) : '') }}</div>
             </div>
+            @endif
             @endauth
         </div>
     </header>
@@ -113,19 +130,42 @@
 </div>
 
 @auth
-<div id="changePasswordModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6">
-        <h3 class="font-semibold text-lg mb-4">Change password</h3>
+<div id="accountSettingsModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 my-8 space-y-6">
+        <div class="flex justify-between items-center">
+            <h3 class="font-semibold text-lg">Account settings</h3>
+            <button type="button" onclick="document.getElementById('accountSettingsModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form method="POST" action="{{ route('account.username.update') }}" class="space-y-3">
+            @csrf @method('PATCH')
+            <h4 class="text-sm font-semibold">Username</h4>
+            <input type="text" name="username" value="{{ auth()->user()->username }}" class="w-full border rounded-lg px-3 py-2 text-sm" required>
+            @error('username')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            <button class="btn btn-primary w-full justify-center">Save username</button>
+        </form>
+
+        <div class="border-t"></div>
+
+        <form method="POST" action="{{ route('account.email.update') }}" class="space-y-3">
+            @csrf @method('PATCH')
+            <h4 class="text-sm font-semibold">Email</h4>
+            <input type="email" name="email" value="{{ auth()->user()->email }}" class="w-full border rounded-lg px-3 py-2 text-sm" required>
+            @error('email')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            <button class="btn btn-primary w-full justify-center">Save email</button>
+        </form>
+
+        <div class="border-t"></div>
+
         <form method="POST" action="{{ route('password.own.update') }}" class="space-y-3">
             @csrf @method('PATCH')
+            <h4 class="text-sm font-semibold">Password</h4>
             <div><label class="text-xs font-semibold">Current password</label><input type="password" name="current_password" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
             <div><label class="text-xs font-semibold">New password</label><input type="password" name="password" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="At least 8 characters, upper&lowercase + a number" required></div>
             <div><label class="text-xs font-semibold">Confirm new password</label><input type="password" name="password_confirmation" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
             @error('current_password')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
-            <div class="flex gap-2 pt-2">
-                <button type="button" onclick="document.getElementById('changePasswordModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
-                <button class="btn btn-primary flex-1 justify-center">Change password</button>
-            </div>
+            @error('password')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            <button class="btn btn-primary w-full justify-center">Change password</button>
         </form>
     </div>
 </div>
@@ -212,13 +252,13 @@
 // only via their own trigger buttons (which just toggles them back open/shut).
 document.addEventListener('click', function (e) {
     const navMenu = document.getElementById('navMenu');
-    const userMenu = document.getElementById('userMenu');
+    const accountMenu = document.getElementById('accountMenu');
     const exportMenu = document.getElementById('exportMenu');
     if (navMenu && !navMenu.classList.contains('hidden') && !e.target.closest('#navMenu') && !e.target.closest('button[onclick*="navMenu"]')) {
         navMenu.classList.add('hidden');
     }
-    if (userMenu && !userMenu.classList.contains('hidden') && !e.target.closest('#userMenu') && !e.target.closest('button[onclick*="userMenu"]')) {
-        userMenu.classList.add('hidden');
+    if (accountMenu && !accountMenu.classList.contains('hidden') && !e.target.closest('#accountMenu') && !e.target.closest('button[onclick*="accountMenu"]')) {
+        accountMenu.classList.add('hidden');
     }
     if (exportMenu && !exportMenu.classList.contains('hidden') && !e.target.closest('#exportMenu') && !e.target.closest('button[onclick*="exportMenu"]')) {
         exportMenu.classList.add('hidden');

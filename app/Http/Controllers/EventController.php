@@ -186,4 +186,32 @@ class EventController extends Controller
 
         return back()->with('status', 'SMS language saved');
     }
+
+    /** Event admin's own account settings — username. Not available to System Admin (they use /admin/account). */
+    public function updateOwnUsername(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'username' => ['required', 'string', 'max:255', 'unique:users,username,'.$user->id],
+        ]);
+
+        $user->update(['username' => $data['username']]);
+
+        return back()->with('status', 'Username updated');
+    }
+
+    /** Event admin's own account settings — email. Not available to System Admin (they use /admin/account). */
+    public function updateOwnEmail(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
+        ]);
+
+        $user->update(['email' => $data['email']]);
+
+        return back()->with('status', 'Email updated');
+    }
 }
