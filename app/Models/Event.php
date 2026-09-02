@@ -123,6 +123,7 @@ class Event extends Model
             'remain' => (float) ($totalPledged - $collected),
             'budget' => (float) $budget,
             'expenditure' => (float) $expenditure,
+            'balance' => (float) ($collected - $expenditure),
             'variance' => (float) ($budget - $collected),
             'pledge_count' => $this->pledges()->count(),
         ];

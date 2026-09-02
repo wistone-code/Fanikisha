@@ -40,7 +40,7 @@
         <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold">Collected</div><div class="text-2xl font-semibold mt-1">{{ number_format($stats['collected']) }}</div><div class="text-xs text-gray-400 mt-1">of {{ number_format($stats['total_pledged']) }}</div></div>
         <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold">Ceremony budget</div><div class="text-2xl font-semibold mt-1">{{ number_format($stats['budget']) }}</div><div class="text-xs text-gray-400 mt-1">across providers</div></div>
         <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold">Expenditure</div><div class="text-2xl font-semibold mt-1">{{ number_format($stats['expenditure']) }}</div><div class="text-xs text-gray-400 mt-1">paid to providers</div></div>
-        <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold">Balance</div><div class="text-2xl font-semibold mt-1">{{ number_format($stats['remain']) }}</div></div>
+        <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold">Balance</div><div class="text-2xl font-semibold mt-1">{{ number_format($stats['balance']) }}</div><div class="text-xs text-gray-400 mt-1">collected − expenditure</div></div>
     </div>
 @endif
 @endsection
