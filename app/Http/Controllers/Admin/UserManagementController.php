@@ -108,17 +108,19 @@ class UserManagementController extends Controller
         ]);
     }
 
-    public function updateEmail(Request $request, User $user): RedirectResponse
+    public function update(Request $request, User $user): RedirectResponse
     {
         abort_if($user->is_super_user, 404);
 
         $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', 'unique:users,username,'.$user->id],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
         ]);
 
-        $user->update(['email' => $data['email']]);
+        $user->update($data);
 
-        return back()->with('status', 'Email updated');
+        return back()->with('status', 'Account updated');
     }
 
     public function resetPassword(User $user, PasswordGeneratorService $passwords): RedirectResponse

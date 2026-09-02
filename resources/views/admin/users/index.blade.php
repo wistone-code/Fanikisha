@@ -77,7 +77,7 @@
                 </td>
                 <td class="px-4 py-3 text-gray-500">{{ $account->created_by_label }}</td>
                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                    <button onclick="document.getElementById('editEmail{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-envelope"></i> Edit email</button>
+                    <button onclick="document.getElementById('editAccount{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i> Edit account</button>
                     <form method="POST" action="{{ route('admin.users.reset-password', $account) }}" class="inline" onsubmit="return confirm('Reset {{ $account->name }}\'s password? A new temporary password will be generated.')">
                         @csrf
                         <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-key"></i> Reset password</button>
@@ -89,16 +89,18 @@
                 </td>
             </tr>
 
-            <div id="editEmail{{ $account->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+            <div id="editAccount{{ $account->id }}" onclick="if(event.target===this) this.classList.add('hidden')" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-6">
-                    <h3 class="font-semibold mb-1">Edit email</h3>
-                    <p class="text-sm text-gray-500 mb-4">Update the email on file for <strong>{{ $account->name }}</strong> ({{ $account->username }}).</p>
-                    <form method="POST" action="{{ route('admin.users.email', $account) }}">
+                    <h3 class="font-semibold mb-1">Edit account</h3>
+                    <p class="text-sm text-gray-500 mb-4">Update name, username, and email for <strong>{{ $account->name }}</strong>.</p>
+                    <form method="POST" action="{{ route('admin.users.update', $account) }}" class="space-y-3">
                         @csrf @method('PATCH')
-                        <input type="email" name="email" value="{{ $account->email }}" required class="w-full border rounded-lg px-3 py-2 text-sm mb-4">
-                        <div class="flex gap-2">
-                            <button type="button" onclick="document.getElementById('editEmail{{ $account->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
-                            <button class="btn btn-primary flex-1 justify-center">Save email</button>
+                        <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ $account->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="text-xs font-semibold">Username</label><input type="text" name="username" value="{{ $account->username }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="text-xs font-semibold">Email</label><input type="email" name="email" value="{{ $account->email }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div class="flex gap-2 pt-2">
+                            <button type="button" onclick="document.getElementById('editAccount{{ $account->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                            <button class="btn btn-primary flex-1 justify-center">Save changes</button>
                         </div>
                     </form>
                 </div>
