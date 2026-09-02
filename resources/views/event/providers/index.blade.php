@@ -65,11 +65,11 @@
                         <div><label class="text-xs font-semibold">Add payment</label><input type="number" name="add_payment" placeholder="0" step="0.01" min="0" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div class="text-xs text-gray-400">
                             Already paid: {{ number_format($p->paid) }}.
-                            <button type="button" onclick="document.getElementById('correctPaidProvider{{ $p->id }}').classList.toggle('hidden')" class="underline">Made a mistake? Correct total instead</button>
+                            <button type="button" onclick="document.getElementById('correctPaidProvider{{ $p->id }}').classList.toggle('hidden'); document.getElementById('paidCorrectionProviderInput{{ $p->id }}').disabled = document.getElementById('correctPaidProvider{{ $p->id }}').classList.contains('hidden')" class="underline">Made a mistake? Correct total instead</button>
                         </div>
                         <div id="correctPaidProvider{{ $p->id }}" class="hidden">
                             <label class="text-xs font-semibold">Correct total paid</label>
-                            <input type="number" name="paid_correction" value="{{ $p->paid }}" step="0.01" min="0" class="w-full border rounded-lg px-3 py-2 text-sm">
+                            <input type="number" id="paidCorrectionProviderInput{{ $p->id }}" name="paid_correction" value="{{ $p->paid }}" step="0.01" min="0" disabled class="w-full border rounded-lg px-3 py-2 text-sm">
                         </div>
                         <div><label class="text-xs font-semibold">Contact (phone)</label>
                             <div class="flex gap-1">

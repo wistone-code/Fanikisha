@@ -110,11 +110,11 @@
                         </div>
                         <div class="text-xs text-gray-400">
                             Already paid: {{ number_format($p->paid) }}.
-                            <button type="button" onclick="document.getElementById('correctPaid{{ $p->id }}').classList.toggle('hidden')" class="underline">Made a mistake? Correct total instead</button>
+                            <button type="button" onclick="document.getElementById('correctPaid{{ $p->id }}').classList.toggle('hidden'); document.getElementById('paidCorrectionInput{{ $p->id }}').disabled = document.getElementById('correctPaid{{ $p->id }}').classList.contains('hidden')" class="underline">Made a mistake? Correct total instead</button>
                         </div>
                         <div id="correctPaid{{ $p->id }}" class="hidden">
                             <label class="text-xs font-semibold">Correct total paid</label>
-                            <input type="number" name="paid_correction" value="{{ $p->paid }}" min="0" step="0.01" class="w-full border rounded-lg px-3 py-2 text-sm">
+                            <input type="number" id="paidCorrectionInput{{ $p->id }}" name="paid_correction" value="{{ $p->paid }}" min="0" step="0.01" disabled class="w-full border rounded-lg px-3 py-2 text-sm">
                         </div>
                         <div class="flex gap-2 pt-2">
                             <button type="button" onclick="document.getElementById('editPledge{{ $p->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
