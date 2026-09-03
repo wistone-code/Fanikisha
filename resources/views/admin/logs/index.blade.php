@@ -38,7 +38,7 @@
         <tbody>
             @forelse ($logs as $log)
             <tr class="border-b last:border-0 align-top">
-                <td class="px-4 py-3 whitespace-nowrap text-gray-500">{{ $log->created_at->format('M j, Y g:i A') }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-gray-500 log-timestamp" data-utc="{{ $log->created_at->clone()->timezone('UTC')->toIso8601String() }}">{{ $log->created_at->timezone('Africa/Dar_es_Salaam')->format('M j, Y g:i A') }} <span class="text-xs text-gray-400">GMT+3</span></td>
                 <td class="px-4 py-3 whitespace-nowrap">
                     @if ($log->actor)
                         {{ $log->actor->name }}
@@ -82,4 +82,29 @@
     </div>
 </div>
 @endif
+
+<script>
+// Converts each log timestamp from the server-rendered GMT+3 fallback to
+// whoever is actually viewing this page's own local timezone, using the raw
+// UTC instant stashed in data-utc. Runs once on load — safe to leave the
+// GMT+3 text in place as a no-JS fallback (matches Fanikisha's home base,
+// Tanzania) if this script doesn't run for any reason.
+document.querySelectorAll('.log-timestamp').forEach(function (cell) {
+    const iso = cell.dataset.utc;
+    if (!iso) return;
+
+    const date = new Date(iso);
+    if (isNaN(date)) return;
+
+    const formatted = date.toLocaleString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit',
+    });
+    const tzAbbr = Intl.DateTimeFormat(undefined, { timeZoneName: 'short' })
+        .formatToParts(date)
+        .find(function (p) { return p.type === 'timeZoneName'; })?.value || '';
+
+    cell.innerHTML = formatted + ' <span class="text-xs text-gray-400">' + tzAbbr + '</span>';
+});
+</script>
 @endsection
