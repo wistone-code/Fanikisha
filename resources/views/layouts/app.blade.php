@@ -249,6 +249,31 @@
     scheduleWarning();
 })();
 
+// Opens/closes a per-row action menu (e.g. admin Users table). Flips the menu to
+// open upward instead of downward when the row is near the bottom of the viewport,
+// so it never gets clipped off-screen for rows near the end of the table/page.
+function toggleRowMenu(id) {
+    const menu = document.getElementById(id);
+    if (!menu) return;
+
+    const opening = menu.classList.contains('hidden');
+    document.querySelectorAll('.row-menu').forEach(function (m) {
+        m.classList.add('hidden');
+        m.classList.remove('bottom-full', 'mb-1');
+    });
+
+    if (opening) {
+        menu.classList.remove('hidden');
+        const rect = menu.getBoundingClientRect();
+        const button = menu.previousElementSibling;
+        const buttonBottom = button ? button.getBoundingClientRect().bottom : rect.bottom;
+
+        if (buttonBottom + rect.height > window.innerHeight) {
+            menu.classList.add('bottom-full', 'mb-1');
+        }
+    }
+}
+
 // Close the nav/user dropdown menus when clicking anywhere outside them, instead of
 // only via their own trigger buttons (which just toggles them back open/shut).
 document.addEventListener('click', function (e) {
