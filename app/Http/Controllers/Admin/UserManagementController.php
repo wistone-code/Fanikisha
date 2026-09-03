@@ -54,6 +54,14 @@ class UserManagementController extends Controller
         $totalSmsSent = (int) Event::sum('sms_sent_count');
         $estimatedSmsCost = $totalSmsSent * (float) config('services.beem.cost_per_sms');
 
+        // Reused across every row's "Reassign event" modal — an account can only
+        // receive an event if it doesn't already have one of its own (accounts are
+        // capped at a single event, whether owner or team member).
+        $eligibleTargets = User::where('is_super_user', false)
+            ->whereDoesntHave('eventMemberships')
+            ->orderBy('name')
+            ->get(['id', 'name', 'username']);
+
         if ($status === 'attention') {
             $base->whereHas('eventMemberships.event', $atQuota);
         } elseif ($status === 'no_event') {
@@ -86,7 +94,7 @@ class UserManagementController extends Controller
             });
 
         return view('admin.users.index', compact(
-            'accounts', 'search', 'status', 'totalAccounts', 'atQuotaCount', 'noEventCount', 'totalSmsSent', 'estimatedSmsCost'
+            'accounts', 'search', 'status', 'totalAccounts', 'atQuotaCount', 'noEventCount', 'totalSmsSent', 'estimatedSmsCost', 'eligibleTargets'
         ));
     }
 
@@ -187,6 +195,78 @@ class UserManagementController extends Controller
         ActivityLogger::log($action, "{$verb} account for {$user->name} ({$user->username})", $user);
 
         return back()->with('status', "{$verb} account for {$user->name}");
+    }
+
+    /**
+     * Moves one account's single event membership to a different account — for
+     * when someone loses access to their phone/account and needs a fresh login,
+     * without recreating the event or losing any of its pledges/providers/schedule.
+     * The target can be an existing account with no event of its own, or a brand
+     * new account created on the spot (same temp-password flow as store()).
+     */
+    public function reassignEvent(Request $request, User $user, PasswordGeneratorService $passwords): RedirectResponse
+    {
+        abort_if($user->is_super_user, 404);
+
+        $event = $user->currentEvent();
+        abort_unless($event, 404, 'This account has no event to reassign.');
+
+        $mode = $request->validate(['mode' => ['required', 'in:existing,new']])['mode'];
+        $revealCredentials = null;
+
+        if ($mode === 'existing') {
+            $data = $request->validate(['target_user_id' => ['required', 'exists:users,id']]);
+
+            if ((int) $data['target_user_id'] === $user->id) {
+                return back()->withErrors(['target_user_id' => 'Choose a different account.']);
+            }
+
+            $target = User::findOrFail($data['target_user_id']);
+            abort_if($target->is_super_user, 422, 'Cannot assign an event to the System Admin.');
+
+            if ($target->currentEvent()) {
+                return back()->withErrors(['target_user_id' => "{$target->name} already has an event of their own."]);
+            }
+        } else {
+            $data = $request->validate([
+                'new_name' => ['required', 'string', 'max:255'],
+                'new_username' => ['required', 'string', 'max:255', 'unique:users,username'],
+                'new_email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            ]);
+
+            $plainPassword = $passwords->generate();
+
+            $target = User::create([
+                'name' => $data['new_name'],
+                'username' => $data['new_username'],
+                'email' => $data['new_email'],
+                'password' => Hash::make($plainPassword),
+                'is_super_user' => false,
+                'must_change_password' => true,
+                'created_by' => $request->user()->id,
+            ]);
+
+            ActivityLogger::log('account.created', "Created account for {$target->name} ({$target->username})", $target);
+
+            $revealCredentials = ['name' => $target->name, 'username' => $target->username, 'password' => $plainPassword];
+        }
+
+        $membership = EventMember::where('event_id', $event->id)->where('user_id', $user->id)->first();
+        abort_unless($membership, 404);
+
+        $membership->update(['user_id' => $target->id]);
+
+        ActivityLogger::log(
+            'event.reassigned',
+            "Reassigned event \"{$event->name}\" from {$user->name} ({$user->username}) to {$target->name} ({$target->username})",
+            $target,
+            $event
+        );
+
+        return back()->with(array_filter([
+            'status' => "Event reassigned to {$target->name}",
+            'reveal_credentials' => $revealCredentials,
+        ]));
     }
 
     /** Sets (or clears) the SMS send cap for this account's event. Null = unlimited. */
