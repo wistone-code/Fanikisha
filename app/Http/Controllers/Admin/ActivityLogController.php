@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class ActivityLogController extends Controller
@@ -18,6 +19,19 @@ class ActivityLogController extends Controller
     {
         $userId = $request->get('user');
         $search = trim((string) $request->get('q'));
+        $period = $request->get('period', 'all');
+
+        // Boundaries computed in Tanzania time so "today"/"this week" match what an
+        // admin viewing from Tanzania actually expects — not the DB server's own
+        // clock/timezone, which is exactly the mismatch fixed for the timestamps
+        // themselves (see ActivityLogger).
+        $now = Carbon::now('Africa/Dar_es_Salaam');
+        $from = match ($period) {
+            'today' => $now->clone()->startOfDay(),
+            'week' => $now->clone()->startOfWeek(),
+            'month' => $now->clone()->startOfMonth(),
+            default => null,
+        };
 
         $logs = ActivityLog::query()
             ->with(['actor', 'targetUser', 'event'])
@@ -25,12 +39,13 @@ class ActivityLogController extends Controller
             ->when($search, function ($q) use ($search) {
                 $q->where('description', 'like', "%{$search}%");
             })
+            ->when($from, fn ($q) => $q->where('created_at', '>=', $from->format('Y-m-d H:i:s')))
             ->latest('created_at')
             ->paginate(30)
             ->withQueryString();
 
         $filteredUser = $userId ? User::find($userId) : null;
 
-        return view('admin.logs.index', compact('logs', 'search', 'filteredUser'));
+        return view('admin.logs.index', compact('logs', 'search', 'filteredUser', 'period'));
     }
 }

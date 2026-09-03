@@ -17,9 +17,21 @@
     <a href="{{ route('admin.users.index') }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Back to accounts</a>
 </div>
 
-<div class="card p-4 mb-4">
+<div class="card p-4 mb-4 space-y-3">
+    <div class="flex flex-wrap gap-2">
+        @php
+            $periods = ['all' => 'All time', 'today' => 'Today', 'week' => 'This week', 'month' => 'This month'];
+        @endphp
+        @foreach ($periods as $key => $label)
+        <a href="{{ route('admin.logs.index', array_filter(['user' => $filteredUser?->id, 'q' => $search ?: null, 'period' => $key === 'all' ? null : $key])) }}"
+           class="px-3 py-1.5 rounded-full text-xs font-semibold {{ $period === $key ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200' }}">
+            {{ $label }}
+        </a>
+        @endforeach
+    </div>
     <form method="GET" class="flex flex-wrap items-center gap-3">
         @if ($filteredUser)<input type="hidden" name="user" value="{{ $filteredUser->id }}">@endif
+        @if ($period !== 'all')<input type="hidden" name="period" value="{{ $period }}">@endif
         <input type="text" name="q" value="{{ $search }}" placeholder="Search log descriptions…" class="flex-1 min-w-[200px] border rounded-lg px-3 py-2 text-sm">
         <button class="btn btn-ghost">Search</button>
     </form>
