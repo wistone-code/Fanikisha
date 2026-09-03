@@ -264,6 +264,13 @@ document.addEventListener('click', function (e) {
     if (exportMenu && !exportMenu.classList.contains('hidden') && !e.target.closest('#exportMenu') && !e.target.closest('button[onclick*="exportMenu"]')) {
         exportMenu.classList.add('hidden');
     }
+    // Per-row action menus (e.g. admin Users table) — any number of rows, each
+    // with its own id, so this closes whichever one is open rather than a fixed id.
+    document.querySelectorAll('.row-menu').forEach(function (menu) {
+        if (!menu.classList.contains('hidden') && !menu.contains(e.target) && !e.target.closest('button[onclick*="' + menu.id + '"]')) {
+            menu.classList.add('hidden');
+        }
+    });
 });
 // Auto-refresh every 30s — skipped while typing into a field or while any modal
 // (identified by the shared .fixed.inset-0 dialog pattern used across the app) is

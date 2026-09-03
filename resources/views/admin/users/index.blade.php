@@ -85,20 +85,26 @@
                 </td>
                 <td class="px-4 py-3 text-gray-500">{{ $account->created_by_label }}</td>
                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                    <a href="{{ route('admin.logs.index', ['user' => $account->id]) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-clock-rotate-left"></i> Logs</a>
                     <button onclick="document.getElementById('editAccount{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i> Edit account</button>
-                    <form method="POST" action="{{ route('admin.users.reset-password', $account) }}" class="inline" onsubmit="return confirm('Reset {{ $account->name }}\'s password? A new temporary password will be generated.')">
-                        @csrf
-                        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-key"></i> Reset password</button>
-                    </form>
-                    <form method="POST" action="{{ route('admin.users.toggle-suspend', $account) }}" class="inline" data-confirm="{{ $account->is_suspended ? 'Reactivate' : 'Suspend' }} {{ $account->name }}'s account? {{ $account->is_suspended ? 'They will be able to log in again immediately.' : 'They will be logged out and blocked from logging in until reactivated. Nothing is deleted.' }}" data-confirm-title="{{ $account->is_suspended ? 'Reactivate account?' : 'Suspend account?' }}">
-                        @csrf
-                        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid {{ $account->is_suspended ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i> {{ $account->is_suspended ? 'Reactivate' : 'Suspend' }}</button>
-                    </form>
-                    <form method="POST" action="{{ route('admin.users.destroy', $account) }}" class="inline" data-confirm="Delete {{ $account->name }}? This removes their account and all event memberships." data-confirm-title="Delete account?">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-trash"></i></button>
-                    </form>
+                    <div class="relative inline-block">
+                        <button onclick="document.getElementById('rowMenu{{ $account->id }}').classList.toggle('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-ellipsis"></i></button>
+                        <div id="rowMenu{{ $account->id }}" class="row-menu hidden absolute right-0 mt-1 w-52 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40 text-left">
+                            <a href="{{ route('admin.logs.index', ['user' => $account->id]) }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-clock-rotate-left w-4"></i> Logs</a>
+                            <form method="POST" action="{{ route('admin.users.reset-password', $account) }}" onsubmit="return confirm('Reset {{ $account->name }}\'s password? A new temporary password will be generated.')">
+                                @csrf
+                                <button class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-key w-4"></i> Reset password</button>
+                            </form>
+                            <form method="POST" action="{{ route('admin.users.toggle-suspend', $account) }}" data-confirm="{{ $account->is_suspended ? 'Reactivate' : 'Suspend' }} {{ $account->name }}'s account? {{ $account->is_suspended ? 'They will be able to log in again immediately.' : 'They will be logged out and blocked from logging in until reactivated. Nothing is deleted.' }}" data-confirm-title="{{ $account->is_suspended ? 'Reactivate account?' : 'Suspend account?' }}">
+                                @csrf
+                                <button class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid {{ $account->is_suspended ? 'fa-toggle-on' : 'fa-toggle-off' }} w-4"></i> {{ $account->is_suspended ? 'Reactivate' : 'Suspend' }}</button>
+                            </form>
+                            <div class="border-t my-1"></div>
+                            <form method="POST" action="{{ route('admin.users.destroy', $account) }}" data-confirm="Delete {{ $account->name }}? This removes their account and all event memberships." data-confirm-title="Delete account?">
+                                @csrf @method('DELETE')
+                                <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50"><i class="fa-solid fa-trash w-4"></i> Delete</button>
+                            </form>
+                        </div>
+                    </div>
                 </td>
             </tr>
 
