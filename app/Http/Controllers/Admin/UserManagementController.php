@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Event;
 use App\Models\EventMember;
 use App\Models\User;
 use App\Services\ActivityLogger;
@@ -47,6 +48,12 @@ class UserManagementController extends Controller
         $atQuotaCount = (clone $base)->whereHas('eventMemberships.event', $atQuota)->count();
         $noEventCount = (clone $base)->whereDoesntHave('eventMemberships')->count();
 
+        // Lifetime running total — there's no per-send log to break this down by
+        // month, so this is deliberately labelled "all-time" in the view rather
+        // than implying a monthly figure the data can't actually support.
+        $totalSmsSent = (int) Event::sum('sms_sent_count');
+        $estimatedSmsCost = $totalSmsSent * (float) config('services.beem.cost_per_sms');
+
         if ($status === 'attention') {
             $base->whereHas('eventMemberships.event', $atQuota);
         } elseif ($status === 'no_event') {
@@ -79,7 +86,7 @@ class UserManagementController extends Controller
             });
 
         return view('admin.users.index', compact(
-            'accounts', 'search', 'status', 'totalAccounts', 'atQuotaCount', 'noEventCount'
+            'accounts', 'search', 'status', 'totalAccounts', 'atQuotaCount', 'noEventCount', 'totalSmsSent', 'estimatedSmsCost'
         ));
     }
 
@@ -163,6 +170,23 @@ class UserManagementController extends Controller
         $user->delete();
 
         return back()->with('status', 'Account deleted');
+    }
+
+    /**
+     * Pauses an account without deleting it — blocks login (see LoginController and
+     * EnsureNotSuspended) while leaving the account and all its event data intact.
+     */
+    public function toggleSuspend(User $user): RedirectResponse
+    {
+        abort_if($user->is_super_user, 404);
+
+        $user->update(['is_suspended' => ! $user->is_suspended]);
+
+        $action = $user->is_suspended ? 'account.suspended' : 'account.reactivated';
+        $verb = $user->is_suspended ? 'Suspended' : 'Reactivated';
+        ActivityLogger::log($action, "{$verb} account for {$user->name} ({$user->username})", $user);
+
+        return back()->with('status', "{$verb} account for {$user->name}");
     }
 
     /** Sets (or clears) the SMS send cap for this account's event. Null = unlimited. */

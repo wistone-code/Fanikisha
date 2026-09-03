@@ -15,7 +15,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'username', 'email', 'password',
-        'is_super_user', 'must_change_password', 'created_by',
+        'is_super_user', 'must_change_password', 'is_suspended', 'created_by',
     ];
 
     protected $hidden = [
@@ -27,6 +27,7 @@ class User extends Authenticatable
         return [
             'is_super_user' => 'boolean',
             'must_change_password' => 'boolean',
+            'is_suspended' => 'boolean',
             'password' => 'hashed',
         ];
     }

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\BlockTeamManagementForFuneral;
 use App\Http\Middleware\EnsureEventAdmin;
+use App\Http\Middleware\EnsureNotSuspended;
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsureSuperUser;
 use App\Http\Middleware\ResolveCurrentEvent;
@@ -45,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'no_funeral_team' => BlockTeamManagementForFuneral::class,
             'resolve_event' => ResolveCurrentEvent::class,
             'password_changed' => EnsurePasswordChanged::class,
+            'not_suspended' => EnsureNotSuspended::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

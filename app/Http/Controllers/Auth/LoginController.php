@@ -58,6 +58,12 @@ class LoginController extends Controller
             ]);
         }
 
+        if ($user->is_suspended) {
+            throw ValidationException::withMessages([
+                'username' => 'This account has been suspended. Contact your administrator.',
+            ]);
+        }
+
         // "Remember me" is opt-in, not automatic — defaulting every login to a
         // persistent cookie is a poor security default on shared/public devices.
         Auth::login($user, remember: $request->boolean('remember'));

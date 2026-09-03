@@ -12,7 +12,7 @@
     </button>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
     <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-users"></i> Total accounts</div><div class="text-xl font-semibold mt-1">{{ $totalAccounts }}</div></div>
     <a href="{{ route('admin.users.index', ['status' => 'attention', 'q' => $search ?: null]) }}" class="card p-5 block {{ $atQuotaCount > 0 ? 'ring-1 ring-red-200' : '' }}">
         <div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> Needs attention</div>
@@ -23,6 +23,11 @@
         <div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-hourglass-half"></i> No event yet</div>
         <div class="text-xl font-semibold mt-1">{{ $noEventCount }}</div>
     </a>
+    <div class="card p-5">
+        <div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-comment-sms"></i> SMS sent (all-time)</div>
+        <div class="text-xl font-semibold mt-1">{{ number_format($totalSmsSent) }}</div>
+        <div class="text-xs text-gray-400 mt-1">~TZS {{ number_format($estimatedSmsCost) }} estimated</div>
+    </div>
 </div>
 
 <div class="card p-4 mb-4">
@@ -52,8 +57,11 @@
         </thead>
         <tbody>
             @forelse ($accounts as $account)
-            <tr class="border-b last:border-0 {{ $account->at_quota ? 'bg-red-50' : '' }}">
-                <td class="px-4 py-3 font-semibold">{{ $account->username }}</td>
+            <tr class="border-b last:border-0 {{ $account->at_quota ? 'bg-red-50' : '' }} {{ $account->is_suspended ? 'opacity-60' : '' }}">
+                <td class="px-4 py-3 font-semibold">
+                    {{ $account->username }}
+                    @if ($account->is_suspended)<span class="badge bg-red-100 text-red-700 ml-1">Suspended</span>@endif
+                </td>
                 <td class="px-4 py-3">{{ $account->email }}</td>
                 <td class="px-4 py-3"><span class="badge {{ $account->role_label === 'Admin' ? 'badge-admin' : 'badge-viewer' }}">{{ $account->role_label }}</span></td>
                 <td class="px-4 py-3">
@@ -82,6 +90,10 @@
                     <form method="POST" action="{{ route('admin.users.reset-password', $account) }}" class="inline" onsubmit="return confirm('Reset {{ $account->name }}\'s password? A new temporary password will be generated.')">
                         @csrf
                         <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-key"></i> Reset password</button>
+                    </form>
+                    <form method="POST" action="{{ route('admin.users.toggle-suspend', $account) }}" class="inline" data-confirm="{{ $account->is_suspended ? 'Reactivate' : 'Suspend' }} {{ $account->name }}'s account? {{ $account->is_suspended ? 'They will be able to log in again immediately.' : 'They will be logged out and blocked from logging in until reactivated. Nothing is deleted.' }}" data-confirm-title="{{ $account->is_suspended ? 'Reactivate account?' : 'Suspend account?' }}">
+                        @csrf
+                        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid {{ $account->is_suspended ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i> {{ $account->is_suspended ? 'Reactivate' : 'Suspend' }}</button>
                     </form>
                     <form method="POST" action="{{ route('admin.users.destroy', $account) }}" class="inline" data-confirm="Delete {{ $account->name }}? This removes their account and all event memberships." data-confirm-title="Delete account?">
                         @csrf @method('DELETE')

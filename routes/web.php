@@ -83,14 +83,14 @@ Route::get('/pay/{token}', function (string $token) {
 
 // ---- Authenticated, but not yet past the forced password change ----------------------
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'not_suspended'])->group(function () {
     Route::get('/password/change', [PasswordChangeController::class, 'show'])->name('password.change.show');
     Route::post('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');
 });
 
 // ---- Fully authenticated (password already changed) ----------------------------------
 
-Route::middleware(['auth', 'password_changed'])->group(function () {
+Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function () {
 
     Route::post('/account/password', [PasswordChangeController::class, 'updateOwn'])->name('password.own.update');
 
@@ -107,6 +107,7 @@ Route::middleware(['auth', 'password_changed'])->group(function () {
         Route::post('/users/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset-password');
         Route::patch('/users/{user}/sms-quota', [UserManagementController::class, 'updateSmsQuota'])->name('users.sms-quota');
         Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+        Route::post('/users/{user}/toggle-suspend', [UserManagementController::class, 'toggleSuspend'])->name('users.toggle-suspend');
 
         Route::get('/account', [UserManagementController::class, 'accountSettings'])->name('account');
         Route::patch('/account/email', [UserManagementController::class, 'updateOwnEmail'])->name('account.email');
