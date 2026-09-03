@@ -24,6 +24,12 @@ class ActivityLogger
             'event_id' => $event?->id,
             'action' => $action,
             'description' => $description,
+            // Set explicitly via PHP's now() (Africa/Dar_es_Salaam, per config('app.timezone'))
+            // rather than relying on the database server's own useCurrent() default — that
+            // default runs on the DB server's own clock/timezone (UTC on Railway), which then
+            // gets silently mislabeled as already being local time when read back, throwing
+            // every displayed timestamp off by the UTC offset.
+            'created_at' => now(),
         ]);
     }
 }
