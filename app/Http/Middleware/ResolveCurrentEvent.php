@@ -21,6 +21,14 @@ class ResolveCurrentEvent
         if (! $user || $user->is_super_user) {
             app()->instance('currentEvent', null);
 
+            // System Admin has zero visibility into event data by design — if they
+            // land on an event-scoped route (e.g. an old bookmark, a typed URL),
+            // send them to their own screen instead of letting every controller
+            // downstream deal with a null $event.
+            if ($user?->is_super_user && ! $request->routeIs('admin.*', 'logout')) {
+                return redirect()->route('admin.users.index');
+            }
+
             return $next($request);
         }
 
