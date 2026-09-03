@@ -43,7 +43,7 @@
                     <span class="text-xs text-gray-400">Awaiting response</span>
                     @endif
                 </td>
-                <td class="px-4 py-3 text-gray-500">{{ $p->rsvp_at?->format('M j, g:i A') ?? '—' }}</td>
+                <td class="px-4 py-3 text-gray-500 rsvp-timestamp" data-utc="{{ $p->rsvp_at?->clone()->timezone('UTC')->toIso8601String() }}">{{ $p->rsvp_at?->timezone('Africa/Dar_es_Salaam')->format('M j, g:i A') ?? '—' }}</td>
             </tr>
             @empty
             <tr><td colspan="3" class="px-4 py-10 text-center text-gray-400">No invitations activated yet.</td></tr>
@@ -51,4 +51,22 @@
         </tbody>
     </table>
 </div>
+
+<script>
+// Same idea as the admin Logs page: show each RSVP response time in whoever is
+// actually viewing this page's own local timezone, converted client-side from
+// the raw UTC instant. Rows with no response yet have no data-utc and are left
+// showing "—".
+document.querySelectorAll('.rsvp-timestamp[data-utc]').forEach(function (cell) {
+    const iso = cell.dataset.utc;
+    if (!iso) return;
+
+    const date = new Date(iso);
+    if (isNaN(date)) return;
+
+    cell.textContent = date.toLocaleString(undefined, {
+        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+});
+</script>
 @endsection
