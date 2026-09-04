@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\NavLabelService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -15,13 +16,13 @@ class DashboardController extends Controller
         }
 
         $event = app('currentEvent');
-        $stats = $event->stats();
+        $isAdmin = $request->user()->isAdminOn($event);
 
-        $quickLinkTypes = ['Graduation', 'Baptism', 'Funeral'];
-        $quickLinks = in_array($event->event_type, $quickLinkTypes, true)
-            ? ['financial', 'pledges', 'providers', 'schedule', 'invitations', 'settings']
-            : null;
+        // The landing page IS the nav now (see layouts/app — the "Fanikisha" dropdown
+        // is gone for regular accounts), so every account/event-type combination gets
+        // the same full, correctly-filtered card list the dropdown used to show.
+        $items = app(NavLabelService::class)->itemsFor($event, $isAdmin);
 
-        return view('event.home', compact('event', 'stats', 'quickLinks'));
+        return view('event.home', compact('event', 'items'));
     }
 }

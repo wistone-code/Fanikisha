@@ -58,32 +58,16 @@
     <header class="text-white" style="background:var(--primary);border-bottom:3px solid var(--accent);">
         <div class="max-w-6xl mx-auto px-5 py-3 flex items-center gap-4">
             @auth
-                @if (!request()->routeIs('event.create'))
+                @if (!request()->routeIs('event.create') && auth()->user()->is_super_user)
                 <div class="relative">
                     <button onclick="document.getElementById('navMenu').classList.toggle('hidden')" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10">
                         <span class="font-semibold">{{ config('app.name') }}</span>
                         <i class="fa-solid fa-chevron-down text-xs"></i>
                     </button>
                     <div id="navMenu" class="hidden absolute left-0 mt-1 w-56 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40">
-                        @if (auth()->user()->is_super_user)
-                            <a href="{{ route('admin.users.index') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">User Management</a>
-                            <a href="{{ route('admin.logs.index') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Logs</a>
-                            <a href="{{ route('admin.account') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Account Settings</a>
-                        @else
-                            @php($event = app('currentEvent'))
-                            @php($isAdmin = $event && auth()->user()->isAdminOn($event))
-                            @if ($event)
-                                @php($routeNames = ['home' => 'dashboard', 'financial' => 'financial.index', 'pledges' => 'pledges.index', 'providers' => 'providers.index', 'committees' => 'committees.index', 'schedule' => 'schedule.index', 'team' => 'team.index', 'invitations' => 'guests.index', 'settings' => 'event.settings'])
-                                @php($lastGroup = null)
-                                @foreach (app(\App\Services\NavLabelService::class)->itemsFor($event, $isAdmin) as $item)
-                                    @if ($item['group'] !== $lastGroup && $item['group'] !== null)
-                                        <div class="px-3 {{ $lastGroup === null ? 'pt-2' : 'pt-3' }} pb-1 text-[10px] font-bold tracking-wider text-gray-400">{{ strtoupper($item['group']) }}</div>
-                                    @endif
-                                    @php($lastGroup = $item['group'])
-                                    <a href="{{ route($routeNames[$item['id']]) }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">{{ $item['label'] }}</a>
-                                @endforeach
-                            @endif
-                        @endif
+                        <a href="{{ route('admin.users.index') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">User Management</a>
+                        <a href="{{ route('admin.logs.index') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Logs</a>
+                        <a href="{{ route('admin.account') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Account Settings</a>
                         <div class="border-t my-1"></div>
                         <form method="POST" action="{{ route('logout') }}">@csrf
                             <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">Logout</button>
@@ -91,6 +75,10 @@
                     </div>
                 </div>
                 @else
+                {{-- Regular accounts (admin or viewer): every nav destination is now a
+                     card on the landing page itself, so this is just a static label —
+                     no dropdown, nothing to toggle. Logout lives in the right-side
+                     account menu instead (see below). --}}
                 <span class="font-semibold">{{ config('app.name') }}</span>
                 @endif
             @else
@@ -101,24 +89,32 @@
 
             @auth
             @php($rightEvent = app('currentEvent'))
-            @php($isEventAdmin = ! auth()->user()->is_super_user && $rightEvent && auth()->user()->isAdminOn($rightEvent))
-            @if ($isEventAdmin)
+            @php($isSuperUser = auth()->user()->is_super_user)
+            @php($isEventAdmin = ! $isSuperUser && $rightEvent && auth()->user()->isAdminOn($rightEvent))
+            @if ($isSuperUser)
+            {{-- System Admin already has Logout in their own left dropdown — unchanged. --}}
+            <div class="text-right px-2 py-1">
+                <div class="text-sm font-semibold">{{ auth()->user()->name }}</div>
+                <div class="text-xs opacity-75">Admin</div>
+            </div>
+            @else
             <div class="relative">
                 <button onclick="document.getElementById('accountMenu').classList.toggle('hidden')" class="flex items-center gap-2 text-right px-2 py-1 rounded-lg hover:bg-white/10">
                     <div>
                         <div class="text-sm font-semibold">{{ auth()->user()->name }}</div>
-                        <div class="text-xs opacity-75">{{ ucfirst(auth()->user()->roleOn($rightEvent)) }}</div>
+                        <div class="text-xs opacity-75">{{ ucfirst($rightEvent ? auth()->user()->roleOn($rightEvent) : '') }}</div>
                     </div>
                     <i class="fa-solid fa-chevron-down text-xs"></i>
                 </button>
                 <div id="accountMenu" class="hidden absolute right-0 mt-1 w-48 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40">
+                    @if ($isEventAdmin)
                     <button onclick="document.getElementById('accountSettingsModal').classList.remove('hidden'); document.getElementById('accountMenu').classList.add('hidden')" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Account settings</button>
+                    <div class="border-t my-1"></div>
+                    @endif
+                    <form method="POST" action="{{ route('logout') }}">@csrf
+                        <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">Logout</button>
+                    </form>
                 </div>
-            </div>
-            @else
-            <div class="text-right px-2 py-1">
-                <div class="text-sm font-semibold">{{ auth()->user()->name }}</div>
-                <div class="text-xs opacity-75">{{ auth()->user()->is_super_user ? 'Admin' : ucfirst($rightEvent ? auth()->user()->roleOn($rightEvent) : '') }}</div>
             </div>
             @endif
             @endauth

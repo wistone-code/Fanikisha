@@ -20,27 +20,16 @@
     </div>
 </div>
 
-@if ($quickLinks)
-    @php($labels = app(\App\Services\NavLabelService::class)->for($event))
-    @php($routeNames = ['financial' => 'financial.index', 'pledges' => 'pledges.index', 'providers' => 'providers.index', 'schedule' => 'schedule.index', 'invitations' => 'guests.index', 'settings' => 'event.settings'])
-    @php($icons = ['financial' => 'chart-pie', 'pledges' => 'hand-holding-dollar', 'providers' => 'truck-fast', 'schedule' => 'calendar-days', 'invitations' => 'envelope-open-text', 'settings' => 'gear'])
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        @foreach ($quickLinks as $id)
-        <a href="{{ route($routeNames[$id]) }}" class="card p-4 flex items-center gap-3 hover:shadow-md transition">
+@php($routeNames = ['financial' => 'financial.index', 'pledges' => 'pledges.index', 'providers' => 'providers.index', 'committees' => 'committees.index', 'schedule' => 'schedule.index', 'team' => 'team.index', 'invitations' => 'guests.index', 'settings' => 'event.settings'])
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    @foreach ($items as $item)
+        @continue($item['id'] === 'home')
+        <a href="{{ route($routeNames[$item['id']]) }}" class="card p-4 flex items-center gap-3 hover:shadow-md transition">
             <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:#E7EDF1;color:var(--primary);">
-                <i class="fa-solid fa-{{ $icons[$id] }}"></i>
+                <i class="fa-solid fa-{{ $item['icon'] }}"></i>
             </div>
-            <div class="font-medium">{{ $labels[$id] }}</div>
+            <div class="font-medium">{{ $item['label'] }}</div>
         </a>
-        @endforeach
-    </div>
-@else
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold">Total pledged</div><div class="text-2xl font-semibold mt-1">{{ number_format($stats['total_pledged']) }}</div><div class="text-xs text-gray-400 mt-1">sum of all pledges</div></div>
-        <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold">Collected</div><div class="text-2xl font-semibold mt-1">{{ number_format($stats['collected']) }}</div><div class="text-xs text-gray-400 mt-1">sum of paid pledges</div></div>
-        <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold">Ceremony budget</div><div class="text-2xl font-semibold mt-1">{{ number_format($stats['budget']) }}</div><div class="text-xs text-gray-400 mt-1">sum of provider budgets</div></div>
-        <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold">Expenditure</div><div class="text-2xl font-semibold mt-1">{{ number_format($stats['expenditure']) }}</div><div class="text-xs text-gray-400 mt-1">paid to providers</div></div>
-        <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold">Balance</div><div class="text-2xl font-semibold mt-1">{{ number_format($stats['balance']) }}</div><div class="text-xs text-gray-400 mt-1">collected − expenditure</div></div>
-    </div>
-@endif
+    @endforeach
+</div>
 @endsection
