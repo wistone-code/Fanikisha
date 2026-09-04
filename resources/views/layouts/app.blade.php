@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>@yield('title', config('app.name'))</title>
 <link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <meta name="theme-color" content="{{ $theme['primary'] ?? '#1F3A52' }}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -396,6 +397,19 @@ document.querySelectorAll('table.sortable-table thead th[data-sort]').forEach(fu
         pendingForm = null;
     });
 })();
+</script>
+
+<script>
+// Registered after the page has fully loaded so it never competes with or
+// delays the actual page content — see public/sw.js for what it does.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {
+            // Fails silently — e.g. on http (non-HTTPS) local dev. The app
+            // works identically either way; this is a pure enhancement.
+        });
+    });
+}
 </script>
 
 </body>
