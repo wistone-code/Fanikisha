@@ -24,9 +24,12 @@
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     @foreach ($items as $item)
         @continue($item['id'] === 'home')
+        @php($icons = explode(',', $item['icon']))
         <a href="{{ route($routeNames[$item['id']]) }}" class="card p-4 flex items-center gap-3 hover:shadow-md transition">
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:#E7EDF1;color:var(--primary);">
-                <i class="fa-solid fa-{{ $item['icon'] }}"></i>
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center gap-0.5" style="background:#E7EDF1;color:var(--primary);">
+                @foreach ($icons as $icon)
+                <i class="fa-solid fa-{{ $icon }} {{ count($icons) > 1 ? 'text-xs' : '' }}"></i>
+                @endforeach
             </div>
             <div class="font-medium">{{ $item['label'] }}</div>
         </a>

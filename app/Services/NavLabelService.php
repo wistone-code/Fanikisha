@@ -55,7 +55,7 @@ class NavLabelService
             // FINANCES — the summary view, then the two pages that drive it.
             ['id' => 'financial', 'label' => $labels['financial'], 'icon' => 'chart-pie', 'group' => 'Finances'],
             ['id' => 'pledges', 'label' => $labels['pledges'], 'icon' => 'hand-holding-dollar', 'group' => 'Finances'],
-            ['id' => 'providers', 'label' => $labels['providers'], 'icon' => 'truck-fast', 'group' => 'Finances'],
+            ['id' => 'providers', 'label' => $labels['providers'], 'icon' => 'plate-wheat,wine-glass', 'group' => 'Finances'],
 
             // PEOPLE — everyone the organizer needs to coordinate: guests, helpers, staff.
             ['id' => 'invitations', 'label' => $labels['invitations'], 'icon' => 'envelope-open-text', 'group' => 'People'],
