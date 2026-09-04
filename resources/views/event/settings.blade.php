@@ -40,6 +40,7 @@
     </form>
 </div>
 
+@unless ($event->isFuneral())
 <div class="card p-6 max-w-md mt-4">
     <div class="text-sm font-semibold mb-1">Automatic reminders</div>
     <p class="text-xs text-gray-500 mb-3">When enabled, the outstanding-pledge reminder broadcast (from the Pledges → Reminder page) sends itself automatically on this schedule — no need to tap "SMS all".</p>
@@ -85,10 +86,11 @@
         <button class="btn btn-primary mt-2"><i class="fa-solid fa-upload"></i> {{ $event->hasCardPhoto() ? 'Replace photo' : 'Upload photo' }}</button>
     </form>
 </div>
+@endunless
 
 <div class="card p-6 max-w-md mt-4">
     <div class="text-sm font-semibold mb-1">Your mobile money number</div>
-    <p class="text-xs text-gray-500 mb-3">Shown on each pledger's "Pay now" page so they can send payment directly to you. Fanikisha never handles the money — this just makes it easy for them to find your number and open the right menu.</p>
+    <p class="text-xs text-gray-500 mb-3">Shown on each {{ $event->isFuneral() ? "contributor's" : "pledger's" }} "Pay now" page so they can send payment directly to you. Fanikisha never handles the money — this just makes it easy for them to find your number and open the right menu.</p>
     <form method="POST" action="{{ route('event.settings.payout') }}" class="space-y-3">
         @csrf @method('PATCH')
         <div>
@@ -109,6 +111,7 @@
     </form>
 </div>
 
+@unless ($event->isFuneral())
 <div class="card p-6 max-w-md mt-4">
     <div class="text-sm font-semibold mb-1">Card setting</div>
     <p class="text-xs text-gray-500 mb-3">When a pledge amount is at or above this figure, their e-card is generated as a "Double/Couple" card instead of "Single". Leave blank to always use Single cards. Changing this only affects pledges saved from now on — existing e-cards keep their current type.</p>
@@ -119,6 +122,7 @@
         <button class="btn btn-primary mt-2"><i class="fa-solid fa-check"></i> Save</button>
     </form>
 </div>
+@endunless
 
 <div class="card p-6 max-w-md mt-4">
     <div class="text-sm font-semibold mb-1">SMS language</div>
