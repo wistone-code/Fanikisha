@@ -76,10 +76,10 @@
                 </div>
                 @else
                 {{-- Regular accounts (admin or viewer): every nav destination is now a
-                     card on the landing page itself, so this is just a static label —
-                     no dropdown, nothing to toggle. Logout lives in the right-side
-                     account menu instead (see below). --}}
-                <span class="font-semibold">{{ config('app.name') }}</span>
+                     card on the landing page itself, so this is just a link back to
+                     that landing page — no dropdown, nothing to toggle. Logout lives
+                     in the right-side account menu instead (see below). --}}
+                <a href="{{ route('dashboard') }}" class="font-semibold hover:opacity-80">{{ config('app.name') }}</a>
                 @endif
             @else
                 <span class="font-semibold">{{ config('app.name') }}</span>
