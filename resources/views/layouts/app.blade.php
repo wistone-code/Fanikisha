@@ -79,7 +79,7 @@
                      card on the landing page itself, so this is just a link back to
                      that landing page — no dropdown, nothing to toggle. Logout lives
                      in the right-side account menu instead (see below). --}}
-                <a href="{{ route('dashboard') }}" class="font-semibold hover:opacity-80">{{ config('app.name') }}</a>
+                <a href="{{ route('dashboard') }}" class="font-semibold hover:opacity-80">Home</a>
                 @endif
             @else
                 <span class="font-semibold">{{ config('app.name') }}</span>
