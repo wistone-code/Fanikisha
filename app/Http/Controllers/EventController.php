@@ -217,4 +217,19 @@ class EventController extends Controller
 
         return back()->with('status', 'Email updated');
     }
+
+    /**
+     * Event admin's own account settings — phone. Needed for SMS-based password
+     * recovery to work for their own account. Not available to System Admin.
+     */
+    public function updateOwnPhone(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'phone' => ['nullable', 'string', 'max:20'],
+        ]);
+
+        $request->user()->update(['phone' => $data['phone'] ?? null]);
+
+        return back()->with('status', 'Phone number updated');
+    }
 }

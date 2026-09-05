@@ -34,6 +34,24 @@
 </head>
 <body class="text-[#1B2429]">
 
+@auth
+    @unless (auth()->user()->is_super_user)
+        @php($bannerEvent = app('currentEvent'))
+        @if ($bannerEvent && $bannerEvent->sms_quota !== null)
+            @php($bannerRemaining = max(0, $bannerEvent->sms_quota - $bannerEvent->sms_sent_count))
+            @if ($bannerRemaining <= 0)
+            <div class="bg-red-50 text-red-700 text-sm px-4 py-2 text-center">
+                <i class="fa-solid fa-triangle-exclamation"></i> Your SMS quota is finished — sending is paused. Contact your system admin to raise it.
+            </div>
+            @elseif ($bannerRemaining < 100)
+            <div class="bg-amber-50 text-amber-700 text-sm px-4 py-2 text-center">
+                <i class="fa-solid fa-triangle-exclamation"></i> Your SMS quota is running low — {{ $bannerRemaining }} message(s) remaining.
+            </div>
+            @endif
+        @endif
+    @endunless
+@endauth
+
 @if (session('status'))
 <div id="toast" class="fixed top-4 right-4 z-50 bg-[#1B2429] text-white px-4 py-3 rounded-lg shadow-lg text-sm">
     {{ session('status') }}
@@ -151,6 +169,17 @@
             <input type="email" name="email" value="{{ auth()->user()->email }}" class="w-full border rounded-lg px-3 py-2 text-sm" required>
             @error('email')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             <button class="btn btn-primary w-full justify-center">Save email</button>
+        </form>
+
+        <div class="border-t"></div>
+
+        <form method="POST" action="{{ route('account.phone.update') }}" class="space-y-3">
+            @csrf @method('PATCH')
+            <h4 class="text-sm font-semibold">Phone</h4>
+            <p class="text-xs text-gray-500">Used to send you a code if you ever need to reset your password.</p>
+            <input type="tel" name="phone" value="{{ auth()->user()->phone }}" placeholder="e.g. +255700000000" class="w-full border rounded-lg px-3 py-2 text-sm">
+            @error('phone')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            <button class="btn btn-primary w-full justify-center">Save phone</button>
         </form>
 
         <div class="border-t"></div>

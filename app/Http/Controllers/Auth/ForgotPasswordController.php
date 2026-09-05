@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\PasswordResetCode;
 use App\Models\User;
+use App\Services\BeemSmsService;
 use App\Services\PasswordGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,7 @@ class ForgotPasswordController extends Controller
         return view('auth.forgot-password.identify');
     }
 
-    public function identify(Request $request, PasswordGeneratorService $passwords): RedirectResponse
+    public function identify(Request $request, PasswordGeneratorService $passwords, BeemSmsService $sms): RedirectResponse
     {
         $data = $request->validate([
             'username' => ['required', 'string'],
@@ -48,6 +49,12 @@ class ForgotPasswordController extends Controller
             ])->withInput();
         }
 
+        if (blank($user->phone)) {
+            return back()->withErrors([
+                'username' => 'No phone number is on file for this account, so a reset code can\'t be sent. Contact your administrator.',
+            ])->withInput();
+        }
+
         $code = $passwords->generateSixDigitCode();
 
         PasswordResetCode::where('user_id', $user->id)->whereNull('consumed_at')->delete();
@@ -60,10 +67,16 @@ class ForgotPasswordController extends Controller
 
         Session::put(self::SESSION_KEY, $user->id);
 
-        // This prototype has no real email/SMS server, so the code is flashed to the
-        // session and shown directly on the next screen instead of being delivered.
-        // In production, dispatch a Mail/Notification here and remove this flash.
-        Session::flash('demo_code', $code);
+        $result = $sms->sendSingle(
+            'Your '.config('app.name')." password reset code is {$code}. It expires in ".self::CODE_LIFETIME_MINUTES." minutes. If you didn't request this, ignore this message.",
+            $user->phone
+        );
+
+        if (! ($result['successful'] ?? false)) {
+            return back()->withErrors([
+                'username' => "We couldn't send the code to the phone number on file. Please try again shortly, or contact your administrator.",
+            ])->withInput();
+        }
 
         return redirect()->route('password.forgot.verify');
     }
@@ -78,10 +91,24 @@ class ForgotPasswordController extends Controller
 
         $user = User::findOrFail(Session::get(self::SESSION_KEY));
 
+        $reset = PasswordResetCode::where('user_id', $user->id)->whereNull('consumed_at')->latest()->first();
+
         return view('auth.forgot-password.verify', [
             'user' => $user,
-            'demoCode' => Session::get('demo_code'),
+            'maskedPhone' => $this->maskPhone($user->phone),
+            'expiresAt' => $reset?->expires_at,
         ]);
+    }
+
+    private function maskPhone(?string $phone): string
+    {
+        if (blank($phone)) {
+            return '';
+        }
+
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        return '•••'.substr($digits, -4);
     }
 
     public function verify(Request $request): RedirectResponse

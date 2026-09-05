@@ -14,7 +14,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'username', 'email', 'password',
+        'name', 'username', 'email', 'phone', 'password',
         'is_super_user', 'must_change_password', 'is_suspended', 'created_by',
     ];
 

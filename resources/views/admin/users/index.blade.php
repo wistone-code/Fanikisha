@@ -120,6 +120,7 @@
                         <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ $account->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div><label class="text-xs font-semibold">Username</label><input type="text" name="username" value="{{ $account->username }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div><label class="text-xs font-semibold">Email</label><input type="email" name="email" value="{{ $account->email }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="text-xs font-semibold">Phone (for password recovery)</label><input type="tel" name="phone" value="{{ $account->phone }}" placeholder="e.g. +255700000000" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div class="flex gap-2 pt-2">
                             <button type="button" onclick="document.getElementById('editAccount{{ $account->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
                             <button class="btn btn-primary flex-1 justify-center">Save changes</button>
@@ -170,6 +171,7 @@
                             <div><label class="text-xs font-semibold">Name</label><input type="text" name="new_name" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                             <div><label class="text-xs font-semibold">Username</label><input type="text" name="new_username" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                             <div><label class="text-xs font-semibold">Email</label><input type="email" name="new_email" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                            <div><label class="text-xs font-semibold">Phone (for password recovery)</label><input type="tel" name="new_phone" placeholder="e.g. +255700000000" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                             <p class="text-xs text-gray-400"><i class="fa-solid fa-wand-magic-sparkles"></i> A temporary password will be generated automatically and shown once.</p>
                             <div class="flex gap-2 pt-2">
                                 <button type="button" onclick="document.getElementById('reassignEvent{{ $account->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
@@ -237,6 +239,7 @@
             <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Username</label><input type="text" name="username" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Email</label><input type="email" name="email" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Phone (for password recovery)</label><input type="tel" name="phone" placeholder="e.g. +255700000000" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <p class="text-xs text-gray-400"><i class="fa-solid fa-wand-magic-sparkles"></i> A temporary password will be generated automatically.</p>
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('newAccountModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>

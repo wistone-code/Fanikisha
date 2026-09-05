@@ -170,6 +170,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
         Route::middleware('event_admin')->group(function () {
             Route::patch('/account/username', [EventController::class, 'updateOwnUsername'])->name('account.username.update');
             Route::patch('/account/email', [EventController::class, 'updateOwnEmail'])->name('account.email.update');
+            Route::patch('/account/phone', [EventController::class, 'updateOwnPhone'])->name('account.phone.update');
 
             Route::get('/settings', [EventController::class, 'editSettings'])->name('event.settings');
             Route::patch('/settings', [EventController::class, 'updateSettings'])->name('event.settings.update');

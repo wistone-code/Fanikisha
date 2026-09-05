@@ -45,7 +45,9 @@ class BeemSmsService
 
             return [
                 'successful' => false,
-                'error' => "SMS quota exceeded — {$remaining} message(s) remaining, but this would send ".count($recipients).'.',
+                'error' => $remaining <= 0
+                    ? 'Quota finished — sending is paused. Contact your system admin to raise it.'
+                    : "Not enough quota remaining — {$remaining} left, but this would send ".count($recipients).'.',
             ];
         }
 

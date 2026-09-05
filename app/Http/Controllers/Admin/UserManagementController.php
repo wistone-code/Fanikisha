@@ -104,6 +104,7 @@ class UserManagementController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
         $plainPassword = $passwords->generate();
@@ -112,6 +113,7 @@ class UserManagementController extends Controller
             'name' => $data['name'],
             'username' => $data['username'],
             'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
             'password' => Hash::make($plainPassword),
             'is_super_user' => false,
             'must_change_password' => true,
@@ -134,9 +136,10 @@ class UserManagementController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username,'.$user->id],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
-        $before = $user->only(['name', 'username', 'email']);
+        $before = $user->only(['name', 'username', 'email', 'phone']);
 
         $user->update($data);
 
@@ -232,6 +235,7 @@ class UserManagementController extends Controller
                 'new_name' => ['required', 'string', 'max:255'],
                 'new_username' => ['required', 'string', 'max:255', 'unique:users,username'],
                 'new_email' => ['required', 'email', 'max:255', 'unique:users,email'],
+                'new_phone' => ['nullable', 'string', 'max:20'],
             ]);
 
             $plainPassword = $passwords->generate();
@@ -240,6 +244,7 @@ class UserManagementController extends Controller
                 'name' => $data['new_name'],
                 'username' => $data['new_username'],
                 'email' => $data['new_email'],
+                'phone' => $data['new_phone'] ?? null,
                 'password' => Hash::make($plainPassword),
                 'is_super_user' => false,
                 'must_change_password' => true,
