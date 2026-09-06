@@ -25,7 +25,7 @@ class EnsureNotSuspended
             $request->session()->regenerateToken();
 
             return redirect()->route('login')->withErrors([
-                'username' => 'This account has been suspended. Contact your administrator.',
+                'username' => 'This account has been suspended. Contact Fanikisha for help.',
             ]);
         }
 
