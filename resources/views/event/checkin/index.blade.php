@@ -42,7 +42,7 @@
                 <span class="text-sm">{{ $arrival->name }}</span>
                 <div class="flex items-center gap-2">
                     <span class="text-xs text-gray-500">{{ $arrival->checked_in_at->format('g:i A, M j') }}</span>
-                    <form method="POST" action="{{ route('checkin.undo', $arrival) }}" data-confirm="Remove {{ $arrival->name }}'s check-in? They'll show as not-yet-arrived again." data-confirm-title="Undo check-in?">
+                    <form method="POST" action="{{ route('checkin.undo', $arrival) }}" data-confirm="Remove {{ $arrival->name }}'s check-in? They'll show as not-yet-arrived again." data-confirm-title="Undo check-in?" data-confirm-button="Undo" data-confirm-icon="fa-rotate-left">
                         @csrf @method('DELETE')
                         <button class="btn btn-ghost !py-1 !px-2 text-xs text-red-600" title="Undo check-in"><i class="fa-solid fa-rotate-left"></i></button>
                     </form>
@@ -158,7 +158,7 @@
         row.innerHTML = '<span class="text-sm">' + escapeHtml(name) + '</span>'
             + '<div class="flex items-center gap-2">'
             + '<span class="text-xs text-gray-500">' + escapeHtml(checkedInAt) + '</span>'
-            + '<form method="POST" action="' + undoUrl + '" data-confirm="Remove ' + escapeHtml(name) + '\'s check-in? They\'ll show as not-yet-arrived again." data-confirm-title="Undo check-in?">'
+            + '<form method="POST" action="' + undoUrl + '" data-confirm="Remove ' + escapeHtml(name) + '\'s check-in? They\'ll show as not-yet-arrived again." data-confirm-title="Undo check-in?" data-confirm-button="Undo" data-confirm-icon="fa-rotate-left">'
             + '<input type="hidden" name="_token" value="' + csrfToken + '">'
             + '<input type="hidden" name="_method" value="DELETE">'
             + '<button class="btn btn-ghost !py-1 !px-2 text-xs text-red-600" title="Undo check-in"><i class="fa-solid fa-rotate-left"></i></button>'

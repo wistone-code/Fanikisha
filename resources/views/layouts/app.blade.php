@@ -402,6 +402,14 @@ document.querySelectorAll('table.sortable-table thead th[data-sort]').forEach(fu
             pendingForm = form;
             titleEl.textContent = form.getAttribute('data-confirm-title') || 'Are you sure?';
             messageEl.textContent = form.getAttribute('data-confirm');
+
+            const buttonLabel = form.getAttribute('data-confirm-button') || 'Delete';
+            const buttonIcon = form.getAttribute('data-confirm-icon') || 'fa-trash';
+            const isDestructive = !form.hasAttribute('data-confirm-button') || form.hasAttribute('data-confirm-danger');
+            okBtn.innerHTML = '<i class="fa-solid ' + buttonIcon + '"></i> ' + buttonLabel;
+            okBtn.classList.toggle('btn-danger', isDestructive);
+            okBtn.classList.toggle('btn-primary', !isDestructive);
+
             modal.classList.remove('hidden');
         }
     }, true);
