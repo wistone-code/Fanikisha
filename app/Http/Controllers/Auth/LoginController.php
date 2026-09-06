@@ -52,9 +52,15 @@ class LoginController extends Controller
         // paths take the same amount of time, closing that side channel.
         $passwordMatches = Hash::check($credentials['password'], $user->password ?? self::DUMMY_HASH);
 
-        if (! $user || ! $passwordMatches) {
+        if (! $user) {
             throw ValidationException::withMessages([
-                'username' => 'Incorrect username or password.',
+                'username' => 'This account does not exist. Contact Fanikisha for help.',
+            ]);
+        }
+
+        if (! $passwordMatches) {
+            throw ValidationException::withMessages([
+                'username' => 'Incorrect password.',
             ]);
         }
 
