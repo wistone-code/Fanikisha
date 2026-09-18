@@ -83,12 +83,12 @@ class BeemSmsService
 
             return [
                 'successful' => false,
-                'error' => $data['message'] ?? ('Beem rejected the request (HTTP '.$response->status().').'),
+                'error' => $data['message'] ?? 'Beem is currently unavailable. Please check your network and try again later.',
             ];
         } catch (Throwable $e) {
             Log::error('Beem SMS send exception', ['message' => $e->getMessage()]);
 
-            return ['successful' => false, 'error' => 'Could not reach Beem: '.$e->getMessage()];
+            return ['successful' => false, 'error' => 'Could not reach Beem — network unavailable. Please try again later.'];
         }
     }
 
