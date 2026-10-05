@@ -28,7 +28,12 @@
         </div>
         <div class="p-8">
             <p class="text-sm text-gray-500 mb-1">{{ $event->event_date->format('l, F j, Y') }}</p>
-            @if ($event->place)<p class="text-sm text-gray-500 mb-4">{{ $event->place }}</p>@endif
+            @if ($event->place)
+            <p class="text-sm text-gray-500 mb-1">{{ $event->place }}</p>
+            <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($event->place) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-xs font-semibold mb-4" style="color:{{ $theme['primary'] }};">
+                <i class="fa-solid fa-location-dot"></i> View on map
+            </a>
+            @endif
             <p class="text-sm mt-4">Dear {{ $pledge->name }}, thank you for your contribution — we look forward to celebrating with you!</p>
 
             <div class="border-t mt-6 pt-5">
