@@ -39,7 +39,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->
 Route::get('/rsvp/{token}', function (string $token) {
     $pledge = \App\Models\Pledge::where('invite_token', $token)->firstOrFail();
     $event = $pledge->event;
-    $theme = app(\App\Services\EventThemeService::class)->for($event->event_type);
+    $theme = app(\App\Services\EventThemeService::class)->forEvent($event);
 
     return view('guest.rsvp', ['pledge' => $pledge, 'event' => $event, 'theme' => $theme]);
 })->name('guest.rsvp');
@@ -76,7 +76,7 @@ Route::get('/rsvp/{token}/photo', function (string $token) {
 Route::get('/pay/{token}', function (string $token) {
     $pledge = \App\Models\Pledge::where('pay_token', $token)->firstOrFail();
     $event = $pledge->event;
-    $theme = app(\App\Services\EventThemeService::class)->for($event->event_type);
+    $theme = app(\App\Services\EventThemeService::class)->forEvent($event);
 
     return view('guest.pay', ['pledge' => $pledge, 'event' => $event, 'theme' => $theme]);
 })->name('guest.pay');
@@ -185,6 +185,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
             Route::delete('/checkin/{pledge}', [CheckinController::class, 'undoCheckin'])->name('checkin.undo');
             Route::patch('/settings/payout', [EventController::class, 'updatePayout'])->name('event.settings.payout');
             Route::patch('/settings/couple-threshold', [EventController::class, 'updateCoupleThreshold'])->name('event.settings.couple-threshold');
+            Route::patch('/settings/theme-color', [EventController::class, 'updateThemeColor'])->name('event.settings.theme-color');
             Route::patch('/settings/sms-language', [EventController::class, 'updateSmsLanguage'])->name('event.settings.sms-language');
 
             Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');

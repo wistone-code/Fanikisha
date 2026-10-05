@@ -12,7 +12,7 @@ class Event extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'event_type', 'mode', 'place', 'event_date', 'pledge_deadline', 'created_by',
+        'name', 'event_type', 'mode', 'theme_color', 'place', 'event_date', 'pledge_deadline', 'created_by',
         'provider_message', 'reminder_message', 'broadcast_message',
         'invitation_message', 'meeting_message', 'announcement_message', 'committee_message',
         'schedule_message',

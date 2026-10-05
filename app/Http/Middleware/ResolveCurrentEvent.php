@@ -44,7 +44,7 @@ class ResolveCurrentEvent
         // from the menu AND blocked here, so typing the URL doesn't reach it either.
         if ($event?->isEcard() && ! $request->routeIs(
             'dashboard', 'guests.*', 'checkin.*', 'team.*', 'account.*', 'keep-alive', 'logout', 'password.*',
-            'event.settings', 'event.settings.update', 'event.settings.card-photo.*', 'event.settings.sms-language',
+            'event.settings', 'event.settings.update', 'event.settings.card-photo.*', 'event.settings.sms-language', 'event.settings.theme-color',
         )) {
             abort(404);
         }

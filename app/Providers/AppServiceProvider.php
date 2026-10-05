@@ -66,7 +66,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.app', function ($view) {
             $event = app('currentEvent');
 
-            $view->with('theme', app(EventThemeService::class)->for($event?->event_type));
+            $view->with('theme', app(EventThemeService::class)->forEvent($event));
             $view->with('navLabels', app(NavLabelService::class)->for($event));
         });
     }

@@ -42,6 +42,76 @@
     </form>
 </div>
 
+<div class="card p-6 max-w-md mt-4">
+    <div class="text-sm font-semibold mb-1"><i class="fa-solid fa-palette"></i> Theme color</div>
+    <p class="text-xs text-gray-500 mb-3">Pick the main color used across the app and on your guests' e-cards and payment pages. {{ $event->theme_color ? 'You are using a custom color.' : 'Right now it follows your event type.' }}</p>
+    @php($themeService = app(\App\Services\EventThemeService::class))
+    @php($currentColor = $event->theme_color ?: $themeService->for($event->event_type)['primary'])
+    <form method="POST" action="{{ route('event.settings.theme-color') }}" class="space-y-3">
+        @csrf @method('PATCH')
+        <div class="flex flex-wrap gap-2">
+            @foreach (\App\Services\EventThemeService::PRESETS as $name => $hex)
+            <label class="cursor-pointer" title="{{ $name }}">
+                <input type="radio" name="theme_color" value="{{ $hex }}" class="sr-only peer theme-preset" @checked(strtolower($currentColor) === strtolower($hex))>
+                <span class="block w-9 h-9 rounded-full border-2 border-white ring-1 ring-gray-300 peer-checked:ring-2 peer-checked:ring-offset-1 peer-checked:ring-gray-800" style="background:{{ $hex }};"></span>
+            </label>
+            @endforeach
+        </div>
+        <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold">Or choose your own</label>
+            <input type="color" id="customThemeColor" value="{{ $currentColor }}" class="w-10 h-8 p-0 border rounded cursor-pointer">
+            <span id="customThemeHex" class="text-xs text-gray-500 font-mono">{{ strtolower($currentColor) }}</span>
+        </div>
+        <div class="rounded-lg px-3 py-2 text-xs text-white" id="themePreview" style="background:{{ $currentColor }};">Preview — this is how headers and buttons will look.</div>
+        @error('theme_color')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+        <div class="flex gap-2 flex-wrap">
+            <button class="btn btn-primary"><i class="fa-solid fa-check"></i> Save color</button>
+        </div>
+    </form>
+    @if ($event->theme_color)
+    <form method="POST" action="{{ route('event.settings.theme-color') }}" class="mt-2">
+        @csrf @method('PATCH')
+        <input type="hidden" name="theme_color" value="">
+        <button class="btn btn-ghost"><i class="fa-solid fa-rotate-left"></i> Use the default for {{ $event->event_type }}</button>
+    </form>
+    @endif
+</div>
+<script>
+(function () {
+    const custom = document.getElementById('customThemeColor');
+    const hexLabel = document.getElementById('customThemeHex');
+    const preview = document.getElementById('themePreview');
+    const form = custom.closest('form');
+
+    // A custom color is sent as the form's color: add (or update) a hidden field that wins over the swatches.
+    let hidden = null;
+    function setColor(hex) {
+        preview.style.background = hex;
+        hexLabel.textContent = hex;
+    }
+
+    custom.addEventListener('input', function () {
+        setColor(custom.value);
+        form.querySelectorAll('.theme-preset').forEach(function (r) { r.checked = false; });
+        if (!hidden) {
+            hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'theme_color';
+            form.appendChild(hidden);
+        }
+        hidden.value = custom.value;
+    });
+
+    form.querySelectorAll('.theme-preset').forEach(function (r) {
+        r.addEventListener('change', function () {
+            setColor(r.value);
+            custom.value = r.value;
+            if (hidden) { hidden.remove(); hidden = null; }
+        });
+    });
+})();
+</script>
+
 @unless ($event->isFuneral() || $event->isEcard())
 <div class="card p-6 max-w-md mt-4">
     <div class="text-sm font-semibold mb-1">Automatic reminders</div>

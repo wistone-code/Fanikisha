@@ -26,8 +26,91 @@ class EventThemeService
 
     private const DEFAULT = ['primary' => '#1F3A52', 'primary_dark' => '#132836', 'accent' => '#7A93A8'];
 
+    /** Ready-made colors offered on the Setting page (name => hex). All are dark enough for white text. */
+    public const PRESETS = [
+        'Navy' => '#1F3A52',
+        'Royal blue' => '#3D5A99',
+        'Ocean' => '#1F7A8C',
+        'Teal' => '#1F6B6B',
+        'Emerald' => '#2E7D5B',
+        'Purple' => '#6B3FA0',
+        'Plum' => '#7B2D5B',
+        'Burgundy' => '#8A2D3B',
+        'Terracotta' => '#B0553A',
+        'Gold' => '#8A6A1F',
+        'Charcoal' => '#3A4750',
+    ];
+
     public function for(?string $eventType): array
     {
         return self::THEMES[$eventType] ?? self::DEFAULT;
+    }
+
+    /**
+     * Theme for a whole event: the organizer's chosen color if they picked one,
+     * otherwise the default for the event's type.
+     */
+    public function forEvent(?\App\Models\Event $event): array
+    {
+        $base = $this->for($event?->event_type);
+        $custom = $event?->theme_color;
+
+        if (! $custom || ! $this->isValidColor($custom)) {
+            return $base;
+        }
+
+        return $this->fromPrimary($custom);
+    }
+
+    public function isValidColor(?string $hex): bool
+    {
+        return is_string($hex) && preg_match('/^#[0-9a-fA-F]{6}$/', $hex) === 1;
+    }
+
+    /** White text sits on the primary color, so very light colors would be unreadable. */
+    public function isDarkEnough(string $hex): bool
+    {
+        return $this->luminance($hex) <= 0.4;
+    }
+
+    /** primary_dark = the color mixed 30% toward black; accent = mixed 55% toward white. */
+    public function fromPrimary(string $hex): array
+    {
+        return [
+            'primary' => strtolower($hex),
+            'primary_dark' => $this->mix($hex, '#000000', 0.30),
+            'accent' => $this->mix($hex, '#ffffff', 0.55),
+        ];
+    }
+
+    private function mix(string $from, string $to, float $amount): string
+    {
+        $a = $this->rgb($from);
+        $b = $this->rgb($to);
+
+        return sprintf('#%02x%02x%02x',
+            (int) round($a[0] + ($b[0] - $a[0]) * $amount),
+            (int) round($a[1] + ($b[1] - $a[1]) * $amount),
+            (int) round($a[2] + ($b[2] - $a[2]) * $amount),
+        );
+    }
+
+    private function rgb(string $hex): array
+    {
+        $hex = ltrim($hex, '#');
+
+        return [hexdec(substr($hex, 0, 2)), hexdec(substr($hex, 2, 2)), hexdec(substr($hex, 4, 2))];
+    }
+
+    /** WCAG relative luminance, 0 (black) to 1 (white). */
+    private function luminance(string $hex): float
+    {
+        [$r, $g, $b] = array_map(function ($v) {
+            $v /= 255;
+
+            return $v <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4;
+        }, $this->rgb($hex));
+
+        return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
     }
 }

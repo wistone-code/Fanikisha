@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventMember;
 use App\Services\AccountUniquenessService;
 use App\Services\ActivityLogger;
+use App\Services\EventThemeService;
 use App\Services\PhoneNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -88,6 +89,28 @@ class EventController extends Controller
         $event->update($data);
 
         return back()->with('status', 'Event settings saved');
+    }
+
+    /** Saves the organizer's chosen theme color, or clears it to go back to the event type's default. */
+    public function updateThemeColor(Request $request, EventThemeService $themes): RedirectResponse
+    {
+        $event = app('currentEvent');
+
+        $data = $request->validate([
+            'theme_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ], [
+            'theme_color.regex' => 'Choose a valid color.',
+        ]);
+
+        $color = $data['theme_color'] ?? null;
+
+        if ($color !== null && ! $themes->isDarkEnough($color)) {
+            return back()->withErrors(['theme_color' => 'That color is too light — white text would be hard to read. Pick a darker shade.']);
+        }
+
+        $event->update(['theme_color' => $color !== null ? strtolower($color) : null]);
+
+        return back()->with('status', $color ? 'Theme color saved' : 'Theme color reset to the default');
     }
 
     /** Saves the toggle/frequency/time for automatic recurring reminder broadcasts. */
