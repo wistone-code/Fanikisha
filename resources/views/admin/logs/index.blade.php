@@ -38,7 +38,7 @@
 </div>
 
 <div class="card overflow-x-auto">
-    <table class="w-full text-sm">
+    <table class="w-full text-sm" data-no-search>
         <thead>
             <tr class="text-left text-xs uppercase text-gray-400 border-b">
                 <th class="px-4 py-3">When</th>

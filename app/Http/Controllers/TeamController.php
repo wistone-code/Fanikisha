@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EventMember;
 use App\Models\User;
+use App\Services\AccountMailer;
 use App\Services\PasswordGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,14 +23,14 @@ class TeamController extends Controller
         ]);
     }
 
-    public function store(Request $request, PasswordGeneratorService $passwords): RedirectResponse
+    public function store(Request $request, PasswordGeneratorService $passwords, AccountMailer $mailer): RedirectResponse
     {
         $event = app('currentEvent');
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email', 'required_if:role,admin'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', 'in:admin,viewer'],
         ]);
 
@@ -38,7 +39,7 @@ class TeamController extends Controller
         $user = User::create([
             'name' => $data['name'],
             'username' => $data['username'],
-            'email' => $data['email'] ?? null,
+            'email' => $data['email'],
             'password' => Hash::make($plainPassword),
             'is_super_user' => false,
             'must_change_password' => true,
@@ -47,8 +48,10 @@ class TeamController extends Controller
 
         EventMember::create(['event_id' => $event->id, 'user_id' => $user->id, 'role' => $data['role']]);
 
+        $emailed = $mailer->sendWelcome($user, $plainPassword);
+
         return back()->with([
-            'status' => 'Member added',
+            'status' => $emailed ? "Member added — login details emailed to {$user->email}" : 'Member added, but the email could not be sent — share the details manually',
             'reveal_credentials' => ['name' => $user->name, 'username' => $user->username, 'password' => $plainPassword],
         ]);
     }

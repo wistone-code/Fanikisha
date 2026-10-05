@@ -4,7 +4,7 @@
 @section('content')
 @include('auth.forgot-password._steps', ['step' => 2])
 
-<p class="text-sm text-gray-500 mb-3">We've sent a 6-digit verification code by SMS to the phone number on file, ending in <strong>{{ $maskedPhone }}</strong>.</p>
+<p class="text-sm text-gray-500 mb-3">We've emailed a 6-digit verification code to <strong>{{ $maskedEmail }}</strong>. Check your spam folder if it doesn't arrive.</p>
 
 @if ($expiresAt)
 <div class="bg-gray-50 rounded-lg p-3 mb-4 text-xs text-gray-500" id="codeExpiry" data-expires="{{ $expiresAt->clone()->timezone('UTC')->toIso8601String() }}">

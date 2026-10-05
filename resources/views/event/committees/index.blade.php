@@ -33,7 +33,7 @@
 </div>
 @else
 <div class="card overflow-x-auto">
-    <table class="w-full text-sm">
+    <table class="w-full text-sm" data-search-groups>
         <tbody>
         @foreach ($committees as $committee)
             <tr><td colspan="5" class="bg-gray-50 text-center text-[11px] uppercase tracking-wide text-gray-400 font-semibold px-4 py-2">Committee</td></tr>

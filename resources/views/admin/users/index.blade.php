@@ -43,7 +43,7 @@
 </div>
 
 <div class="card overflow-x-auto">
-    <table class="w-full text-sm sortable-table">
+    <table class="w-full text-sm sortable-table" data-no-search>
         <thead>
             <tr class="text-left text-xs uppercase text-gray-400 border-b">
                 <th class="px-4 py-3" data-sort="text">Username</th>

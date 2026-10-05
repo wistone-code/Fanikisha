@@ -63,7 +63,7 @@
 <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6">
         <h3 class="font-semibold text-lg mb-2">Account credentials</h3>
-        <p class="text-sm text-gray-500 mb-4">Share these with {{ session('reveal_credentials')['name'] }}. They'll set their own password on first login.</p>
+        <p class="text-sm text-gray-500 mb-4">Share these with {{ session('reveal_credentials')['name'] }} if the email doesn't reach them. They'll set their own password on first login.</p>
         <div class="bg-gray-50 rounded-lg p-3 text-sm space-y-2">
             <div class="flex justify-between"><span class="text-gray-500">Username</span><strong>{{ session('reveal_credentials')['username'] }}</strong></div>
             <div class="flex justify-between"><span class="text-gray-500">Temporary password</span><strong class="font-mono">{{ session('reveal_credentials')['password'] }}</strong></div>
@@ -386,6 +386,78 @@ document.querySelectorAll('table.sortable-table thead th[data-sort]').forEach(fu
         </div>
     </div>
 </div>
+<script>
+// Generic search box for every list table on the page. Tables inside the main
+// content get a "Search…" input above them; typing hides non-matching rows.
+// A table with data-search-groups (Event Management) is filtered by committee
+// instead: a committee stays visible if its name or any member matches.
+(function () {
+    const tables = Array.from(document.querySelectorAll('main table')).filter(function (t) {
+        return !t.closest('.fixed') && !t.hasAttribute('data-no-search') && t.tBodies.length && t.querySelectorAll('tbody tr').length;
+    });
+    const seen = new Set();
+
+    tables.forEach(function (table) {
+        if (seen.has(table)) return;
+        seen.add(table);
+
+        const grouped = table.hasAttribute('data-search-groups');
+        const wrap = table.closest('.card') || table.parentElement;
+
+        // Pages with a single data row don't need a search box.
+        const dataRows = Array.from(table.tBodies[0].rows).filter(function (r) { return !r.querySelector('td[colspan]') || grouped; });
+        if (dataRows.length < 2) return;
+
+        const box = document.createElement('div');
+        box.className = 'relative mb-3';
+        box.innerHTML = '<i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>' +
+            '<input type="search" placeholder="Search…" aria-label="Search" class="w-full border rounded-lg pl-9 pr-3 py-2 text-sm bg-white">';
+        wrap.parentNode.insertBefore(box, wrap);
+
+        const noMatch = document.createElement('div');
+        noMatch.className = 'text-center text-sm text-gray-400 py-6 hidden';
+        noMatch.textContent = 'No matches found.';
+        wrap.parentNode.insertBefore(noMatch, wrap.nextSibling);
+
+        const input = box.querySelector('input');
+
+        function groupsOf(rows) {
+            const groups = [];
+            rows.forEach(function (r) {
+                const first = r.querySelector('td[colspan]');
+                const isCommitteeHeader = first && /^committee$/i.test(first.textContent.trim());
+                if (isCommitteeHeader || !groups.length) groups.push([]);
+                groups[groups.length - 1].push(r);
+            });
+            return groups;
+        }
+
+        input.addEventListener('input', function () {
+            const q = input.value.trim().toLowerCase();
+            const rows = Array.from(table.tBodies[0].rows);
+            let visible = 0;
+
+            if (grouped) {
+                groupsOf(rows).forEach(function (g) {
+                    const match = !q || g.some(function (r) { return r.textContent.toLowerCase().includes(q); });
+                    g.forEach(function (r) { r.style.display = match ? '' : 'none'; });
+                    if (match) visible++;
+                });
+            } else {
+                rows.forEach(function (r) {
+                    if (r.querySelector('td[colspan]')) { r.style.display = q ? 'none' : ''; return; }
+                    const match = !q || r.textContent.toLowerCase().includes(q);
+                    r.style.display = match ? '' : 'none';
+                    if (match) visible++;
+                });
+            }
+
+            noMatch.classList.toggle('hidden', !q || visible > 0);
+        });
+    });
+})();
+</script>
+
 <script>
 (function () {
     const modal = document.getElementById('confirmModal');

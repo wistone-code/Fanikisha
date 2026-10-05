@@ -4,7 +4,7 @@
 @section('content')
 @include('auth.forgot-password._steps', ['step' => 1])
 
-<p class="text-sm text-gray-500 mb-4">Enter your username and the email on file to verify it's you.</p>
+<p class="text-sm text-gray-500 mb-4">Enter your username and the email on your account. We'll email you a code to reset your password.</p>
 
 @error('username')
 <div class="bg-red-50 text-red-700 text-sm rounded-lg px-3 py-2 mb-4">{{ $message }}</div>

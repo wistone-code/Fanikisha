@@ -60,8 +60,8 @@
             @csrf
             <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ old('name') }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Username</label><input type="text" name="username" value="{{ old('username') }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="text-xs font-semibold">Email <span id="emailHint" class="text-gray-400 font-normal">(required for Admin role)</span></label><input type="email" name="email" id="memberEmail" value="{{ old('email') }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <p class="text-xs text-gray-400">A temporary password will be generated automatically and shown once after adding.</p>
+            <div><label class="text-xs font-semibold">Email</label><input type="email" name="email" id="memberEmail" required value="{{ old('email') }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <p class="text-xs text-gray-400">A temporary password will be generated and emailed to them with a sign-in link. It is also shown once after adding.</p>
             <div>
                 <label class="text-xs font-semibold">Role</label>
                 <select name="role" id="memberRole" class="w-full border rounded-lg px-3 py-2 text-sm">
@@ -76,11 +76,4 @@
         </form>
     </div>
 </div>
-<script>
-document.getElementById('memberRole').addEventListener('change', function(){
-    const hint = document.getElementById('emailHint');
-    hint.textContent = this.value === 'admin' ? '(required for Admin role)' : '(optional, for contact only)';
-});
-document.getElementById('memberRole').dispatchEvent(new Event('change'));
-</script>
 @endsection

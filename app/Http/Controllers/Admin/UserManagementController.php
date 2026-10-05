@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventMember;
 use App\Models\User;
+use App\Services\AccountMailer;
 use App\Services\ActivityLogger;
 use App\Services\PasswordGeneratorService;
 use Illuminate\Http\RedirectResponse;
@@ -98,7 +99,7 @@ class UserManagementController extends Controller
         ));
     }
 
-    public function store(Request $request, PasswordGeneratorService $passwords): RedirectResponse
+    public function store(Request $request, PasswordGeneratorService $passwords, AccountMailer $mailer): RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -122,8 +123,10 @@ class UserManagementController extends Controller
 
         ActivityLogger::log('account.created', "Created account for {$user->name} ({$user->username})", $user);
 
+        $emailed = $mailer->sendWelcome($user, $plainPassword);
+
         return redirect()->route('admin.users.index')->with([
-            'status' => 'Account created',
+            'status' => $emailed ? "Account created — login details emailed to {$user->email}" : 'Account created, but the email could not be sent — share the details manually',
             'reveal_credentials' => ['name' => $user->name, 'username' => $user->username, 'password' => $plainPassword],
         ]);
     }
@@ -207,7 +210,7 @@ class UserManagementController extends Controller
      * The target can be an existing account with no event of its own, or a brand
      * new account created on the spot (same temp-password flow as store()).
      */
-    public function reassignEvent(Request $request, User $user, PasswordGeneratorService $passwords): RedirectResponse
+    public function reassignEvent(Request $request, User $user, PasswordGeneratorService $passwords, AccountMailer $mailer): RedirectResponse
     {
         abort_if($user->is_super_user, 404);
 
@@ -216,6 +219,7 @@ class UserManagementController extends Controller
 
         $mode = $request->validate(['mode' => ['required', 'in:existing,new']])['mode'];
         $revealCredentials = null;
+        $emailed = null;
 
         if ($mode === 'existing') {
             $data = $request->validate(['target_user_id' => ['required', 'exists:users,id']]);
@@ -254,6 +258,7 @@ class UserManagementController extends Controller
             ActivityLogger::log('account.created', "Created account for {$target->name} ({$target->username})", $target);
 
             $revealCredentials = ['name' => $target->name, 'username' => $target->username, 'password' => $plainPassword];
+            $emailed = $mailer->sendWelcome($target, $plainPassword);
         }
 
         $membership = EventMember::where('event_id', $event->id)->where('user_id', $user->id)->first();
@@ -269,7 +274,7 @@ class UserManagementController extends Controller
         );
 
         return back()->with(array_filter([
-            'status' => "Event reassigned to {$target->name}",
+            'status' => "Event reassigned to {$target->name}".($emailed === true ? ' — login details emailed' : ($emailed === false ? ' — email could not be sent, share the details manually' : '')),
             'reveal_credentials' => $revealCredentials,
         ]));
     }
