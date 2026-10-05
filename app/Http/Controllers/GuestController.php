@@ -67,7 +67,7 @@ class GuestController extends Controller
     public function inviteSms(Pledge $pledge, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
-        abort_unless($pledge->invite_token, 403, 'This invitation has not been activated yet.');
+        abort_unless($pledge->isPaidInFull() && $pledge->invite_token, 403, 'The invitation link activates once the pledge is paid in full.');
 
         $event = app('currentEvent');
         $result = $sms->sendSingle($messages->forInvitation($event, $pledge), $pledge->phone);
@@ -80,7 +80,7 @@ class GuestController extends Controller
     public function inviteWhatsApp(Pledge $pledge, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
-        abort_unless($pledge->invite_token, 403, 'This invitation has not been activated yet.');
+        abort_unless($pledge->isPaidInFull() && $pledge->invite_token, 403, 'The invitation link activates once the pledge is paid in full.');
 
         $event = app('currentEvent');
         $digits = $phones->digitsOnly($pledge->phone);

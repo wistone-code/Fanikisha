@@ -63,7 +63,7 @@
 
     @if ($isAdmin)
     <div>
-        <div class="mb-3"><h2 class="text-xl font-semibold">Invitation message</h2><p class="text-sm text-gray-500">Use <code>{name}</code>, <code>{place}</code>, <code>{link}</code></p></div>
+        <div class="mb-3"><h2 class="text-xl font-semibold">Invitation message</h2></div>
         <div class="card p-5">
             <form method="POST" action="{{ route('guests.message.invitation') }}">
                 @csrf @method('PATCH')
