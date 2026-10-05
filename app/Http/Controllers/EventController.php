@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventMember;
+use App\Services\AccountUniquenessService;
 use App\Services\ActivityLogger;
 use App\Services\PhoneNumberService;
 use Illuminate\Http\RedirectResponse;
@@ -191,13 +192,17 @@ class EventController extends Controller
     }
 
     /** Event admin's own account settings — username. Not available to System Admin (they use /admin/account). */
-    public function updateOwnUsername(Request $request): RedirectResponse
+    public function updateOwnUsername(Request $request, AccountUniquenessService $unique): RedirectResponse
     {
         $user = $request->user();
 
         $data = $request->validate([
-            'username' => ['required', 'string', 'max:255', 'unique:users,username,'.$user->id],
+            'username' => ['required', 'string', 'max:255'],
         ]);
+
+        if ($warnings = $unique->conflicts($data['username'], null, null, $user->id)) {
+            return back()->with('warning', $warnings);
+        }
 
         $user->update(['username' => $data['username']]);
 
@@ -205,13 +210,17 @@ class EventController extends Controller
     }
 
     /** Event admin's own account settings — email. Not available to System Admin (they use /admin/account). */
-    public function updateOwnEmail(Request $request): RedirectResponse
+    public function updateOwnEmail(Request $request, AccountUniquenessService $unique): RedirectResponse
     {
         $user = $request->user();
 
         $data = $request->validate([
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'email' => ['required', 'email', 'max:255'],
         ]);
+
+        if ($warnings = $unique->conflicts(null, $data['email'], null, $user->id)) {
+            return back()->with('warning', $warnings);
+        }
 
         $user->update(['email' => $data['email']]);
 
@@ -222,13 +231,17 @@ class EventController extends Controller
      * Event admin's own account settings — phone. Needed for SMS-based password
      * recovery to work for their own account. Not available to System Admin.
      */
-    public function updateOwnPhone(Request $request): RedirectResponse
+    public function updateOwnPhone(Request $request, AccountUniquenessService $unique, PhoneNumberService $phones): RedirectResponse
     {
         $data = $request->validate([
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
-        $request->user()->update(['phone' => $data['phone'] ?? null]);
+        if ($warnings = $unique->conflicts(null, null, $data['phone'] ?? null, $request->user()->id)) {
+            return back()->with('warning', $warnings);
+        }
+
+        $request->user()->update(['phone' => $phones->normalize($data['phone'] ?? null)]);
 
         return back()->with('status', 'Phone number updated');
     }

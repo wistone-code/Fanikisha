@@ -59,6 +59,19 @@
 <script>setTimeout(()=>document.getElementById('toast')?.remove(), 3000);</script>
 @endif
 
+@if (session('warning'))
+<div id="warningToast" class="fixed top-4 right-4 z-[60] max-w-sm bg-amber-50 border border-amber-300 text-amber-900 px-4 py-3 rounded-lg shadow-lg text-sm" role="alert">
+    <div class="flex items-start gap-2">
+        <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-500"></i>
+        <div class="flex-1">
+            <div class="font-semibold mb-1">Account not saved</div>
+            @foreach ((array) session('warning') as $w)<div>{{ $w }}</div>@endforeach
+        </div>
+        <button type="button" onclick="document.getElementById('warningToast').remove()" class="text-amber-600" aria-label="Dismiss"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+</div>
+@endif
+
 @if (session('reveal_credentials'))
 <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6">

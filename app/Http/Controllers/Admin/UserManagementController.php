@@ -7,6 +7,8 @@ use App\Models\Event;
 use App\Models\EventMember;
 use App\Models\User;
 use App\Services\AccountMailer;
+use App\Services\AccountUniquenessService;
+use App\Services\PhoneNumberService;
 use App\Services\ActivityLogger;
 use App\Services\PasswordGeneratorService;
 use Illuminate\Http\RedirectResponse;
@@ -99,14 +101,18 @@ class UserManagementController extends Controller
         ));
     }
 
-    public function store(Request $request, PasswordGeneratorService $passwords, AccountMailer $mailer): RedirectResponse
+    public function store(Request $request, PasswordGeneratorService $passwords, AccountMailer $mailer, AccountUniquenessService $unique, PhoneNumberService $phones): RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'username' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
+
+        if ($warnings = $unique->conflicts($data['username'], $data['email'], $data['phone'] ?? null)) {
+            return back()->withInput()->with('warning', $warnings);
+        }
 
         $plainPassword = $passwords->generate();
 
@@ -114,7 +120,7 @@ class UserManagementController extends Controller
             'name' => $data['name'],
             'username' => $data['username'],
             'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
+            'phone' => $phones->normalize($data['phone'] ?? null),
             'password' => Hash::make($plainPassword),
             'is_super_user' => false,
             'must_change_password' => true,
@@ -131,16 +137,22 @@ class UserManagementController extends Controller
         ]);
     }
 
-    public function update(Request $request, User $user): RedirectResponse
+    public function update(Request $request, User $user, AccountUniquenessService $unique, PhoneNumberService $phones): RedirectResponse
     {
         abort_if($user->is_super_user, 404);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:255', 'unique:users,username,'.$user->id],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'username' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
+
+        if ($warnings = $unique->conflicts($data['username'], $data['email'], $data['phone'] ?? null, $user->id)) {
+            return back()->with('warning', $warnings);
+        }
+
+        $data['phone'] = $phones->normalize($data['phone'] ?? null);
 
         $before = $user->only(['name', 'username', 'email', 'phone']);
 
@@ -210,7 +222,7 @@ class UserManagementController extends Controller
      * The target can be an existing account with no event of its own, or a brand
      * new account created on the spot (same temp-password flow as store()).
      */
-    public function reassignEvent(Request $request, User $user, PasswordGeneratorService $passwords, AccountMailer $mailer): RedirectResponse
+    public function reassignEvent(Request $request, User $user, PasswordGeneratorService $passwords, AccountMailer $mailer, AccountUniquenessService $unique, PhoneNumberService $phones): RedirectResponse
     {
         abort_if($user->is_super_user, 404);
 
@@ -237,10 +249,14 @@ class UserManagementController extends Controller
         } else {
             $data = $request->validate([
                 'new_name' => ['required', 'string', 'max:255'],
-                'new_username' => ['required', 'string', 'max:255', 'unique:users,username'],
-                'new_email' => ['required', 'email', 'max:255', 'unique:users,email'],
+                'new_username' => ['required', 'string', 'max:255'],
+                'new_email' => ['required', 'email', 'max:255'],
                 'new_phone' => ['nullable', 'string', 'max:20'],
             ]);
+
+            if ($warnings = $unique->conflicts($data['new_username'], $data['new_email'], $data['new_phone'] ?? null)) {
+                return back()->with('warning', $warnings);
+            }
 
             $plainPassword = $passwords->generate();
 
@@ -248,7 +264,7 @@ class UserManagementController extends Controller
                 'name' => $data['new_name'],
                 'username' => $data['new_username'],
                 'email' => $data['new_email'],
-                'phone' => $data['new_phone'] ?? null,
+                'phone' => $phones->normalize($data['new_phone'] ?? null),
                 'password' => Hash::make($plainPassword),
                 'is_super_user' => false,
                 'must_change_password' => true,

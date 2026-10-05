@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\EventMember;
 use App\Models\User;
 use App\Services\AccountMailer;
+use App\Services\AccountUniquenessService;
+use App\Services\PhoneNumberService;
 use App\Services\PasswordGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,16 +25,21 @@ class TeamController extends Controller
         ]);
     }
 
-    public function store(Request $request, PasswordGeneratorService $passwords, AccountMailer $mailer): RedirectResponse
+    public function store(Request $request, PasswordGeneratorService $passwords, AccountMailer $mailer, AccountUniquenessService $unique, PhoneNumberService $phones): RedirectResponse
     {
         $event = app('currentEvent');
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'username' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
             'role' => ['required', 'in:admin,viewer'],
         ]);
+
+        if ($warnings = $unique->conflicts($data['username'], $data['email'], $data['phone'] ?? null)) {
+            return back()->withInput()->with('warning', $warnings);
+        }
 
         $plainPassword = $passwords->generate();
 
@@ -40,6 +47,7 @@ class TeamController extends Controller
             'name' => $data['name'],
             'username' => $data['username'],
             'email' => $data['email'],
+            'phone' => $phones->normalize($data['phone'] ?? null),
             'password' => Hash::make($plainPassword),
             'is_super_user' => false,
             'must_change_password' => true,

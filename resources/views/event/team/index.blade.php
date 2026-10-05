@@ -61,6 +61,7 @@
             <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ old('name') }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Username</label><input type="text" name="username" value="{{ old('username') }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Email</label><input type="email" name="email" id="memberEmail" required value="{{ old('email') }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Phone <span class="text-gray-400 font-normal">(optional, for SMS password recovery)</span></label><input type="tel" name="phone" value="{{ old('phone') }}" placeholder="e.g. 0712 345 678" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <p class="text-xs text-gray-400">A temporary password will be generated and emailed to them with a sign-in link. It is also shown once after adding.</p>
             <div>
                 <label class="text-xs font-semibold">Role</label>
