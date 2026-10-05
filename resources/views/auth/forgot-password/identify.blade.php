@@ -4,7 +4,7 @@
 @section('content')
 @include('auth.forgot-password._steps', ['step' => 1])
 
-<p class="text-sm text-gray-500 mb-4">Enter your username and the email on your account. We'll email you a code to reset your password.</p>
+<p class="text-sm text-gray-500 mb-4">Enter your username and the email on your account. Choose how you'd like to receive your reset code.</p>
 
 @error('username')
 <div class="bg-red-50 text-red-700 text-sm rounded-lg px-3 py-2 mb-4">{{ $message }}</div>
@@ -19,6 +19,17 @@
     <div>
         <label class="text-xs font-semibold">Email</label>
         <input type="email" name="email" value="{{ old('email') }}" required class="w-full border rounded-lg px-3 py-2.5 text-sm mt-1">
+    </div>
+    <div>
+        <label class="text-xs font-semibold">Send my code by</label>
+        <div class="grid grid-cols-2 gap-2 mt-1">
+            <label class="border rounded-lg px-3 py-2.5 text-sm flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="channel" value="email" {{ old('channel', 'email') === 'email' ? 'checked' : '' }}> <i class="fa-solid fa-envelope text-gray-400"></i> Email
+            </label>
+            <label class="border rounded-lg px-3 py-2.5 text-sm flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="channel" value="sms" {{ old('channel') === 'sms' ? 'checked' : '' }}> <i class="fa-solid fa-comment-sms text-gray-400"></i> SMS
+            </label>
+        </div>
     </div>
     <button class="btn btn-primary mt-2">Continue</button>
 </form>

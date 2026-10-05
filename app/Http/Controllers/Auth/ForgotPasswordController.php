@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PasswordResetCode;
 use App\Models\User;
 use App\Services\AccountMailer;
+use App\Services\BeemSmsService;
 use App\Services\PasswordGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ class ForgotPasswordController extends Controller
 {
     private const SESSION_KEY = 'password_reset_user_id';
 
+    private const CHANNEL_KEY = 'password_reset_channel';
+
     private const MAX_ATTEMPTS = 5;
 
     private const CODE_LIFETIME_MINUTES = 15;
@@ -29,11 +32,12 @@ class ForgotPasswordController extends Controller
         return view('auth.forgot-password.identify');
     }
 
-    public function identify(Request $request, PasswordGeneratorService $passwords, AccountMailer $mailer): RedirectResponse
+    public function identify(Request $request, PasswordGeneratorService $passwords, AccountMailer $mailer, BeemSmsService $sms): RedirectResponse
     {
         $data = $request->validate([
             'username' => ['required', 'string'],
             'email' => ['required', 'email'],
+            'channel' => ['required', 'in:email,sms'],
         ]);
 
         // Deliberately generic error either way — confirming *which* field was wrong
@@ -49,6 +53,12 @@ class ForgotPasswordController extends Controller
             ])->withInput();
         }
 
+        if ($data['channel'] === 'sms' && blank($user->phone)) {
+            return back()->withErrors([
+                'username' => "No phone number is on file for this account, so a code can't be sent by SMS. Choose email instead.",
+            ])->withInput();
+        }
+
         $code = $passwords->generateSixDigitCode();
 
         PasswordResetCode::where('user_id', $user->id)->whereNull('consumed_at')->delete();
@@ -60,10 +70,21 @@ class ForgotPasswordController extends Controller
         ]);
 
         Session::put(self::SESSION_KEY, $user->id);
+        Session::put(self::CHANNEL_KEY, $data['channel']);
 
-        if (! $mailer->sendResetCode($user, $code, self::CODE_LIFETIME_MINUTES)) {
+        if ($data['channel'] === 'sms') {
+            $result = $sms->sendSingle(
+                'Your '.config('app.name')." password reset code is {$code}. It expires in ".self::CODE_LIFETIME_MINUTES." minutes. If you didn't request this, ignore this message.",
+                $user->phone
+            );
+            $sent = (bool) ($result['successful'] ?? false);
+        } else {
+            $sent = $mailer->sendResetCode($user, $code, self::CODE_LIFETIME_MINUTES);
+        }
+
+        if (! $sent) {
             return back()->withErrors([
-                'username' => "We couldn't send the code to the email on file. Please try again shortly, or contact your administrator.",
+                'username' => "We couldn't send the code by ".($data['channel'] === 'sms' ? 'SMS' : 'email').'. Please try again shortly, try the other option, or contact your administrator.',
             ])->withInput();
         }
 
@@ -84,9 +105,18 @@ class ForgotPasswordController extends Controller
 
         return view('auth.forgot-password.verify', [
             'user' => $user,
+            'channel' => Session::get(self::CHANNEL_KEY, 'email'),
             'maskedEmail' => $this->maskEmail($user->email),
+            'maskedPhone' => $this->maskPhone($user->phone),
             'expiresAt' => $reset?->expires_at,
         ]);
+    }
+
+    private function maskPhone(?string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone) ?? '';
+
+        return $digits === '' ? '' : '•••'.substr($digits, -4);
     }
 
     private function maskEmail(?string $email): string
@@ -168,7 +198,7 @@ class ForgotPasswordController extends Controller
             'must_change_password' => false,
         ])->save();
 
-        Session::forget([self::SESSION_KEY, 'password_reset_verified']);
+        Session::forget([self::SESSION_KEY, self::CHANNEL_KEY, 'password_reset_verified']);
 
         return redirect()->route('login')->with('status', 'Password reset — you can now sign in.');
     }
