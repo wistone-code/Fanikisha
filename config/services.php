@@ -13,6 +13,11 @@ return [
         'cost_per_sms' => env('BEEM_COST_PER_SMS', 20),
     ],
 
+    // Sends account emails over HTTPS (Railway Hobby blocks SMTP). See AccountMailer.
+    'resend' => [
+        'key' => env('RESEND_API_KEY'),
+    ],
+
     'anthropic' => [
         'api_key' => env('ANTHROPIC_API_KEY'),
     ],

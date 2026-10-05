@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Mail\AccountCreatedMail;
 use App\Mail\PasswordResetCodeMail;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -32,7 +33,14 @@ class AccountMailer
         }
 
         try {
-            Mail::to($user->email)->send($mailable);
+            // Railway's Hobby plan blocks outbound SMTP, so when a Resend API key is
+            // configured we send over HTTPS instead. Without a key we fall back to
+            // whatever Laravel mailer is configured (SMTP, log, ...).
+            if (config('services.resend.key')) {
+                $this->sendViaResend($user, $mailable);
+            } else {
+                Mail::to($user->email)->send($mailable);
+            }
 
             return true;
         } catch (Throwable $e) {
@@ -40,5 +48,20 @@ class AccountMailer
 
             return false;
         }
+    }
+
+    private function sendViaResend(User $user, $mailable): void
+    {
+        $from = config('mail.from');
+
+        Http::withToken(config('services.resend.key'))
+            ->timeout(10)
+            ->post('https://api.resend.com/emails', [
+                'from' => $from['name'].' <'.$from['address'].'>',
+                'to' => [$user->email],
+                'subject' => $mailable->envelope()->subject,
+                'html' => $mailable->render(),
+            ])
+            ->throw();
     }
 }
