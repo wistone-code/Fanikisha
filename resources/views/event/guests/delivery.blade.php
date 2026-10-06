@@ -80,7 +80,6 @@
                     @if ($p->invite_sent_at === null)
                     <form method="POST" action="{{ route('delivery.mark-sent', $p) }}" class="inline">@csrf <button class="btn btn-ghost !py-1.5 !px-2.5 text-xs" title="Mark as sent (you sent it yourself)"><i class="fa-solid fa-check"></i> Mark sent</button></form>
                     @elseif ($p->first_opened_at === null && $p->phone)
-                    <a href="{{ route('delivery.remind-wa', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5 text-xs" title="Remind on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
                     @endif
                     <form method="POST" action="{{ route('delivery.reissue', $p) }}" class="inline" data-confirm="Create a new card link for {{ $p->name }}? The old link stops working, and you will need to send the new one." data-confirm-title="Reissue card?" data-confirm-button="Reissue">@csrf <button class="btn btn-ghost !py-1.5 !px-2.5 text-xs" title="New link (old one stops working)"><i class="fa-solid fa-arrows-rotate"></i></button></form>
                     <form method="POST" action="{{ route('delivery.revoke', $p) }}" class="inline" data-confirm="Cancel {{ $p->name }}'s card? The link and QR code stop working straight away." data-confirm-title="Cancel card?" data-confirm-button="Cancel card">@csrf <button class="btn btn-danger !py-1.5 !px-2.5 text-xs" title="Cancel this card"><i class="fa-solid fa-ban"></i></button></form>

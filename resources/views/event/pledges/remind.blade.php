@@ -34,7 +34,6 @@
                         @csrf
                         <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
                     </form>
-                    <a href="{{ route('pledges.remind.whatsapp', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
                 </td>
             </tr>
         @empty

@@ -61,7 +61,6 @@
                         @csrf
                         <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
                     </form>
-                    <a href="{{ route('committees.members.whatsapp', $member) }}" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
                 </td>
                 @if ($isAdmin)
                 <td class="px-4 py-3 text-right">
