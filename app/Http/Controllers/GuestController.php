@@ -266,6 +266,9 @@ class GuestController extends Controller
     public function inviteWhatsApp(Pledge $pledge, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
+        if ($blocked = app(\App\Services\OptOutService::class)->blockedRedirect($pledge->phone)) {
+            return $blocked;
+        }
         abort_unless($this->canSendInvite($pledge), 403, 'The invitation link activates once the pledge is paid in full.');
 
         $event = app('currentEvent');

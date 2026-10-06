@@ -118,6 +118,18 @@ class BeemSmsService
             return ['successful' => false, 'error' => 'No recipients with a phone number.'];
         }
 
+        // Numbers that asked to stop are never messaged (suppression list).
+        $suppressed = app(OptOutService::class)->suppressedAmong(array_column($recipients, 'dest_addr'));
+
+        if ($suppressed !== []) {
+            $recipients = array_values(array_filter($recipients, fn ($r) => ! isset($suppressed[ltrim($r['dest_addr'], '+')])));
+            $recipients = array_map(fn ($r, $i) => ['recipient_id' => (string) ($i + 1), 'dest_addr' => $r['dest_addr']], $recipients, array_keys($recipients));
+
+            if (empty($recipients)) {
+                return ['successful' => false, 'error' => 'This number asked not to receive messages, so nothing was sent.'];
+            }
+        }
+
         $event = $this->quotaEvent();
 
         if ($event && ! $event->hasSmsCapacity(count($recipients))) {

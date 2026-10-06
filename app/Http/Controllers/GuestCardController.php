@@ -62,6 +62,17 @@ class GuestCardController extends Controller
         ]);
     }
 
+    /** "Stop messages" on the card: the number goes on the suppression list at once, for every event. */
+    public function stopMessages(Request $request, string $token, \App\Services\OptOutService $optOuts): RedirectResponse
+    {
+        $pledge = $this->find($token);
+        abort_unless($pledge, 404);
+
+        $optOuts->add($pledge->phone, 'card', $pledge->event_id);
+
+        return redirect()->route('guest.rsvp', array_filter(['token' => $token, 'lang' => $request->query('lang')]))->with('stopped', true);
+    }
+
     public function respond(Request $request, string $token): RedirectResponse
     {
         $pledge = $this->find($token);

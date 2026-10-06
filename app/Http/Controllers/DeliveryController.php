@@ -113,6 +113,9 @@ class DeliveryController extends Controller
     public function remindWhatsApp(Pledge $pledge, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
+        if ($blocked = app(\App\Services\OptOutService::class)->blockedRedirect($pledge->phone)) {
+            return $blocked;
+        }
         abort_unless($pledge->invite_token, 404);
 
         $pledge->update(['unopened_reminded_at' => now()]);

@@ -114,6 +114,9 @@ class CommitteeController extends Controller
     public function notifyWhatsApp(CommitteeMember $member, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
     {
         $this->assertCommitteeMemberInCurrentEvent($member);
+        if ($blocked = app(\App\Services\OptOutService::class)->blockedRedirect($member->pledge->phone)) {
+            return $blocked;
+        }
 
         $event = app('currentEvent');
         $digits = $phones->digitsOnly($member->pledge->phone);

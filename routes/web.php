@@ -20,9 +20,19 @@ use App\Http\Controllers\GuestController;
 use App\Http\Controllers\PublicPhotoWallController;
 use App\Http\Controllers\PledgeController;
 use App\Http\Controllers\ProviderController;
+use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
+
+// ---- Public pages (no login) ----------------------------------------------------------
+// '/' is the public landing page for visitors; signed-in users are sent on to the dashboard.
+Route::get('/', [PublicPageController::class, 'home'])->name('home');
+Route::get('/privacy', [PublicPageController::class, 'privacy'])->name('privacy');
+Route::get('/terms', [PublicPageController::class, 'terms'])->name('terms');
+Route::get('/acceptable-use', [PublicPageController::class, 'acceptableUse'])->name('acceptable-use');
+Route::get('/data-request', [PublicPageController::class, 'dataRequestForm'])->name('data-request');
+Route::post('/data-request', [PublicPageController::class, 'dataRequestStore'])->middleware('throttle:5,10')->name('data-request.store');
 
 // ---- Guest ---------------------------------------------------------------------------
 
@@ -44,6 +54,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->
 
 // ---- Public guest card (no login — the secret link is the key) -------------------------
 Route::get('/rsvp/{token}', [GuestCardController::class, 'show'])->name('guest.rsvp');
+Route::post('/rsvp/{token}/stop', [GuestCardController::class, 'stopMessages'])->middleware('throttle:10,1')->name('guest.rsvp.stop');
 Route::post('/rsvp/{token}/respond', [GuestCardController::class, 'respond'])->middleware('throttle:30,1')->name('guest.rsvp.respond');
 Route::get('/rsvp/{token}/photo', [GuestCardController::class, 'photo'])->name('guest.rsvp.photo');
 Route::get('/rsvp/{token}/design', [GuestCardController::class, 'design'])->name('guest.rsvp.design');
@@ -122,7 +133,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
     // a graceful redirect, since app('currentEvent') would never have been bound at all.
     Route::middleware('resolve_event')->group(function () {
 
-        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/financial', [FinancialController::class, 'index'])->name('financial.index');
 

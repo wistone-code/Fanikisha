@@ -27,6 +27,12 @@
         <div class="px-8 pb-8 pt-2">
             @yield('content')
         </div>
+        <div class="text-center text-xs text-gray-400 pb-5">
+            <a href="{{ route('home') }}" class="hover:text-gray-600">Home</a> ·
+            <a href="{{ route('privacy') }}" class="hover:text-gray-600">Privacy</a> ·
+            <a href="{{ route('terms') }}" class="hover:text-gray-600">Terms</a> ·
+            <a href="{{ route('data-request') }}" class="hover:text-gray-600">Your data</a>
+        </div>
     </div>
 </body>
 </html>

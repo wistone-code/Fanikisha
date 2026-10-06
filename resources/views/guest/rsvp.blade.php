@@ -200,6 +200,20 @@
     <a href="{{ route('wall.show', [$event->photo_wall_token, 'c' => $pledge->invite_token]) }}" class="btn btn-ghost w-full max-w-sm"><i class="fa-solid fa-images"></i> {{ $L['photos'] }}</a>
     @endif
 
+    <div class="w-full max-w-sm text-center text-xs mt-4 mb-8 px-2" style="color:#374151;background:rgba(255,255,255,.9);border-radius:10px;padding:10px 8px">
+        @if (session('stopped'))
+            <p class="mb-2 font-semibold">{{ $L['stopped_msg'] }}</p>
+        @else
+            <p class="mb-2">{{ $L['msg_note'] }}</p>
+            <form method="POST" action="{{ route('guest.rsvp.stop', ['token' => $pledge->invite_token, 'lang' => $lang]) }}" class="inline" onsubmit="return confirm({{ Js::from($L['stop_messages'].'?') }})">
+                @csrf
+                <button type="submit" class="underline">{{ $L['stop_messages'] }}</button>
+            </form>
+            ·
+        @endif
+        <a href="{{ route('privacy', ['lang' => $lang]) }}" class="underline">{{ $L['privacy'] }}</a>
+    </div>
+
     <script src="{{ asset('js/qrcode.js') }}"></script>
     <script src="{{ asset('js/html2canvas.min.js') }}"></script>
     <script>

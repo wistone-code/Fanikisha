@@ -128,6 +128,9 @@ class ProviderController extends Controller
     public function sendWhatsApp(Provider $provider, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
     {
         $this->assertProviderInCurrentEvent($provider);
+        if ($blocked = app(\App\Services\OptOutService::class)->blockedRedirect($provider->phone)) {
+            return $blocked;
+        }
 
         $event = app('currentEvent');
         $digits = $phones->digitsOnly($provider->phone);

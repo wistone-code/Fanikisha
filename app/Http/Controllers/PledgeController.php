@@ -289,6 +289,9 @@ class PledgeController extends Controller
     public function remindWhatsApp(Pledge $pledge, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
+        if ($blocked = app(\App\Services\OptOutService::class)->blockedRedirect($pledge->phone)) {
+            return $blocked;
+        }
 
         $event = app('currentEvent');
         $digits = $phones->digitsOnly($pledge->phone);
