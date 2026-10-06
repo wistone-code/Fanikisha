@@ -6,12 +6,10 @@ use App\Models\AccountRequest;
 use App\Models\DataRequest;
 use App\Services\OptOutService;
 use App\Services\PhoneNumberService;
+use App\Services\PlainMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Throwable;
 
 class PublicPageController extends Controller
 {
@@ -113,40 +111,30 @@ class PublicPageController extends Controller
 
     private function notifyAccountRequest(AccountRequest $r): void
     {
-        try {
-            $body = "New account request #{$r->id}\nName: {$r->name}\nPhone: {$r->phone}\nEmail: {$r->email}\nEvent: {$r->event_type}"
-                .($r->event_date ? ' on '.$r->event_date->format('j M Y') : '')."\nPlace: {$r->location}\nGuests: {$r->guests}\nNeeds: {$r->needs}\n\n{$r->message}\n\nNext: contact them, then create their account in User Management.";
-            // Goes to the company inbox (info@fanikisha.app unless COMPANY_EMAIL is changed).
-            // Reply-To lets you answer the person straight from the mail.
-            Mail::raw($body, function ($m) use ($r) {
-                $m->to(config('company.email'))->subject("Fanikisha account request #{$r->id}: {$r->name}");
-                if (filled($r->email)) {
-                    $m->replyTo($r->email, $r->name);
-                }
-            });
+        $mailer = app(PlainMailer::class);
 
-            if (filled($r->email)) {
-                $sw = $r->language === 'sw';
-                $text = $sw
-                    ? "Habari {$r->name},\n\nTumepokea ombi lako la akaunti ya Fanikisha. Tutawasiliana nawe kwa simu au barua pepe ndani ya siku 2 za kazi.\n\n— ".config('company.legal_name')
-                    : "Hello {$r->name},\n\nWe received your request for a Fanikisha account. We will contact you by phone or email within 2 working days.\n\n— ".config('company.legal_name');
-                Mail::raw($text, fn ($m) => $m->to($r->email)->subject($sw ? 'Fanikisha: tumepokea ombi lako' : 'Fanikisha: we received your request'));
-            }
-        } catch (Throwable $e) {
-            // The request is stored; a mail failure must not lose it or show the person an error.
-            Log::warning('Account request email failed', ['id' => $r->id, 'message' => $e->getMessage()]);
+        $body = "New account request #{$r->id}\nName: {$r->name}\nPhone: {$r->phone}\nEmail: {$r->email}\nEvent: {$r->event_type}"
+            .($r->event_date ? ' on '.$r->event_date->format('j M Y') : '')."\nPlace: {$r->location}\nGuests: {$r->guests}\nNeeds: {$r->needs}\nLanguage: {$r->language}\n\n{$r->message}\n\nNext: contact them, then create their account in User Management.";
+
+        // Goes to the company inbox (info@fanikisha.app unless COMPANY_EMAIL is changed).
+        // Reply-To lets you answer the person straight from the mail.
+        $mailer->send(config('company.email'), "Fanikisha account request #{$r->id}: {$r->name}", $body, $r->email, $r->name);
+
+        if (filled($r->email)) {
+            $sw = $r->language === 'sw';
+            $text = $sw
+                ? "Habari {$r->name},\n\nTumepokea ombi lako la akaunti ya Fanikisha. Tutawasiliana nawe kwa simu au barua pepe ndani ya siku 2 za kazi.\n\n— ".config('company.legal_name')
+                : "Hello {$r->name},\n\nWe received your request for a Fanikisha account. We will contact you by phone or email within 2 working days.\n\n— ".config('company.legal_name');
+            $mailer->send($r->email, $sw ? 'Fanikisha: tumepokea ombi lako' : 'Fanikisha: we received your request', $text, config('company.email'));
         }
     }
 
     private function notifyDpo(DataRequest $r): void
     {
-        try {
-            $body = "New data request #{$r->id} ({$r->type})\nName: {$r->name}\nPhone: {$r->phone}\nEmail: {$r->email}\n\n{$r->details}\n\nAcknowledge within 2 working days; complete within 30 days.";
-            Mail::raw($body, fn ($m) => $m->to(config('company.email'))->subject("Fanikisha data request #{$r->id}: {$r->type}"));
-        } catch (Throwable $e) {
-            // The request is stored; a mail failure must not lose it or show the person an error.
-            Log::warning('Data request email failed', ['id' => $r->id, 'message' => $e->getMessage()]);
-        }
+        // The request is already stored; a mail failure must not lose it or show the person an error.
+        $body = "New data request #{$r->id} ({$r->type})\nName: {$r->name}\nPhone: {$r->phone}\nEmail: {$r->email}\n\n{$r->details}\n\nAcknowledge within 2 working days; complete within 30 days.";
+
+        app(PlainMailer::class)->send(config('company.email'), "Fanikisha data request #{$r->id}: {$r->type}", $body, $r->email, $r->name);
     }
 
     private function legal(Request $request, string $file, string $title, string $titleSw, string $description)

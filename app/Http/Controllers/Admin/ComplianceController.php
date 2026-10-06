@@ -7,12 +7,10 @@ use App\Models\DataRequest;
 use App\Models\MessageOptOut;
 use App\Services\ActivityLogger;
 use App\Services\OptOutService;
+use App\Services\PlainMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
-use Throwable;
 
 /**
  * System Admin's privacy-compliance desk: public data requests and the "do not message" list.
@@ -127,11 +125,8 @@ class ComplianceController extends Controller
             return;
         }
 
-        try {
-            $footer = "\n\n— ".config('company.legal_name')."\nThis message comes from a no-reply address; to reach us write to ".config('company.email').'.';
-            Mail::raw($text.$footer, fn ($m) => $m->to($r->email)->subject("Fanikisha: {$subject}"));
-        } catch (Throwable $e) {
-            Log::warning('Data request email to requester failed', ['id' => $r->id, 'message' => $e->getMessage()]);
-        }
+        $footer = "\n\n— ".config('company.legal_name')."\nThis message comes from a no-reply address; to reach us write to ".config('company.email').'.';
+
+        app(PlainMailer::class)->send($r->email, "Fanikisha: {$subject}", $text.$footer, config('company.email'));
     }
 }
