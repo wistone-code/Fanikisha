@@ -96,7 +96,8 @@ class ComplianceAdminTest extends TestCase
         $this->actingAs($admin)->patch(route('admin.compliance.request', $r), ['action' => 'block'])->assertRedirect();
         $this->assertTrue(app(OptOutService::class)->isOptedOut('+255712777888'));
         $this->assertSame('acknowledged', $r->fresh()->status);
-        $this->actingAs($admin)->get(route('admin.compliance'))->assertSee('Unblock');
+        // The Unblock form asks for confirmation; its action must travel in a hidden field, not only in the button.
+        $this->actingAs($admin)->get(route('admin.compliance'))->assertSee('Unblock')->assertSee('<input type="hidden" name="action" value="unblock">', false);
 
         $this->actingAs($admin)->patch(route('admin.compliance.request', $r), ['action' => 'unblock'])->assertRedirect();
         $this->assertFalse(app(OptOutService::class)->isOptedOut('0712777888'));

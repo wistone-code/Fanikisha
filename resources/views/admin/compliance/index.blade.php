@@ -12,6 +12,10 @@
     <p class="text-sm text-gray-500">Requests from the public page <span class="font-mono">/data-request</span> and the list of numbers that must never be messaged. Targets: acknowledge within 2 days, finish within 30 days.</p>
 </div>
 
+@if ($errors->any())
+    <div class="rounded-xl bg-red-50 text-red-700 p-3 text-sm mb-4">{{ $errors->first() }}</div>
+@endif
+
 <div class="flex gap-2 mb-4">
     <a href="{{ route('admin.compliance', ['tab' => 'requests']) }}" class="px-3 py-1.5 rounded-full text-xs font-semibold {{ $tab === 'requests' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200' }}">
         Data requests @if ($openCount)<span class="ml-1">({{ $openCount }} open)</span>@endif
@@ -63,7 +67,8 @@
                             <span class="text-xs text-green-700"><i class="fa-solid fa-ban"></i> Blocked — this number gets no messages.</span>
                             <form method="POST" action="{{ route('admin.compliance.request', $r) }}" data-confirm="Unblock this number? Only do this if the person asked to receive messages again.">
                                 @csrf @method('PATCH')
-                                <button name="action" value="unblock" class="btn btn-ghost !w-auto !py-1.5 !px-2.5 text-xs">Unblock</button>
+                                <input type="hidden" name="action" value="unblock">
+                                <button class="btn btn-ghost !w-auto !py-1.5 !px-2.5 text-xs">Unblock</button>
                             </form>
                         @else
                             <span class="text-xs text-amber-700"><i class="fa-solid fa-hourglass-half"></i> Waiting for your approval — not blocked yet.</span>

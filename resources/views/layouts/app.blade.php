@@ -487,12 +487,15 @@ document.querySelectorAll('table.sortable-table thead th[data-sort]').forEach(fu
     const okBtn = document.getElementById('confirmModalOk');
     const cancelBtn = document.getElementById('confirmModalCancel');
     let pendingForm = null;
+    let pendingSubmitter = null;
 
     document.addEventListener('submit', function (e) {
         const form = e.target;
         if (form instanceof HTMLFormElement && form.hasAttribute('data-confirm') && !form.dataset.confirmed) {
             e.preventDefault();
             pendingForm = form;
+            // Remember which button was pressed: requestSubmit() without it drops the button's name/value.
+            pendingSubmitter = e.submitter || null;
             titleEl.textContent = form.getAttribute('data-confirm-title') || 'Are you sure?';
             messageEl.textContent = form.getAttribute('data-confirm');
 
@@ -510,6 +513,7 @@ document.querySelectorAll('table.sortable-table thead th[data-sort]').forEach(fu
     function close() {
         modal.classList.add('hidden');
         pendingForm = null;
+        pendingSubmitter = null;
     }
 
     cancelBtn.addEventListener('click', close);
@@ -520,11 +524,12 @@ document.querySelectorAll('table.sortable-table thead th[data-sort]').forEach(fu
         pendingForm.dataset.confirmed = '1';
         modal.classList.add('hidden');
         if (pendingForm.requestSubmit) {
-            pendingForm.requestSubmit();
+            pendingForm.requestSubmit(pendingSubmitter || undefined);
         } else {
             pendingForm.submit();
         }
         pendingForm = null;
+        pendingSubmitter = null;
     });
 })();
 </script>
