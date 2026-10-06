@@ -2,6 +2,8 @@
 @section('title', 'Card delivery — '.config('app.name'))
 
 @section('content')
+@php($optOuts = app(\App\Services\OptOutService::class))
+@php($optSet = $optOuts->suppressedAmong($rows->pluck('phone')->all()))
 @include('event.guests._tabs', ['active' => 'delivery'])
 
 @php($pct = fn ($n) => $counts['total'] > 0 ? round($n / $counts['total'] * 100) : 0)
@@ -62,7 +64,7 @@
         @forelse ($rows as $p)
             @php($stageKey = $p->funnelStage())
             <tr class="border-b last:border-0">
-                <td class="px-4 py-3"><div class="font-semibold">{{ $p->name }}</div><div class="text-xs text-gray-400">{{ $p->phone ?? 'no phone' }} · code {{ $p->card_code }}</div></td>
+                <td class="px-4 py-3"><div class="font-semibold">{{ $p->name }}</div><div class="text-xs text-gray-400">{{ $p->phone ?? 'no phone' }} · code {{ $p->card_code }}</div>@if ($optOuts->inSet($optSet, $p->phone))<div class="mt-1"><span class="badge" style="background:#fde8e8;color:#b42318;" title="This person asked not to receive messages. Fanikisha will not send to this number."><i class="fa-solid fa-ban text-[9px]"></i> Opted out</span></div>@endif</td>
                 <td class="px-4 py-3">
                     @switch($stageKey)
                         @case('arrived') <span class="badge badge-admin">Arrived</span> @break

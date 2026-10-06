@@ -114,4 +114,25 @@ class PublicPagesTest extends TestCase
 
         $this->actingAs($admin)->get(route('guests.whatsapp', $g))->assertRedirect()->assertSessionHas('error');
     }
+
+    public function test_organiser_sees_an_opted_out_badge_and_no_send_buttons_for_that_guest(): void
+    {
+        [$event, $admin] = $this->ecardEvent();
+        $blocked = $this->guestCard($event, ['name' => 'Blocked Guest', 'phone' => '+255712000111']);
+        $this->guestCard($event, ['name' => 'Normal Guest', 'phone' => '+255713000222']);
+        app(OptOutService::class)->add($blocked->phone, 'card');
+
+        $html = $this->actingAs($admin)->get(route('guests.index'))->assertOk()->getContent();
+
+        $this->assertSame(1, substr_count($html, 'Opted out'));
+        $this->assertSame(1, substr_count($html, 'Will not be messaged'));
+        $this->assertStringContainsString('guests/'.$this->guestIdOf('Normal Guest', $event).'/whatsapp', $html);
+        $this->assertStringNotContainsString('guests/'.$blocked->id.'/whatsapp', $html);
+        $this->actingAs($admin)->get(route('delivery.index'))->assertOk()->assertSee('Opted out');
+    }
+
+    private function guestIdOf(string $name, $event): int
+    {
+        return $event->pledges()->where('name', $name)->value('id');
+    }
 }

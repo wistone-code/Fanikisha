@@ -2,6 +2,8 @@
 @section('title', 'Reminder — '.config('app.name'))
 
 @section('content')
+@php($optOuts = app(\App\Services\OptOutService::class))
+@php($optSet = $optOuts->suppressedAmong($outstanding->pluck('phone')->all()))
 <div class="flex gap-6 border-b mb-5 text-sm font-semibold">
     <a href="{{ route('pledges.index') }}" class="pb-3 border-b-2 border-transparent text-gray-400">All pledges</a>
     <span class="pb-3 border-b-2" style="border-color:var(--primary);color:var(--primary);">Reminder</span>
@@ -26,14 +28,18 @@
         <tbody>
         @forelse ($outstanding as $p)
             <tr class="border-b last:border-0">
-                <td class="px-4 py-3 font-semibold">{{ $p->name }}</td>
+                <td class="px-4 py-3 font-semibold">{{ $p->name }}@if ($optOuts->inSet($optSet, $p->phone))<div class="mt-1"><span class="badge" style="background:#fde8e8;color:#b42318;" title="This person asked not to receive messages. Fanikisha will not send to this number."><i class="fa-solid fa-ban text-[9px]"></i> Opted out</span></div>@endif</td>
                 <td class="px-4 py-3">{{ $p->phone ?? '—' }}</td>
                 <td class="px-4 py-3">{{ number_format($p->remaining()) }}</td>
                 <td class="px-4 py-3 text-right whitespace-nowrap">
+                    @if ($optOuts->inSet($optSet, $p->phone))
+                    <span class="text-xs text-gray-400">Will not be messaged</span>
+                    @else
                     <form method="POST" action="{{ route('pledges.remind.sms', $p) }}" class="inline">
                         @csrf
                         <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
                     </form>
+                    @endif
                 </td>
             </tr>
         @empty

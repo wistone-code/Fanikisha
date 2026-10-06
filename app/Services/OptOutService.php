@@ -58,6 +58,14 @@ class OptOutService
         return array_fill_keys(MessageOptOut::whereIn('phone', $keys)->pluck('phone')->all(), true);
     }
 
+    /** Is this phone inside a set returned by suppressedAmong()? Used by list pages to show an "Opted out" badge. */
+    public function inSet(array $set, ?string $phone): bool
+    {
+        $key = $this->key($phone);
+
+        return $key !== null && isset($set[$key]);
+    }
+
     /** For the WhatsApp click-to-chat buttons: stop before opening a chat with someone who opted out. */
     public function blockedRedirect(?string $phone): ?RedirectResponse
     {

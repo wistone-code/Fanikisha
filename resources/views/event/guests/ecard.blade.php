@@ -2,6 +2,8 @@
 @section('title', 'Guest E-cards — '.config('app.name'))
 
 @section('content')
+@php($optOuts = app(\App\Services\OptOutService::class))
+@php($optSet = $optOuts->suppressedAmong($guests->pluck('phone')->all()))
 @include('event.guests._tabs', ['active' => 'guests'])
 
 <div class="flex justify-between items-start mb-4 flex-wrap gap-3">
@@ -31,7 +33,7 @@
                 <tbody>
                 @forelse ($guests as $g)
                     <tr class="border-b last:border-0">
-                        <td class="px-4 py-3 font-semibold">{{ $g->name }}</td>
+                        <td class="px-4 py-3 font-semibold">{{ $g->name }}@if ($optOuts->inSet($optSet, $g->phone))<div class="mt-1"><span class="badge" style="background:#fde8e8;color:#b42318;" title="This person asked not to receive messages. Fanikisha will not send to this number."><i class="fa-solid fa-ban text-[9px]"></i> Opted out</span></div>@endif</td>
                         <td class="px-4 py-3 text-gray-600">{{ $g->phone ?? '—' }}</td>
                         <td class="px-4 py-3"><span class="badge badge-viewer">{{ ucfirst($g->card_type) }}</span></td>
                         <td class="px-4 py-3">
@@ -46,6 +48,9 @@
                         @if ($isAdmin)
                         <td class="px-4 py-3 text-right whitespace-nowrap">
                             <button type="button" data-copy="{{ $g->inviteLink() }}" class="btn btn-ghost !py-1.5 !px-2.5 copy-link-btn" title="Copy card link"><i class="fa-solid fa-link"></i></button>
+                            @if ($optOuts->inSet($optSet, $g->phone))
+                            <span class="text-xs text-gray-400">Will not be messaged</span>
+                            @else
                             @if ($g->phone)
                             <form method="POST" action="{{ route('guests.sms', $g) }}" class="inline">
                                 @csrf
@@ -53,6 +58,7 @@
                             </form>
                             @endif
                             <a href="{{ route('guests.whatsapp', $g) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i></a>
+                            @endif
                             <button type="button" onclick="document.getElementById('editGuest{{ $g->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i></button>
                             <form method="POST" action="{{ route('guests.destroy', $g) }}" class="inline" data-confirm="Remove this guest? Their card link will stop working." data-confirm-title="Remove guest?">
                                 @csrf @method('DELETE')

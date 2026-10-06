@@ -2,6 +2,8 @@
 @section('title', 'Guest Management — '.config('app.name'))
 
 @section('content')
+@php($optOuts = app(\App\Services\OptOutService::class))
+@php($optSet = $optOuts->suppressedAmong($pledges->pluck('phone')->all()))
 @include('event.guests._tabs', ['active' => 'event'])
 
 <div class="grid grid-cols-1 {{ $isAdmin ? 'lg:grid-cols-2' : '' }} gap-5 items-start">
@@ -20,7 +22,7 @@
                 <tbody>
                 @forelse ($pledges as $p)
                     <tr class="border-b last:border-0">
-                        <td class="px-4 py-3 font-semibold">{{ $p->name }}</td>
+                        <td class="px-4 py-3 font-semibold">{{ $p->name }}@if ($optOuts->inSet($optSet, $p->phone))<div class="mt-1"><span class="badge" style="background:#fde8e8;color:#b42318;" title="This person asked not to receive messages. Fanikisha will not send to this number."><i class="fa-solid fa-ban text-[9px]"></i> Opted out</span></div>@endif</td>
                         @if ($isAdmin)
                         <td class="px-4 py-3"><span class="badge {{ $p->isPaidInFull() ? 'badge-admin' : 'badge-viewer' }}">{{ $p->isPaidInFull() ? 'Paid in full' : 'Balance due' }}</span></td>
                         @endif
@@ -39,6 +41,8 @@
                                 <form method="POST" action="{{ route('guests.send-invite', $p) }}">@csrf
                                     <button class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-solid fa-paper-plane"></i> Send invite</button>
                                 </form>
+                            @elseif ($p->invite_token && $optOuts->inSet($optSet, $p->phone))
+                                <span class="text-xs text-gray-400">Will not be messaged</span>
                             @elseif ($p->invite_token)
                                 <form method="POST" action="{{ route('guests.sms', $p) }}" class="inline">
                                     @csrf
