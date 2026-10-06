@@ -11,6 +11,12 @@ class AccountRequest extends Model
 
     public const NEEDS = ['ecards', 'both'];
 
+    /** What the team reads in the email for each choice on the form. */
+    public const NEEDS_LABELS = [
+        'ecards' => 'Invitation cards, RSVP and door check-in (e-card account, no contributions)',
+        'both' => 'Invitation cards, RSVP and door check-in, plus pledges and contributions (full account)',
+    ];
+
     public const STATUSES = ['new', 'contacted', 'created', 'declined'];
 
     protected $fillable = ['name', 'phone', 'email', 'event_type', 'event_date', 'location', 'guests', 'needs', 'language', 'message', 'status', 'note'];

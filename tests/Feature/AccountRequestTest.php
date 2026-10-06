@@ -58,6 +58,18 @@ class AccountRequestTest extends TestCase
         $this->assertSame(0, AccountRequest::count());
     }
 
+    public function test_the_email_shows_what_was_chosen_not_a_code(): void
+    {
+        config(['services.resend.key' => 're_test', 'company.email' => 'info@fanikisha.app']);
+        \Illuminate\Support\Facades\Http::fake(['api.resend.com/*' => \Illuminate\Support\Facades\Http::response(['id' => 'x'], 200)]);
+
+        $this->post('/request-account', $this->payload(['needs' => 'both']))->assertSessionHasNoErrors();
+
+        \Illuminate\Support\Facades\Http::assertSent(fn ($r) => $r['to'] === ['info@fanikisha.app']
+            && str_contains($r['text'], 'plus pledges and contributions (full account)')
+            && ! str_contains($r['text'], 'Needs: both'));
+    }
+
     public function test_email_is_optional(): void
     {
         Mail::fake();

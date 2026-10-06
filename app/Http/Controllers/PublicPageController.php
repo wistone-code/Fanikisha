@@ -114,7 +114,7 @@ class PublicPageController extends Controller
         $mailer = app(PlainMailer::class);
 
         $body = "New account request #{$r->id}\nName: {$r->name}\nPhone: {$r->phone}\nEmail: {$r->email}\nEvent: {$r->event_type}"
-            .($r->event_date ? ' on '.$r->event_date->format('j M Y') : '')."\nPlace: {$r->location}\nGuests: {$r->guests}\nNeeds: {$r->needs}\nLanguage: {$r->language}\n\n{$r->message}\n\nNext: contact them, then create their account in User Management.";
+            .($r->event_date ? ' on '.$r->event_date->format('j M Y') : '')."\nPlace: {$r->location}\nGuests: {$r->guests}\nNeeds: ".(AccountRequest::NEEDS_LABELS[$r->needs] ?? $r->needs)."\nLanguage: {$r->language}\n\n{$r->message}\n\nNext: contact them, then create their account in User Management.";
 
         // Goes to the company inbox (info@fanikisha.app unless COMPANY_EMAIL is changed).
         // Reply-To lets you answer the person straight from the mail.
