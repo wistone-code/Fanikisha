@@ -20,6 +20,7 @@
     body{font-family:'Inter',sans-serif;background:#F6F8F9;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
     h1,h2,.display{font-family:'Fraunces',serif;}
     .btn{display:inline-flex;align-items:center;gap:6px;border-radius:9px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer;}
+    .btn.hidden{display:none;}
     .btn-primary{background:var(--primary);color:#fff;}
     .btn-ghost{background:#fff;border:1px solid #e2e6e9;color:#1B2429;}
     .btn-danger{background:#fbe9e8;color:#b23a32;}
