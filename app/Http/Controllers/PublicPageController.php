@@ -59,17 +59,14 @@ class PublicPageController extends Controller
 
         unset($data['website']);
 
-        // Asking to stop messages takes effect at once — we do not wait for a person to read the request.
-        if ($data['type'] === 'stop' && filled($data['phone'] ?? null)) {
-            $optOuts->add($data['phone'], 'request');
-        }
-
+        // A stop request from this open form is NOT applied automatically: anyone could type someone
+        // else's number. The System Admin reviews it and approves the block (Privacy & opt-outs screen).
         $dataRequest = DataRequest::create($data + ['status' => 'new']);
 
         $this->notifyDpo($dataRequest);
 
         return redirect()->route('data-request', ['lang' => $request->query('lang')])
-            ->with('sent', $data['type'] === 'stop' && filled($data['phone'] ?? null) ? 'stopped' : 'received');
+            ->with('sent', 'received');
     }
 
     private function notifyDpo(DataRequest $r): void

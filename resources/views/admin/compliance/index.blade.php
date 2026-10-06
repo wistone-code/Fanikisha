@@ -56,7 +56,24 @@
                     </div>
                 </div>
                 @if ($r->details)<p class="text-sm mt-2 whitespace-pre-line">{{ $r->details }}</p>@endif
-                @if ($r->type === 'stop')<p class="text-xs text-green-700 mt-2"><i class="fa-solid fa-check"></i> The number was blocked automatically when this was submitted.</p>@endif
+                @if ($r->type === 'stop' && $r->phone)
+                    @php $isBlocked = isset($blockedKeys[$optOuts->key($r->phone)]); @endphp
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        @if ($isBlocked)
+                            <span class="text-xs text-green-700"><i class="fa-solid fa-ban"></i> Blocked — this number gets no messages.</span>
+                            <form method="POST" action="{{ route('admin.compliance.request', $r) }}" data-confirm="Unblock this number? Only do this if the person asked to receive messages again.">
+                                @csrf @method('PATCH')
+                                <button name="action" value="unblock" class="btn btn-ghost !w-auto !py-1.5 !px-2.5 text-xs">Unblock</button>
+                            </form>
+                        @else
+                            <span class="text-xs text-amber-700"><i class="fa-solid fa-hourglass-half"></i> Waiting for your approval — not blocked yet.</span>
+                            <form method="POST" action="{{ route('admin.compliance.request', $r) }}">
+                                @csrf @method('PATCH')
+                                <button name="action" value="block" class="btn btn-primary !w-auto !py-1.5 !px-2.5 text-xs">Approve &amp; block</button>
+                            </form>
+                        @endif
+                    </div>
+                @endif
                 @if ($r->note)<p class="text-sm mt-2 bg-gray-50 rounded-lg p-2"><span class="text-xs font-semibold text-gray-500">What we did:</span> {{ $r->note }}</p>@endif
 
                 <form method="POST" action="{{ route('admin.compliance.request', $r) }}" class="mt-3 flex flex-wrap items-end gap-2">
@@ -106,9 +123,9 @@
                     <td class="px-4 py-3">{{ $sourceLabels[$b->source] ?? $b->source }}</td>
                     <td class="px-4 py-3 text-gray-500 whitespace-nowrap hidden sm:table-cell">{{ $b->created_at->timezone('Africa/Dar_es_Salaam')->format('M j, Y') }}</td>
                     <td class="px-4 py-3 text-right">
-                        <form method="POST" action="{{ route('admin.compliance.blocked.remove', $b) }}" data-confirm="Remove +{{ $b->phone }} from the list? Only do this if the person themselves asked to receive messages again.">
+                        <form method="POST" action="{{ route('admin.compliance.blocked.remove', $b) }}" data-confirm="Unblock +{{ $b->phone }}? Only do this if the person themselves asked to receive messages again.">
                             @csrf @method('DELETE')
-                            <button class="btn btn-ghost !w-auto !py-1.5 !px-2.5 text-xs">Remove</button>
+                            <button class="btn btn-ghost !w-auto !py-1.5 !px-2.5 text-xs">Unblock</button>
                         </form>
                     </td>
                 </tr>

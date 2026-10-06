@@ -50,6 +50,8 @@ class ComplianceController extends Controller
             'blocked' => $blocked,
             'openCount' => DataRequest::whereIn('status', ['new', 'acknowledged'])->count(),
             'blockedCount' => MessageOptOut::count(),
+            'blockedKeys' => MessageOptOut::pluck('phone')->flip()->all(),
+            'optOuts' => app(OptOutService::class),
         ]);
     }
 
@@ -75,12 +77,31 @@ class ComplianceController extends Controller
         return redirect()->route('admin.compliance', ['tab' => 'blocked'])->with('status', 'Number removed. Only do this when the person themselves asked to receive messages again.');
     }
 
-    public function updateRequest(Request $request, DataRequest $dataRequest): RedirectResponse
+    public function updateRequest(Request $request, DataRequest $dataRequest, OptOutService $optOuts): RedirectResponse
     {
         $data = $request->validate([
-            'action' => ['required', 'in:acknowledge,close,reopen'],
+            'action' => ['required', 'in:acknowledge,close,reopen,block,unblock'],
             'note' => ['nullable', 'string', 'max:2000'],
         ]);
+
+        if (in_array($data['action'], ['block', 'unblock'], true)) {
+            if ($dataRequest->type !== 'stop' || blank($dataRequest->phone)) {
+                return back()->withErrors(['phone' => 'Only a stop request with a phone number can be blocked.']);
+            }
+
+            if ($data['action'] === 'block') {
+                $optOuts->add($dataRequest->phone, 'request');
+                $dataRequest->update(['status' => 'acknowledged', 'acknowledged_at' => $dataRequest->acknowledged_at ?? now()]);
+                $message = 'Approved. The number is blocked and will no longer receive any message from Fanikisha.';
+            } else {
+                MessageOptOut::where('phone', $optOuts->key($dataRequest->phone))->delete();
+                $message = 'Unblocked. The number can receive messages again.';
+            }
+
+            ActivityLogger::log('compliance.request_'.$data['action'], "Data request #{$dataRequest->id} (stop): {$data['action']}.");
+
+            return back()->with('status', $message);
+        }
 
         if ($data['action'] === 'acknowledge') {
             $dataRequest->update(['status' => 'acknowledged', 'acknowledged_at' => $dataRequest->acknowledged_at ?? now()]);

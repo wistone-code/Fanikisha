@@ -54,14 +54,14 @@ class PublicPagesTest extends TestCase
         $this->get(route('dashboard'))->assertRedirect(route('login'));
     }
 
-    public function test_stop_request_suppresses_the_number_immediately_and_logs_it(): void
+    public function test_stop_request_waits_for_admin_approval_and_is_not_applied_automatically(): void
     {
         Mail::fake();
 
         $this->post(route('data-request.store'), ['type' => 'stop', 'phone' => '0712 345 678'])
-            ->assertRedirect()->assertSessionHas('sent', 'stopped');
+            ->assertRedirect()->assertSessionHas('sent', 'received');
 
-        $this->assertTrue(app(OptOutService::class)->isOptedOut('+255712345678'));
+        $this->assertFalse(app(OptOutService::class)->isOptedOut('+255712345678'));
         $this->assertDatabaseHas('data_requests', ['type' => 'stop', 'status' => 'new']);
     }
 

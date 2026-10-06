@@ -85,4 +85,21 @@ class ComplianceAdminTest extends TestCase
         $this->actingAs($this->superUser())->get(route('admin.compliance', ['tab' => 'blocked', 'q' => '999']))
             ->assertOk()->assertSee('+255713999888')->assertDontSee('+255712000555');
     }
+
+    public function test_admin_approves_and_unblocks_a_stop_request(): void
+    {
+        $admin = $this->superUser();
+        $r = \App\Models\DataRequest::create(['type' => 'stop', 'phone' => '0712 777 888', 'status' => 'new']);
+
+        $this->actingAs($admin)->get(route('admin.compliance'))->assertSee('Approve &amp; block', false)->assertSee('not blocked yet');
+
+        $this->actingAs($admin)->patch(route('admin.compliance.request', $r), ['action' => 'block'])->assertRedirect();
+        $this->assertTrue(app(OptOutService::class)->isOptedOut('+255712777888'));
+        $this->assertSame('acknowledged', $r->fresh()->status);
+        $this->actingAs($admin)->get(route('admin.compliance'))->assertSee('Unblock');
+
+        $this->actingAs($admin)->patch(route('admin.compliance.request', $r), ['action' => 'unblock'])->assertRedirect();
+        $this->assertFalse(app(OptOutService::class)->isOptedOut('0712777888'));
+        $this->assertDatabaseHas('activity_logs', ['action' => 'compliance.request_unblock']);
+    }
 }

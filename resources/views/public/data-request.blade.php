@@ -10,15 +10,11 @@
 @section('content')
 <div class="max-w-xl mx-auto px-5 pt-10">
     <h1 class="text-3xl font-bold mb-2">{{ $t('Your data and messages', 'Taarifa zako na ujumbe') }}</h1>
-    <p class="text-gray-600 text-sm mb-6">{{ $t('Use this form to see, correct or delete the personal data we hold about you, or to stop receiving messages sent through Fanikisha. We reply within 30 days, and a request to stop messages takes effect immediately.', 'Tumia fomu hii kuona, kusahihisha au kufuta taarifa zako, au kuacha kupokea ujumbe unaotumwa kupitia Fanikisha. Tunajibu ndani ya siku 30, na ombi la kuacha ujumbe linaanza kutumika mara moja.') }}</p>
+    <p class="text-gray-600 text-sm mb-6">{{ $t('Use this form to see, correct or delete the personal data we hold about you, or to stop receiving messages sent through Fanikisha. We reply within 30 days. A request to stop messages is checked and applied by our team, usually within 2 working days. To stop messages at once, use the Stop messages button on your invitation card.', 'Tumia fomu hii kuona, kusahihisha au kufuta taarifa zako, au kuacha kupokea ujumbe unaotumwa kupitia Fanikisha. Tunajibu ndani ya siku 30. Ombi la kuacha ujumbe huhakikiwa na timu yetu, kwa kawaida ndani ya siku 2 za kazi. Kuacha ujumbe mara moja, tumia kitufe cha Acha ujumbe kwenye kadi yako ya mwaliko.') }}</p>
 
     @if ($sent)
         <div class="rounded-xl bg-green-50 text-green-800 p-4 text-sm mb-6">
-            @if ($sent === 'stopped')
-                <strong>{{ $t('Done.', 'Imekamilika.') }}</strong> {{ $t('You will not receive any more messages from Fanikisha on that number. We have also logged your request.', 'Hutapokea tena ujumbe wowote kutoka Fanikisha kwenye namba hiyo. Pia tumeandika ombi lako.') }}
-            @else
-                <strong>{{ $t('Thank you.', 'Asante.') }}</strong> {{ $t('We received your request and will reply within 30 days.', 'Tumepokea ombi lako na tutajibu ndani ya siku 30.') }}
-            @endif
+            <strong>{{ $t('Thank you.', 'Asante.') }}</strong> {{ $t('We received your request and will reply within 30 days.', 'Tumepokea ombi lako na tutajibu ndani ya siku 30.') }}
         </div>
     @endif
 
