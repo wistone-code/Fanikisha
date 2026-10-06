@@ -11,7 +11,7 @@ class Pledge extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['event_id', 'name', 'phone', 'amount', 'paid', 'invite_token', 'pay_token', 'checked_in_at', 'card_type', 'rsvp_status', 'rsvp_at'];
+    protected $fillable = ['event_id', 'name', 'phone', 'amount', 'paid', 'invite_token', 'pay_token', 'checked_in_at', 'checked_in_by', 'card_type', 'rsvp_status', 'rsvp_at'];
 
     protected function casts(): array
     {

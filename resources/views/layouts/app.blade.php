@@ -522,6 +522,57 @@ document.querySelectorAll('table.sortable-table thead th[data-sort]').forEach(fu
 </script>
 
 <script>
+// Offline check-in keeps a guest list and queued scans on this phone (see the Check-in page). They belong
+// to whoever was logged in, so logging out removes them — after a warning if some haven't been uploaded.
+document.querySelectorAll('form[action$="/logout"]').forEach(function (form) {
+    let confirmed = false;
+
+    form.addEventListener('submit', function (e) {
+        if (confirmed || !('indexedDB' in window)) return;
+        e.preventDefault();
+
+        function finish() {
+            confirmed = true;
+
+            const deleteDb = new Promise(function (resolve) {
+                const req = indexedDB.deleteDatabase('fanikisha-checkin');
+                req.onsuccess = req.onerror = req.onblocked = function () { resolve(); };
+            });
+            const clearCache = new Promise(function (resolve) {
+                const worker = navigator.serviceWorker && navigator.serviceWorker.controller;
+                if (!worker) return resolve();
+                const channel = new MessageChannel();
+                channel.port1.onmessage = function () { resolve(); };
+                worker.postMessage({ type: 'CLEAR_RUNTIME' }, [channel.port2]);
+                setTimeout(resolve, 1500);
+            });
+
+            Promise.all([deleteDb, clearCache]).then(function () { form.submit(); });
+        }
+
+        // Count scans still waiting to upload (without creating the database if it doesn't exist yet).
+        const open = indexedDB.open('fanikisha-checkin');
+        open.onupgradeneeded = function () { open.transaction.abort(); };
+        open.onerror = function () { finish(); };
+        open.onsuccess = function () {
+            const db = open.result;
+            if (!db.objectStoreNames.contains('queue')) { db.close(); return finish(); }
+
+            const count = db.transaction('queue', 'readonly').objectStore('queue').count();
+            count.onsuccess = function () {
+                db.close();
+                if (count.result > 0 && !window.confirm(count.result + ' check-in(s) on this phone have not been uploaded yet. Logging out will delete them. Log out anyway?')) {
+                    return;
+                }
+                finish();
+            };
+            count.onerror = function () { db.close(); finish(); };
+        };
+    });
+});
+</script>
+
+<script>
 // Registered after the page has fully loaded so it never competes with or
 // delays the actual page content — see public/sw.js for what it does.
 if ('serviceWorker' in navigator) {

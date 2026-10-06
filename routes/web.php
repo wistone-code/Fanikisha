@@ -181,6 +181,10 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
 
             Route::get('/checkin', [CheckinController::class, 'index'])->name('checkin.index');
             Route::post('/checkin/verify', [CheckinController::class, 'verify'])->name('checkin.verify');
+            // Offline check-in: download the guest list, then upload queued scans in one batch.
+            Route::get('/checkin/guest-list', [CheckinController::class, 'guestList'])->name('checkin.guest-list');
+            Route::get('/checkin/token', [CheckinController::class, 'freshToken'])->name('checkin.token');
+            Route::post('/checkin/sync', [CheckinController::class, 'sync'])->middleware('throttle:60,1')->name('checkin.sync');
             Route::get('/checkin/search', [CheckinController::class, 'search'])->name('checkin.search');
             Route::delete('/checkin/{pledge}', [CheckinController::class, 'undoCheckin'])->name('checkin.undo');
             Route::patch('/settings/payout', [EventController::class, 'updatePayout'])->name('event.settings.payout');
