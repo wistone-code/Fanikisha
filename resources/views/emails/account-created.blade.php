@@ -12,6 +12,7 @@
             <a href="{{ $loginUrl }}" style="background:#1B2429;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:bold;">Sign in</a>
         </p>
         <p style="font-size:12px;color:#6b7280;line-height:1.5;">You will be asked to choose your own password the first time you sign in. If the button doesn't work, open this link: {{ $loginUrl }}</p>
+        @include('emails._footer')
     </div>
 </body>
 </html>

@@ -6,6 +6,7 @@
         <p style="font-size:14px;line-height:1.5;">Hello {{ $name }}, use this code to reset your {{ $appName }} password:</p>
         <p style="text-align:center;font-size:32px;letter-spacing:8px;font-family:monospace;font-weight:bold;margin:20px 0;">{{ $code }}</p>
         <p style="font-size:12px;color:#6b7280;line-height:1.5;">It expires in {{ $minutes }} minutes. If you didn't request this, you can ignore this email — your password won't change.</p>
+        @include('emails._footer')
     </div>
 </body>
 </html>
