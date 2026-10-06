@@ -84,6 +84,32 @@ class GuestController extends Controller
         ]);
     }
 
+    /** Which extra questions the RSVP asks (plus-ones, meal, dietary, message) and the reply deadline. */
+    public function updateRsvpSettings(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'rsvp_max_plus_single' => ['required', 'integer', 'min:0', 'max:10'],
+            'rsvp_max_plus_double' => ['required', 'integer', 'min:0', 'max:10'],
+            'rsvp_meal_options' => ['nullable', 'string', 'max:1000'],
+            'rsvp_cutoff_date' => ['nullable', 'date'],
+        ]);
+
+        $options = collect(preg_split('/\r\n|\r|\n/', (string) ($data['rsvp_meal_options'] ?? '')))->map(fn ($o) => trim($o))->filter()->take(10)->implode("\n");
+
+        app('currentEvent')->update([
+            'rsvp_plus_ones_enabled' => $request->boolean('rsvp_plus_ones_enabled'),
+            'rsvp_max_plus_single' => $data['rsvp_max_plus_single'],
+            'rsvp_max_plus_double' => $data['rsvp_max_plus_double'],
+            'rsvp_meal_enabled' => $request->boolean('rsvp_meal_enabled'),
+            'rsvp_meal_options' => $options ?: null,
+            'rsvp_dietary_enabled' => $request->boolean('rsvp_dietary_enabled'),
+            'rsvp_message_enabled' => $request->boolean('rsvp_message_enabled'),
+            'rsvp_cutoff_date' => $data['rsvp_cutoff_date'] ?? null,
+        ]);
+
+        return back()->with('status', 'RSVP options saved');
+    }
+
     private function abortUnlessEcard(): void
     {
         abort_unless(app('currentEvent')->isEcard(), 404);
@@ -228,6 +254,10 @@ class GuestController extends Controller
         $event = app('currentEvent');
         $result = $sms->sendSingle($messages->forInvitation($event, $pledge), $pledge->phone);
 
+        if ($result['successful']) {
+            $pledge->update(['invite_sent_at' => now(), 'invite_channel' => 'sms']);
+        }
+
         return back()->with('status', $result['successful']
             ? "Invitation sent to {$pledge->name}."
             : 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
@@ -241,6 +271,9 @@ class GuestController extends Controller
         $event = app('currentEvent');
         $digits = $phones->digitsOnly($pledge->phone);
         $text = rawurlencode($messages->forInvitation($event, $pledge));
+
+        // Opening WhatsApp counts as sent (we cannot see whether the host presses send there).
+        $pledge->update(['invite_sent_at' => $pledge->invite_sent_at ?? now(), 'invite_channel' => $pledge->invite_channel ?? 'whatsapp']);
 
         return redirect()->away("https://wa.me/{$digits}?text={$text}");
     }

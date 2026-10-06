@@ -5,12 +5,19 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordChangeController;
+use App\Http\Controllers\AfterEventController;
+use App\Http\Controllers\CardDesignController;
 use App\Http\Controllers\CheckinController;
+use App\Http\Controllers\DeliveryController;
+use App\Http\Controllers\PhotoWallController;
+use App\Http\Controllers\SeatingController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FinancialController;
+use App\Http\Controllers\GuestCardController;
 use App\Http\Controllers\GuestController;
+use App\Http\Controllers\PublicPhotoWallController;
 use App\Http\Controllers\PledgeController;
 use App\Http\Controllers\ProviderController;
 use App\Http\Controllers\ScheduleController;
@@ -35,39 +42,21 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 
-// Public RSVP landing page opened from an activated invitation link — no auth required.
-Route::get('/rsvp/{token}', function (string $token) {
-    $pledge = \App\Models\Pledge::where('invite_token', $token)->firstOrFail();
-    $event = $pledge->event;
-    $theme = app(\App\Services\EventThemeService::class)->forEvent($event);
+// ---- Public guest card (no login — the secret link is the key) -------------------------
+Route::get('/rsvp/{token}', [GuestCardController::class, 'show'])->name('guest.rsvp');
+Route::post('/rsvp/{token}/respond', [GuestCardController::class, 'respond'])->middleware('throttle:30,1')->name('guest.rsvp.respond');
+Route::get('/rsvp/{token}/photo', [GuestCardController::class, 'photo'])->name('guest.rsvp.photo');
+Route::get('/rsvp/{token}/design', [GuestCardController::class, 'design'])->name('guest.rsvp.design');
+Route::get('/rsvp/{token}/music', [GuestCardController::class, 'music'])->name('guest.rsvp.music');
+Route::get('/rsvp/{token}/calendar.ics', [GuestCardController::class, 'calendar'])->name('guest.rsvp.calendar');
 
-    return view('guest.rsvp', ['pledge' => $pledge, 'event' => $event, 'theme' => $theme]);
-})->name('guest.rsvp');
-
-// The guest's own attendance response — no auth, since the guest isn't a logged-in
-// user. The invite_token itself is the only "authorization" here, same as the RSVP
-// page and the check-in QR code both already rely on.
-Route::post('/rsvp/{token}/respond', function (string $token, \Illuminate\Http\Request $request) {
-    $pledge = \App\Models\Pledge::where('invite_token', $token)->firstOrFail();
-
-    $data = $request->validate([
-        'response' => ['required', 'in:attending,not_attending'],
-    ]);
-
-    $pledge->update(['rsvp_status' => $data['response'], 'rsvp_at' => now()]);
-
-    return redirect()->route('guest.rsvp', $token);
-})->name('guest.rsvp.respond');
-
-// Publicly servable event card photo (no auth — guests view this on the RSVP page above).
-Route::get('/rsvp/{token}/photo', function (string $token) {
-    $pledge = \App\Models\Pledge::where('invite_token', $token)->firstOrFail();
-    $event = $pledge->event;
-
-    abort_unless($event->hasCardPhoto(), 404);
-
-    return response($event->card_photo)->header('Content-Type', $event->card_photo_mime);
-})->name('guest.rsvp.photo');
+// Shared photo wall: a public page behind its own secret link (and optional PIN).
+Route::get('/wall/{wallToken}', [PublicPhotoWallController::class, 'show'])->name('wall.show');
+Route::post('/wall/{wallToken}/pin', [PublicPhotoWallController::class, 'pin'])->middleware('throttle:10,1')->name('wall.pin');
+Route::post('/wall/{wallToken}/upload', [PublicPhotoWallController::class, 'upload'])->middleware('throttle:30,1')->name('wall.upload');
+Route::post('/wall/{wallToken}/photos/{photo}/report', [PublicPhotoWallController::class, 'report'])->middleware('throttle:20,1')->name('wall.report');
+Route::get('/wall/{wallToken}/photos/{photo}/thumb', [PublicPhotoWallController::class, 'thumb'])->name('wall.thumb');
+Route::get('/wall/{wallToken}/photos/{photo}', [PublicPhotoWallController::class, 'full'])->name('wall.full');
 
 // Public "Pay now" page — shows the admin's own mobile money number so the pledger
 // can send payment directly, peer-to-peer. Fanikisha never touches the money.
@@ -158,12 +147,26 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
         });
 
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
+        Route::get('/delivery', [DeliveryController::class, 'index'])->name('delivery.index');
+
+        // Check-in: event admins and door staff ("scanner" role).
+        Route::middleware('can_checkin')->group(function () {
+            Route::get('/checkin', [CheckinController::class, 'index'])->name('checkin.index');
+            Route::post('/checkin/verify', [CheckinController::class, 'verify'])->middleware('throttle:120,1')->name('checkin.verify');
+            // Offline check-in: download the guest list, then upload queued scans in one batch.
+            Route::get('/checkin/guest-list', [CheckinController::class, 'guestList'])->name('checkin.guest-list');
+            Route::get('/checkin/token', [CheckinController::class, 'freshToken'])->name('checkin.token');
+            Route::post('/checkin/sync', [CheckinController::class, 'sync'])->middleware('throttle:60,1')->name('checkin.sync');
+            Route::get('/checkin/search', [CheckinController::class, 'search'])->middleware('throttle:120,1')->name('checkin.search');
+            Route::get('/checkin/stats', [CheckinController::class, 'stats'])->name('checkin.stats');
+        });
 
         // Team Management: admin-only, and hidden entirely for Funeral events.
         Route::middleware(['event_admin', 'no_funeral_team'])->group(function () {
             Route::get('/team', [TeamController::class, 'index'])->name('team.index');
             Route::post('/team', [TeamController::class, 'store'])->name('team.store');
             Route::delete('/team/{member}', [TeamController::class, 'destroy'])->name('team.destroy');
+            Route::post('/team/{member}/toggle-disabled', [TeamController::class, 'toggleDisabled'])->name('team.toggle-disabled');
             Route::post('/team/{member}/reset-password', [TeamController::class, 'resetPassword'])->name('team.reset-password');
         });
 
@@ -179,14 +182,9 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
             Route::delete('/settings/card-photo', [EventController::class, 'removeCardPhoto'])->name('event.settings.card-photo.remove');
             Route::get('/settings/card-photo', [EventController::class, 'viewCardPhoto'])->name('event.settings.card-photo.view');
 
-            Route::get('/checkin', [CheckinController::class, 'index'])->name('checkin.index');
-            Route::post('/checkin/verify', [CheckinController::class, 'verify'])->name('checkin.verify');
-            // Offline check-in: download the guest list, then upload queued scans in one batch.
-            Route::get('/checkin/guest-list', [CheckinController::class, 'guestList'])->name('checkin.guest-list');
-            Route::get('/checkin/token', [CheckinController::class, 'freshToken'])->name('checkin.token');
-            Route::post('/checkin/sync', [CheckinController::class, 'sync'])->middleware('throttle:60,1')->name('checkin.sync');
-            Route::get('/checkin/search', [CheckinController::class, 'search'])->name('checkin.search');
+            Route::get('/checkin/door-list', [CheckinController::class, 'doorList'])->name('checkin.door-list');
             Route::delete('/checkin/{pledge}', [CheckinController::class, 'undoCheckin'])->name('checkin.undo');
+            Route::patch('/settings/checkin-confirm', [EventController::class, 'updateCheckinConfirm'])->name('event.settings.checkin-confirm');
             Route::patch('/settings/payout', [EventController::class, 'updatePayout'])->name('event.settings.payout');
             Route::patch('/settings/couple-threshold', [EventController::class, 'updateCoupleThreshold'])->name('event.settings.couple-threshold');
             Route::patch('/settings/theme-color', [EventController::class, 'updateThemeColor'])->name('event.settings.theme-color');
@@ -232,6 +230,56 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
             Route::post('/guests/import', [GuestController::class, 'importGuests'])->name('guests.import');
             Route::patch('/guests/{pledge}', [GuestController::class, 'updateGuest'])->name('guests.update');
             Route::delete('/guests/{pledge}', [GuestController::class, 'destroyGuest'])->name('guests.destroy');
+
+            Route::get('/guests-export', [DeliveryController::class, 'export'])->name('guests.export');
+            Route::post('/delivery/send-all', [DeliveryController::class, 'sendAll'])->name('delivery.send-all');
+            Route::post('/delivery/remind-unopened', [DeliveryController::class, 'remindUnopened'])->name('delivery.remind-unopened');
+            Route::patch('/delivery/auto', [DeliveryController::class, 'updateAuto'])->name('delivery.auto');
+            Route::post('/delivery/{pledge}/mark-sent', [DeliveryController::class, 'markSent'])->name('delivery.mark-sent');
+            Route::post('/delivery/{pledge}/revoke', [DeliveryController::class, 'revoke'])->name('delivery.revoke');
+            Route::post('/delivery/{pledge}/reissue', [DeliveryController::class, 'reissue'])->name('delivery.reissue');
+            Route::get('/delivery/{pledge}/remind-wa', [DeliveryController::class, 'remindWhatsApp'])->name('delivery.remind-wa');
+
+            // RSVP extras (plus-ones, meals…) and the seating plan.
+            Route::patch('/rsvp/settings', [GuestController::class, 'updateRsvpSettings'])->name('rsvp.settings');
+            Route::get('/seating', [SeatingController::class, 'index'])->name('seating.index');
+            Route::patch('/seating/mode', [SeatingController::class, 'updateMode'])->name('seating.mode');
+            Route::patch('/seating/publish', [SeatingController::class, 'publish'])->name('seating.publish');
+            Route::post('/seating/areas', [SeatingController::class, 'storeArea'])->name('seating.areas.store');
+            Route::delete('/seating/areas/{area}', [SeatingController::class, 'destroyArea'])->name('seating.areas.destroy');
+            Route::post('/seating/tables', [SeatingController::class, 'storeTable'])->name('seating.tables.store');
+            Route::patch('/seating/tables/{table}', [SeatingController::class, 'updateTable'])->name('seating.tables.update');
+            Route::delete('/seating/tables/{table}', [SeatingController::class, 'destroyTable'])->name('seating.tables.destroy');
+            Route::patch('/seating/assign/{pledge}', [SeatingController::class, 'assign'])->name('seating.assign');
+            Route::post('/seating/auto-fill', [SeatingController::class, 'autoFill'])->name('seating.auto-fill');
+
+            // Shared photo wall (admin side).
+            Route::get('/photos', [PhotoWallController::class, 'index'])->name('photos.index');
+            Route::patch('/photos/settings', [PhotoWallController::class, 'update'])->name('photos.update');
+            Route::post('/photos/new-link', [PhotoWallController::class, 'newLink'])->name('photos.new-link');
+            Route::post('/photos/{photo}/toggle-hidden', [PhotoWallController::class, 'toggleHidden'])->name('photos.toggle-hidden');
+            Route::delete('/photos/{photo}', [PhotoWallController::class, 'destroy'])->name('photos.destroy');
+            Route::get('/photos/{photo}/thumb', [PhotoWallController::class, 'thumb'])->name('photos.thumb');
+            Route::get('/photos/download', [PhotoWallController::class, 'download'])->name('photos.download');
+
+            // Card design, venue and event-day reminder.
+            Route::get('/design', [CardDesignController::class, 'index'])->name('design.index');
+            Route::patch('/design/card', [CardDesignController::class, 'updateCard'])->name('design.card');
+            Route::post('/design/music', [CardDesignController::class, 'uploadMusic'])->name('design.music.upload');
+            Route::delete('/design/music', [CardDesignController::class, 'removeMusic'])->name('design.music.remove');
+            Route::post('/design/custom', [CardDesignController::class, 'uploadDesign'])->name('design.custom.upload');
+            Route::patch('/design/custom', [CardDesignController::class, 'updateLayout'])->name('design.custom.layout');
+            Route::delete('/design/custom', [CardDesignController::class, 'removeDesign'])->name('design.custom.remove');
+            Route::get('/design/custom-image', [CardDesignController::class, 'designImage'])->name('design.custom.image');
+            Route::patch('/design/venue', [CardDesignController::class, 'updateVenue'])->name('design.venue');
+            Route::patch('/design/day-reminder', [CardDesignController::class, 'updateDayReminder'])->name('design.day-reminder');
+            Route::post('/design/day-reminder/send-now', [CardDesignController::class, 'sendDayReminderNow'])->name('design.day-reminder.send');
+
+            // After the event: thank-you messages and the recap.
+            Route::get('/after', [AfterEventController::class, 'index'])->name('after.index');
+            Route::patch('/after/settings', [AfterEventController::class, 'update'])->name('after.update');
+            Route::post('/after/send-now', [AfterEventController::class, 'sendNow'])->name('after.send');
+            Route::get('/after/recap', [AfterEventController::class, 'recap'])->name('after.recap');
 
             Route::post('/guests/{pledge}/send-invite', [GuestController::class, 'sendInvite'])->name('guests.send-invite');
             Route::post('/guests/{pledge}/sms', [GuestController::class, 'inviteSms'])->name('guests.sms');

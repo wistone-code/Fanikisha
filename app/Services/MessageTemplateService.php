@@ -155,4 +155,42 @@ class MessageTemplateService
             '{remain}' => number_format($pledge->remaining()),
         ]);
     }
+
+    public function forUnopenedReminder(Event $event, Pledge $pledge): string
+    {
+        return strtr($event->messageOrDefault('unopened_reminder'), $this->common($event, $pledge));
+    }
+
+    public function forThankYou(Event $event, Pledge $pledge): string
+    {
+        $attended = $pledge->checked_in_at !== null;
+        $text = $event->messageOrDefault($attended ? 'thank_you_attended' : 'thank_you_absent');
+
+        if ($attended && $event->thank_you_acknowledge_paid && $pledge->paid > 0) {
+            $text .= $event->sms_language === 'sw'
+                ? ' Tunashukuru pia kwa mchango wako wa '.number_format((float) $pledge->paid).'.'
+                : ' Thank you also for your contribution of '.number_format((float) $pledge->paid).'.';
+        }
+
+        return strtr($text, $this->common($event, $pledge));
+    }
+
+    public function forEventDayReminder(Event $event, Pledge $pledge): string
+    {
+        return strtr($event->messageOrDefault('event_day_reminder'), $this->common($event, $pledge));
+    }
+
+    /** Placeholders shared by the guest-facing messages above. */
+    private function common(Event $event, Pledge $pledge): array
+    {
+        return [
+            '{name}' => $pledge->name,
+            '{event}' => $event->name,
+            '{date}' => $event->event_date->format('d.m.Y'),
+            '{place}' => $event->place ? ', '.$event->venueLine() : '',
+            '{time}' => $event->event_time ? ($event->sms_language === 'sw' ? ' saa ' : ' at ').$event->event_time : '',
+            '{link}' => $pledge->inviteLink() ?? '',
+            '{hosts}' => $event->host_names ?: $event->name,
+        ];
+    }
 }

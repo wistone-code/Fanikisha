@@ -2,22 +2,25 @@
 @section('title', 'Entrance Check-in — '.config('app.name'))
 
 @section('content')
-@php($ciEvent = app('currentEvent'))
-<div class="flex gap-6 border-b mb-5 text-sm font-semibold">
-    @if ($ciEvent->isEcard())
-    <a href="{{ route('guests.index') }}" class="pb-3 border-b-2 border-transparent text-gray-400">E-cards</a>
-    @else
-    <a href="{{ route('guests.index') }}" class="pb-3 border-b-2 border-transparent text-gray-400">Event invitation</a>
-    <a href="{{ route('guests.index', ['tab' => 'meeting']) }}" class="pb-3 border-b-2 border-transparent text-gray-400">Meeting invitation</a>
+@include('event.guests._tabs', ['active' => 'checkin'])
+
+<div class="mb-4 flex justify-between items-start flex-wrap gap-2">
+    <div>
+        <h2 class="text-xl font-semibold">Entrance Check-in</h2>
+        <p class="text-sm text-gray-500"><span id="checkinCount">{{ $checkedInCount }}</span> of <span id="expectedCount">{{ $eligibleCount }}</span> invited guests checked in · <span id="peopleIn">{{ $stats['people_in'] }}</span> people through the door</p>
+    </div>
+    @if ($isAdmin)
+    <div class="flex gap-2 flex-wrap">
+        <a href="{{ route('checkin.door-list') }}" target="_blank" class="btn btn-ghost !py-1.5 !px-3 text-xs"><i class="fa-solid fa-print"></i> Door list</a>
+        <form method="POST" action="{{ route('event.settings.checkin-confirm') }}" class="flex items-center gap-1 text-xs">@csrf @method('PATCH')
+            <label class="flex items-center gap-1"><input type="checkbox" name="checkin_confirm_name" value="1" @checked(app('currentEvent')->checkin_confirm_name) onchange="this.form.submit()"> Confirm name before checking in</label></form>
+    </div>
     @endif
-    <a href="{{ route('guests.index', ['tab' => 'rsvp']) }}" class="pb-3 border-b-2 border-transparent text-gray-400">RSVP</a>
-    <span class="pb-3 border-b-2" style="border-color:var(--primary);color:var(--primary);">Check-in</span>
 </div>
 
-<div class="mb-4">
-    <h2 class="text-xl font-semibold">Entrance Check-in</h2>
-    <p class="text-sm text-gray-500"><span id="checkinCount">{{ $checkedInCount }}</span> of {{ $eligibleCount }} invited guests checked in</p>
-</div>
+@if ($isAdmin && count($stats['per_scanner']))
+<div class="card p-3 mb-4 text-xs text-gray-600" id="scannerStats">Checked in by: @foreach ($stats['per_scanner'] as $row)<strong>{{ $row['name'] }}</strong> {{ $row['count'] }}{{ ! $loop->last ? ' · ' : '' }}@endforeach</div>
+@endif
 
 <div class="card p-4 mb-4" id="offlineBar">
     <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
@@ -52,10 +55,10 @@
     </div>
 
     <div class="card p-5">
-        <div class="text-sm font-semibold mb-3">Or search by name</div>
-        <input type="text" id="searchInput" placeholder="Type a name…" class="w-full border rounded-lg px-3 py-2 text-sm mb-3">
+        <div class="text-sm font-semibold mb-3">Or search by name, card code or phone</div>
+        <input type="text" id="searchInput" placeholder="Name, card code (e.g. K7M2Q) or last digits of phone" autocomplete="off" class="w-full border rounded-lg px-3 py-2 text-sm mb-3">
         <div id="searchResults" class="space-y-2 max-h-72 overflow-y-auto"></div>
-        <p class="text-xs text-gray-400 mt-2">For guests without a smartphone to show a QR code.</p>
+        <p class="text-xs text-gray-400 mt-2">For guests whose phone is flat or who have no smartphone — ask for the code printed under the QR on their card.</p>
     </div>
 </div>
 
@@ -66,19 +69,24 @@
     <div id="arrivalsList" class="space-y-2 max-h-96 overflow-y-auto">
         @forelse ($arrivals as $arrival)
             <div class="flex justify-between items-center border rounded-lg px-3 py-2">
-                <span class="text-sm">{{ $arrival->name }}</span>
+                <span class="text-sm">{{ $arrival->name }}@if ($arrival->seat) <span class="text-xs text-gray-400">· {{ $arrival->seat }}</span>@endif</span>
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">{{ $arrival->checked_in_at->format('g:i A, M j') }}</span>
-                    <form method="POST" action="{{ route('checkin.undo', $arrival) }}" data-confirm="Remove {{ $arrival->name }}'s check-in? They'll show as not-yet-arrived again." data-confirm-title="Undo check-in?" data-confirm-button="Undo" data-confirm-icon="fa-rotate-left">
+                    <span class="text-xs text-gray-500">{{ $arrival->checked_in_at->format('g:i A, M j') }}@if ($arrival->by_name && $isAdmin) · {{ $arrival->by_name }}@endif</span>
+                    @if ($isAdmin)<form method="POST" action="{{ route('checkin.undo', $arrival) }}" data-confirm="Remove {{ $arrival->name }}'s check-in? They'll show as not-yet-arrived again." data-confirm-title="Undo check-in?" data-confirm-button="Undo" data-confirm-icon="fa-rotate-left">
                         @csrf @method('DELETE')
                         <button class="btn btn-ghost !py-1 !px-2 text-xs text-red-600" title="Undo check-in"><i class="fa-solid fa-rotate-left"></i></button>
-                    </form>
+                    </form>@endif
                 </div>
             </div>
         @empty
             <p id="noArrivals" class="text-xs text-gray-400">No one checked in yet.</p>
         @endforelse
     </div>
+</div>
+
+<div class="card p-5 mt-4">
+    <div class="text-sm font-semibold mb-3">Live — latest arrivals at every door <span class="text-xs text-gray-400 font-normal">(updates every 20 seconds)</span></div>
+    <div id="liveList" class="space-y-1 text-sm text-gray-600"><span class="text-xs text-gray-400">Waiting for the first update…</span></div>
 </div>
 
 <script src="{{ asset('js/html5-qrcode.min.js') }}"></script>
@@ -91,6 +99,9 @@
     const syncUrl = {{ Js::from(route('checkin.sync')) }};
     const tokenUrl = {{ Js::from(route('checkin.token')) }};
     const currentEventId = {{ Js::from(app('currentEvent')->id) }};
+    const statsUrl = {{ Js::from(route('checkin.stats')) }};
+    const isAdmin = {{ Js::from($isAdmin) }};
+    const confirmName = {{ Js::from((bool) app('currentEvent')->checkin_confirm_name) }};
 
     let html5QrCode;
     let scanning = false;
@@ -111,7 +122,36 @@
         return escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    // Optional safety step: show the guest's name and ask before recording the check-in.
+    async function confirmGuest(raw) {
+        let name = null;
+        try {
+            if (await cacheIsForThisEvent()) {
+                const g = await dbGet('guests', tokenFrom(raw));
+                if (g) { if (g.checked_in_at) return true; name = g.name; }
+            }
+        } catch (e) { /* no saved list */ }
+
+        if (!name && navigator.onLine) {
+            try {
+                const r = await fetch(verifyUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({ token: raw, preview: true }),
+                });
+                if (r.ok) { const d = await r.json(); if (d.already) return true; name = d.name; }
+            } catch (e) { /* fall through: just check in */ }
+        }
+
+        return name ? window.confirm('Check in ' + name + '?') : true;
+    }
+
     async function verifyToken(token) {
+        if (confirmName && !(await confirmGuest(token))) {
+            lastScannedToken = null;
+            return;
+        }
+
         if (!navigator.onLine) {
             return renderResult(await localVerify(token));
         }
@@ -124,8 +164,9 @@
             });
 
             if (res.status === 404) {
-                // The server answered: this card isn't in this event.
-                return renderResult({ found: false });
+                // The server answered: this card isn't in this event (or it was cancelled).
+                const miss = await res.json().catch(function () { return {}; });
+                return renderResult({ found: false, revoked: !!miss.revoked });
             }
             if (!res.ok) {
                 throw new Error('HTTP ' + res.status);
@@ -186,6 +227,13 @@
             return;
         }
 
+        if (!data.found && data.revoked) {
+            el.classList.add('border-2', 'border-red-600', 'bg-red-50');
+            el.innerHTML = '<div class="text-red-700 font-bold text-lg"><i class="fa-solid fa-ban"></i> CARD CANCELLED</div><div class="text-red-700 text-sm">This card was replaced or withdrawn by the hosts. Do not admit on this card.</div>';
+            showScanToast('<i class="fa-solid fa-ban"></i> CARD CANCELLED', 'warning');
+            return;
+        }
+
         if (!data.found) {
             el.innerHTML = '<div class="text-red-600 font-semibold"><i class="fa-solid fa-circle-xmark"></i> No matching invitation found.</div>';
             showScanToast('<i class="fa-solid fa-circle-xmark"></i> No matching invitation found', 'error');
@@ -196,7 +244,7 @@
             el.classList.add('border-2', 'border-red-600', 'bg-red-50');
             el.innerHTML = '<div class="text-red-700 font-bold text-lg"><i class="fa-solid fa-triangle-exclamation"></i> ALREADY CHECKED IN</div>'
                 + (data.name ? '<div class="text-red-800 text-sm font-semibold mt-1">' + escapeHtml(data.name) + '</div>' : '')
-                + '<div class="text-red-600 text-sm">at ' + escapeHtml(data.checked_in_at) + '</div>';
+                + '<div class="text-red-600 text-sm">at ' + escapeHtml(data.checked_in_at) + (data.checked_in_by && isAdmin ? ' · by ' + escapeHtml(data.checked_in_by) : '') + '</div>';
             showScanToast('<i class="fa-solid fa-triangle-exclamation"></i> ALREADY CHECKED IN', 'warning');
             return;
         }
@@ -204,14 +252,18 @@
         el.innerHTML = '<div class="text-green-600 font-bold text-lg"><i class="fa-solid fa-circle-check"></i> Checked in</div>'
             + '<div class="text-gray-800 text-sm font-semibold mt-1">' + escapeHtml(data.name) + '</div>'
             + '<div class="text-gray-600 text-sm">at ' + escapeHtml(data.checked_in_at) + '</div>'
+            + (data.seat ? '<div class="mt-2 inline-block rounded-lg px-3 py-1 text-base font-bold" style="background:var(--primary);color:#fff;"><i class="fa-solid fa-chair"></i> ' + escapeHtml(data.seat) + '</div>' : '')
+            + (data.people > 1 ? '<div class="text-gray-700 text-sm mt-1"><i class="fa-solid fa-user-group"></i> ' + data.people + ' people on this card</div>' : '')
+            + (data.group ? '<div class="text-gray-500 text-xs">Group: ' + escapeHtml(data.group) + '</div>' : '')
+            + (data.meal ? '<div class="text-gray-500 text-xs">Meal: ' + escapeHtml(data.meal) + '</div>' : '')
             + (data.offline ? '<div class="text-amber-700 text-xs mt-1"><i class="fa-solid fa-cloud-arrow-up"></i> Saved on this phone — uploads when signal returns.</div>' : '');
         showScanToast('<i class="fa-solid fa-circle-check"></i> Checked in', 'success');
 
-        addArrival(data.id, data.name, data.checked_in_at);
+        addArrival(data.id, data.name, data.checked_in_at, data.seat);
         bumpCheckedInCount();
     }
 
-    function addArrival(id, name, checkedInAt) {
+    function addArrival(id, name, checkedInAt, seat) {
         const list = document.getElementById('arrivalsList');
         const empty = document.getElementById('noArrivals');
         if (empty) empty.remove();
@@ -219,10 +271,10 @@
         const undoUrl = id ? undoUrlTemplate.replace('__ID__', id) : null;
         const row = document.createElement('div');
         row.className = 'flex justify-between items-center border rounded-lg px-3 py-2';
-        row.innerHTML = '<span class="text-sm">' + escapeHtml(name) + '</span>'
+        row.innerHTML = '<span class="text-sm">' + escapeHtml(name) + (seat ? ' <span class="text-xs text-gray-400">· ' + escapeHtml(seat) + '</span>' : '') + '</span>'
             + '<div class="flex items-center gap-2">'
             + '<span class="text-xs text-gray-500">' + escapeHtml(checkedInAt) + '</span>'
-            + (!undoUrl ? '<span class="text-[10px] text-amber-700">waiting to sync</span>' : '<form method="POST" action="' + undoUrl + '" data-confirm="Remove ' + escapeHtml(name) + '\'s check-in? They\'ll show as not-yet-arrived again." data-confirm-title="Undo check-in?" data-confirm-button="Undo" data-confirm-icon="fa-rotate-left">'
+            + (!undoUrl ? '<span class="text-[10px] text-amber-700">waiting to sync</span>' : !isAdmin ? '' : '<form method="POST" action="' + undoUrl + '" data-confirm="Remove ' + escapeHtml(name) + '\'s check-in? They\'ll show as not-yet-arrived again." data-confirm-title="Undo check-in?" data-confirm-button="Undo" data-confirm-icon="fa-rotate-left">'
             + '<input type="hidden" name="_token" value="' + csrfToken + '">'
             + '<input type="hidden" name="_method" value="DELETE">'
             + '<button class="btn btn-ghost !py-1 !px-2 text-xs text-red-600" title="Undo check-in"><i class="fa-solid fa-rotate-left"></i></button>'
@@ -351,7 +403,9 @@
                 const badge = r.checked_in
                     ? '<span class="text-xs text-amber-600">Checked in ' + escapeHtml(r.checked_in_at) + '</span>'
                     : '<button type="button" class="search-checkin-btn btn btn-primary !py-1 !px-2 text-xs" data-token="' + escapeAttr(r.invite_token) + '">Check in</button>';
-                return '<div class="flex justify-between items-center border rounded-lg px-3 py-2"><span class="text-sm">' + escapeHtml(r.name) + '</span>' + badge + '</div>';
+                return '<div class="flex justify-between items-center border rounded-lg px-3 py-2"><span class="text-sm">' + escapeHtml(r.name)
+                    + (r.code ? ' <span class="text-[11px] text-gray-400 tracking-wider">' + escapeHtml(r.code) + '</span>' : '')
+                    + (r.seat ? ' <span class="text-[11px] text-gray-400">· ' + escapeHtml(r.seat) + '</span>' : '') + '</span>' + badge + '</div>';
             }).join('');
         }, 300);
     });
@@ -445,7 +499,7 @@
         await dbPut('queue', { token: token, name: guest.name, scanned_at: now.toISOString() });
         refreshStatus();
 
-        return { found: true, already: false, offline: true, id: null, name: guest.name, checked_in_at: guest.checked_in_at };
+        return { found: true, already: false, offline: true, id: null, name: guest.name, checked_in_at: guest.checked_in_at, seat: guest.seat, people: guest.people };
     }
 
     // Keeps the saved list in step with check-ins the server just confirmed, so a later
@@ -471,12 +525,13 @@
             .filter(function (g) {
                 if (!needle) return true;
                 return g.name.toLowerCase().indexOf(needle) !== -1
-                    || (g.phone_last && g.phone_last === needle)
+                    || (g.phone_last && needle.length >= 4 && g.phone_last === needle.replace(/\D+/g, '').slice(-4))
+                    || (g.code && g.code.toLowerCase() === needle.replace(/[^a-z0-9]/g, ''))
                     || g.token.toLowerCase() === needle;
             })
             .slice(0, 20)
             .map(function (g) {
-                return { invite_token: g.token, name: g.name, checked_in: !!g.checked_in_at, checked_in_at: g.checked_in_at };
+                return { invite_token: g.token, name: g.name, code: g.code, seat: g.seat, checked_in: !!g.checked_in_at, checked_in_at: g.checked_in_at };
             });
     }
 
@@ -620,7 +675,7 @@
                         await dbPut('guests', guest);
                     }
                     if (r.status === 'already') conflicts.push({ name: r.name, at: r.checked_in_at });
-                    if (r.status === 'unknown') conflicts.push({ name: 'Unrecognised card', at: null });
+                    if (r.status === 'unknown') conflicts.push({ name: r.revoked ? 'Cancelled card (not valid)' : 'Unrecognised card', at: null });
                 }
             }
 
@@ -670,6 +725,28 @@
 
     window.addEventListener('online', function () { refreshStatus(); syncNow(true); });
     window.addEventListener('offline', refreshStatus);
+
+    // Live numbers and the latest arrivals from every door.
+    async function pollStats() {
+        if (!navigator.onLine || document.hidden) return;
+        try {
+            const res = await fetch(statsUrl, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+            const d = await res.json();
+            document.getElementById('checkinCount').textContent = d.checked_in;
+            document.getElementById('expectedCount').textContent = d.expected;
+            document.getElementById('peopleIn').textContent = d.people_in;
+            const box = document.getElementById('scannerStats');
+            if (box && d.per_scanner.length) {
+                box.innerHTML = 'Checked in by: ' + d.per_scanner.map(function (r) { return '<strong>' + escapeHtml(r.name) + '</strong> ' + r.count; }).join(' · ');
+            }
+            document.getElementById('liveList').innerHTML = d.recent.length ? d.recent.map(function (r) {
+                return '<div class="flex justify-between"><span>' + escapeHtml(r.name) + (r.seat ? ' <span class="text-xs text-gray-400">· ' + escapeHtml(r.seat) + '</span>' : '') + '</span><span class="text-xs text-gray-400">' + escapeHtml(r.time) + (r.by && isAdmin ? ' · ' + escapeHtml(r.by) : '') + '</span></div>';
+            }).join('') : '<span class="text-xs text-gray-400">No one has arrived yet.</span>';
+        } catch (e) { /* offline or logged out — try again next time */ }
+    }
+    pollStats();
+    setInterval(pollStats, 20000);
 
     refreshStatus();
     if (navigator.onLine) syncNow(true);

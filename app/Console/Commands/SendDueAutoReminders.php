@@ -49,7 +49,7 @@ class SendDueAutoReminders extends Command
                 continue;
             }
 
-            $result = $sms->sendBulk($message, $outstanding);
+            $result = $sms->forEvent($event)->sendBulk($message, $outstanding);
             $event->update(['reminder_auto_last_sent_at' => $now]);
 
             $this->info($result['successful']

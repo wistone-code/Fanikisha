@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EventMember extends Model
 {
-    protected $fillable = ['event_id', 'user_id', 'role'];
+    protected $fillable = ['event_id', 'user_id', 'role', 'disabled_at'];
+
+    protected function casts(): array
+    {
+        return ['disabled_at' => 'datetime'];
+    }
 
     public function event(): BelongsTo
     {

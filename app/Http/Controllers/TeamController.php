@@ -19,8 +19,11 @@ class TeamController extends Controller
     {
         $event = app('currentEvent');
 
+        $scans = $event->pledges()->whereNotNull('checked_in_by')->selectRaw('checked_in_by, COUNT(*) as n')->groupBy('checked_in_by')->pluck('n', 'checked_in_by');
+
         return view('event.team.index', [
             'event' => $event,
+            'scans' => $scans,
             'members' => $event->members()->with('user')->get(),
         ]);
     }
@@ -34,7 +37,7 @@ class TeamController extends Controller
             'username' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'role' => ['required', 'in:admin,viewer'],
+            'role' => ['required', 'in:admin,viewer,scanner'],
         ]);
 
         if ($warnings = $unique->conflicts($data['username'], $data['email'], $data['phone'] ?? null)) {
@@ -76,6 +79,20 @@ class TeamController extends Controller
         $member->delete();
 
         return back()->with('status', 'Member removed');
+    }
+
+    /** Switch a member off (or back on) without deleting them — handy for door staff once the event is over. */
+    public function toggleDisabled(EventMember $member): RedirectResponse
+    {
+        abort_unless($member->event_id === app('currentEvent')->id, 404);
+
+        if ($member->isOwner()) {
+            abort(403, "The event owner can't be disabled.");
+        }
+
+        $member->update(['disabled_at' => $member->disabled_at ? null : now()]);
+
+        return back()->with('status', $member->disabled_at ? "{$member->user->name} disabled — they can no longer sign in" : "{$member->user->name} enabled again");
     }
 
     public function resetPassword(EventMember $member, PasswordGeneratorService $passwords): RedirectResponse

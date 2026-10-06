@@ -59,6 +59,11 @@
 <script>setTimeout(()=>document.getElementById('toast')?.remove(), 3000);</script>
 @endif
 
+@if (session('error'))
+<div id="errToast" class="fixed top-4 right-4 z-50 max-w-sm bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg text-sm" role="alert">{{ session('error') }}</div>
+<script>setTimeout(()=>document.getElementById('errToast')?.remove(), 6000);</script>
+@endif
+
 @if (session('warning'))
 <div id="warningToast" class="fixed top-4 right-4 z-[60] max-w-sm bg-amber-50 border border-amber-300 text-amber-900 px-4 py-3 rounded-lg shadow-lg text-sm" role="alert">
     <div class="flex items-start gap-2">

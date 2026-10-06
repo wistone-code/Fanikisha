@@ -16,7 +16,7 @@
 //
 // Guest data (the offline guest list and queued scans) is NOT stored here — it lives in the page's
 // IndexedDB — so bumping the version never loses un-synced check-ins.
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const SHELL_CACHE = 'fanikisha-shell-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'fanikisha-runtime-' + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';

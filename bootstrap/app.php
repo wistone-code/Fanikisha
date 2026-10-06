@@ -43,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'super_user' => EnsureSuperUser::class,
             'event_admin' => EnsureEventAdmin::class,
+            'can_checkin' => \App\Http\Middleware\EnsureCanCheckin::class,
             'no_funeral_team' => BlockTeamManagementForFuneral::class,
             'resolve_event' => ResolveCurrentEvent::class,
             'password_changed' => EnsurePasswordChanged::class,

@@ -39,12 +39,31 @@ class ResolveCurrentEvent
             return redirect()->route('event.create');
         }
 
+        // A disabled team member (e.g. door staff after the event) is signed out straight away.
+        if ($event) {
+            $membership = $user->eventMemberships()->where('event_id', $event->id)->first();
+
+            if ($membership?->disabled_at) {
+                \Illuminate\Support\Facades\Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')->withErrors(['username' => 'This account has been disabled by the event organiser.']);
+            }
+
+            // Door staff ("scanner") only ever see the check-in screen.
+            if ($membership?->role === 'scanner' && ! $request->routeIs('checkin.*', 'keep-alive', 'logout', 'password.*', 'dashboard')) {
+                abort(403, 'Door staff accounts can only use check-in.');
+            }
+        }
+
         // E-card-only accounts only get the guest-card screens, check-in and a trimmed
         // Setting page. Everything else (pledges, finances, providers, team…) is hidden
         // from the menu AND blocked here, so typing the URL doesn't reach it either.
-        if ($event?->isEcard() && ! $request->routeIs(
-            'dashboard', 'guests.*', 'checkin.*', 'team.*', 'account.*', 'keep-alive', 'logout', 'password.*',
-            'event.settings', 'event.settings.update', 'event.settings.card-photo.*', 'event.settings.sms-language', 'event.settings.theme-color',
+        // Block-list rather than allow-list: the pages that have no meaning without payments.
+        if ($event?->isEcard() && $request->routeIs(
+            'financial.*', 'pledges.*', 'providers.*', 'committees.*', 'schedule.*',
+            'event.settings.auto-reminder', 'event.settings.payout', 'event.settings.couple-threshold',
         )) {
             abort(404);
         }

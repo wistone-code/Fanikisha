@@ -18,6 +18,10 @@ class DashboardController extends Controller
         $event = app('currentEvent');
         $isAdmin = $request->user()->isAdminOn($event);
 
+        if ($request->user()->roleOn($event) === 'scanner') {
+            return redirect()->route('checkin.index');
+        }
+
         // The landing page IS the nav now (see layouts/app — the "Fanikisha" dropdown
         // is gone for regular accounts), so every account/event-type combination gets
         // the same full, correctly-filtered card list the dropdown used to show.

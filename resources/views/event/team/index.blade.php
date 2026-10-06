@@ -19,7 +19,9 @@
                 <td class="px-4 py-3 font-semibold">{{ $member->user->name }}</td>
                 <td class="px-4 py-3">{{ $member->user->username }}</td>
                 <td class="px-4 py-3">
-                    <span class="badge {{ $member->role === 'admin' ? 'badge-admin' : 'badge-viewer' }}">{{ ucfirst($member->role) }}</span>
+                    <span class="badge {{ $member->role === 'admin' ? 'badge-admin' : 'badge-viewer' }}">{{ $member->role === 'scanner' ? 'Door staff' : ucfirst($member->role) }}</span>
+                    @if ($member->role === 'scanner')<span class="text-xs text-gray-500 ml-1">{{ $scans[$member->user_id] ?? 0 }} check-in(s)</span>@endif
+                    @if ($member->disabled_at)<span class="badge ml-1" style="background:#fee2e2;color:#b91c1c;">Disabled</span>@endif
                     @if ($member->isOwner())<span class="badge badge-viewer ml-1"><i class="fa-solid fa-star text-[9px]"></i> Owner</span>@endif
                 </td>
                 <td class="px-4 py-3 text-right whitespace-nowrap">
@@ -32,6 +34,10 @@
                         </form>
                     @endif
                     @unless ($member->isOwner())
+                    <form method="POST" action="{{ route('team.toggle-disabled', $member) }}" class="inline">
+                        @csrf
+                        <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid {{ $member->disabled_at ? 'fa-user-check' : 'fa-user-slash' }}"></i> {{ $member->disabled_at ? 'Enable' : 'Disable' }}</button>
+                    </form>
                     <form method="POST" action="{{ route('team.destroy', $member) }}" class="inline" data-confirm="Remove this member from the event?" data-confirm-title="Remove member?">
                         @csrf @method('DELETE')
                         <button class="btn btn-danger !py-1.5 !px-2.5"><i class="fa-solid fa-user-minus"></i> Remove</button>
@@ -68,7 +74,9 @@
                 <select name="role" id="memberRole" class="w-full border rounded-lg px-3 py-2 text-sm">
                     <option value="admin" {{ old('role', 'admin') === 'admin' ? 'selected' : '' }}>Admin</option>
                     <option value="viewer" {{ old('role') === 'viewer' ? 'selected' : '' }}>Viewer</option>
+                    <option value="scanner" {{ old('role') === 'scanner' ? 'selected' : '' }}>Door staff (check-in only)</option>
                 </select>
+                <p class="text-xs text-gray-400 mt-1">Door staff can only open the check-in screen — no guest list, no phone numbers, nothing else.</p>
             </div>
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('addMemberModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>

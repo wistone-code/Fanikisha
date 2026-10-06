@@ -9,6 +9,86 @@ use Throwable;
 
 class BeemSmsService
 {
+    /** Set by forEvent() for scheduled jobs, where there is no logged-in "current event". */
+    private ?\App\Models\Event $eventOverride = null;
+
+    private bool $skipQuota = false;
+
+    /** A copy of this service that charges quota to the given event (used by scheduled commands). */
+    public function forEvent(?\App\Models\Event $event): static
+    {
+        $copy = clone $this;
+        $copy->eventOverride = $event;
+
+        return $copy;
+    }
+
+    private function quotaEvent(): ?\App\Models\Event
+    {
+        return $this->skipQuota ? null : ($this->eventOverride ?? app('currentEvent'));
+    }
+
+    /** sendBulk() without the quota check/count — the caller (sendPersonalised) handles quota for the whole batch. */
+    private function sendBulkUnchecked(string $message, Collection $recipients): array
+    {
+        $this->skipQuota = true;
+
+        try {
+            return $this->sendBulk($message, $recipients);
+        } finally {
+            $this->skipQuota = false;
+        }
+    }
+
+    /**
+     * Send a different message to each recipient (personalised cards, thank-yous…).
+     * Quota is checked once up front for the whole batch.
+     *
+     * @param  Collection  $items  objects/arrays with ->phone and ->message
+     * @return array{successful: bool, sent: int, failed: int, ok_keys?: array, error?: string}
+     */
+    public function sendPersonalised(Collection $items): array
+    {
+        $items = $items->map(fn ($i) => (object) (array) $i)->filter(fn ($i) => filled($i->phone) && filled($i->message))->values();
+
+        if ($items->isEmpty()) {
+            return ['successful' => false, 'sent' => 0, 'failed' => 0, 'error' => 'No recipients with a phone number.'];
+        }
+
+        $event = $this->quotaEvent();
+
+        if ($event && ! $event->hasSmsCapacity($items->count())) {
+            $remaining = $event->smsRemaining();
+
+            return ['successful' => false, 'sent' => 0, 'failed' => 0, 'error' => $remaining <= 0
+                ? 'Quota finished — sending is paused. Contact your system admin to raise it.'
+                : "Not enough quota remaining — {$remaining} left, but this would send {$items->count()}."];
+        }
+
+        $sent = 0;
+        $failed = 0;
+        $lastError = null;
+        $okKeys = [];
+
+        foreach ($items as $index => $item) {
+            $result = $this->sendBulkUnchecked($item->message, collect([(object) ['phone' => $item->phone]]));
+
+            if ($result['successful']) {
+                $sent += $result['valid'] ?? 1;
+                $okKeys[] = $item->key ?? $index;
+            } else {
+                $failed++;
+                $lastError = $result['error'] ?? null;
+            }
+        }
+
+        if ($event && $sent > 0) {
+            $event->increment('sms_sent_count', $sent);
+        }
+
+        return ['successful' => $sent > 0, 'sent' => $sent, 'failed' => $failed, 'ok_keys' => $okKeys] + ($lastError && $sent === 0 ? ['error' => $lastError] : []);
+    }
+
     /**
      * Send one message to many recipients through Beem Africa's bulk SMS API.
      *
@@ -38,7 +118,7 @@ class BeemSmsService
             return ['successful' => false, 'error' => 'No recipients with a phone number.'];
         }
 
-        $event = app('currentEvent');
+        $event = $this->quotaEvent();
 
         if ($event && ! $event->hasSmsCapacity(count($recipients))) {
             $remaining = $event->smsRemaining();

@@ -92,6 +92,14 @@ class EventController extends Controller
     }
 
     /** Saves the organizer's chosen theme color, or clears it to go back to the event type's default. */
+    /** Door staff see the guest's name and confirm before a check-in is recorded. */
+    public function updateCheckinConfirm(Request $request): RedirectResponse
+    {
+        app('currentEvent')->update(['checkin_confirm_name' => $request->boolean('checkin_confirm_name')]);
+
+        return back()->with('status', 'Check-in setting saved');
+    }
+
     public function updateThemeColor(Request $request, EventThemeService $themes): RedirectResponse
     {
         $event = app('currentEvent');

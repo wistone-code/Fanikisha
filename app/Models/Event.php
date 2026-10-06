@@ -19,6 +19,19 @@ class Event extends Model
         'reminder_auto_enabled', 'reminder_auto_frequency_days', 'reminder_auto_time', 'reminder_auto_last_sent_at',
         'sms_quota', 'sms_sent_count', 'card_photo', 'card_photo_mime',
         'payout_phone', 'payout_network', 'couple_threshold_amount', 'sms_language',
+        'auto_remind_unopened', 'auto_remind_unopened_days', 'unopened_reminder_message',
+        'rsvp_plus_ones_enabled', 'rsvp_max_plus_single', 'rsvp_max_plus_double', 'rsvp_meal_enabled', 'rsvp_meal_options',
+        'rsvp_dietary_enabled', 'rsvp_message_enabled', 'rsvp_cutoff_date',
+        'seating_mode', 'seating_published',
+        'host_names', 'thank_you_enabled', 'thank_you_time', 'thank_you_attended_message', 'thank_you_absent_message', 'thank_you_acknowledge_paid',
+        'checkin_confirm_name',
+        'photo_wall_enabled', 'photo_wall_token', 'photo_wall_pin', 'photo_wall_access', 'photo_wall_open_mode',
+        'photo_wall_close_days', 'photo_wall_max_per_guest', 'photo_wall_max_total', 'photo_wall_uploads_blocked',
+        'card_template', 'card_default_lang', 'card_text_en', 'card_text_sw', 'card_video_url', 'card_music_url',
+        'card_has_music', 'card_has_custom_design', 'custom_design_width', 'custom_design_height',
+        'custom_design_layout', 'use_custom_design',
+        'event_time', 'venue_name', 'venue_address', 'venue_lat', 'venue_lng', 'landmark_note_en', 'landmark_note_sw',
+        'event_day_reminder_enabled', 'event_day_reminder_time', 'event_day_reminder_message',
     ];
 
     /** Verified June 2026 against vodacom.co.tz, yas.co.tz/mixx-by-yas, airtel.co.tz, halotel.co.tz. */
@@ -36,6 +49,22 @@ class Event extends Model
             'pledge_deadline' => 'date',
             'reminder_auto_enabled' => 'boolean',
             'reminder_auto_last_sent_at' => 'datetime',
+            'auto_remind_unopened' => 'boolean',
+            'rsvp_plus_ones_enabled' => 'boolean',
+            'rsvp_meal_enabled' => 'boolean',
+            'rsvp_dietary_enabled' => 'boolean',
+            'rsvp_message_enabled' => 'boolean',
+            'rsvp_cutoff_date' => 'date',
+            'seating_published' => 'boolean',
+            'thank_you_enabled' => 'boolean',
+            'thank_you_acknowledge_paid' => 'boolean',
+            'checkin_confirm_name' => 'boolean',
+            'photo_wall_enabled' => 'boolean',
+            'photo_wall_uploads_blocked' => 'boolean',
+            'use_custom_design' => 'boolean',
+            'card_has_music' => 'boolean',
+            'card_has_custom_design' => 'boolean',
+            'event_day_reminder_enabled' => 'boolean',
         ];
     }
 
@@ -77,6 +106,21 @@ class Event extends Model
     public function providers(): HasMany
     {
         return $this->hasMany(Provider::class);
+    }
+
+    public function seatingAreas(): HasMany
+    {
+        return $this->hasMany(SeatingArea::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function seatingTables(): HasMany
+    {
+        return $this->hasMany(SeatingTable::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(EventPhoto::class);
     }
 
     public function scheduleItems(): HasMany
@@ -181,7 +225,40 @@ class Event extends Model
             'committee' => $sw
                 ? 'Habari {name}, umechaguliwa kuwa {role} katika kamati ya {committee}.'
                 : 'Dear {name}, you have been elected as {role} on {committee} committee.',
+            'unopened_reminder' => $sw
+                ? 'Habari {name}, bado hujafungua kadi yako ya mwaliko wa {event} ({date}). Bofya hapa: {link}'
+                : "Dear {name}, we noticed you haven't opened your invitation to {event} ({date}) yet. Tap here to see it and RSVP: {link}",
+            'thank_you_attended' => $sw
+                ? 'Habari {name}, asante kwa kuwa nasi kwenye {event}. Uwepo wako ulituongezea furaha! — {hosts}'
+                : 'Dear {name}, thank you for celebrating {event} with us. Your presence made the day special! — {hosts}',
+            'thank_you_absent' => $sw
+                ? 'Habari {name}, tulikukumbuka kwenye {event}. Asante kwa mawazo na dua zako. — {hosts}'
+                : 'Dear {name}, we missed you at {event}. Thank you for your thoughts and good wishes. — {hosts}',
+            'event_day_reminder' => $sw
+                ? 'Habari {name}, leo ni {event}! Tarehe {date}{time}{place}. Kadi yako (QR ya kuingia): {link}'
+                : 'Dear {name}, today is {event}! {date}{time}{place}. Your card and entry QR: {link}',
             default => '',
         };
+    }
+
+    /** Venue shown on the card and in reminders, in the language asked for ('en' or 'sw'). */
+    public function venueLine(): string
+    {
+        return trim(($this->venue_name ?: $this->place ?: '').($this->venue_address ? ', '.$this->venue_address : ''), ' ,');
+    }
+
+    public function hasMapPin(): bool
+    {
+        return $this->venue_lat !== null && $this->venue_lng !== null;
+    }
+
+    /** Directions link: the exact pin if one was set, otherwise a text search on the place name. */
+    public function mapsUrl(): ?string
+    {
+        if ($this->hasMapPin()) {
+            return 'https://www.google.com/maps/dir/?api=1&destination='.number_format((float) $this->venue_lat, 7, '.', '').','.number_format((float) $this->venue_lng, 7, '.', '');
+        }
+
+        return $this->place ? 'https://www.google.com/maps/search/?api=1&query='.urlencode($this->venueLine()) : null;
     }
 }
