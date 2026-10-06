@@ -2,7 +2,6 @@
 @php
     $c = config('company'); $sw = $lang === 'sw';
     $t = fn ($en, $swh) => $sw ? $swh : $en;
-    $sent = session('sent');
     $types = ['wedding' => $t('Wedding', 'Harusi'), 'sendoff' => $t('Send-off / kitchen party', 'Send-off / kitchen party'), 'funeral' => $t('Funeral / memorial', 'Msiba / kumbukumbu'), 'graduation' => $t('Graduation', 'Mahafali'), 'fundraiser' => $t('Fundraiser', 'Harambee'), 'birthday' => $t('Birthday', 'Sherehe ya kuzaliwa'), 'corporate' => $t('Corporate event', 'Tukio la kampuni'), 'other' => $t('Something else', 'Jambo lingine')];
 @endphp
 @section('title', $t('Request an account', 'Omba akaunti').' — '.$c['brand'])
@@ -12,12 +11,6 @@
 <div class="max-w-xl mx-auto px-5 pt-10">
     <h1 class="text-3xl font-bold mb-2">{{ $t('Request an account', 'Omba akaunti') }}</h1>
     <p class="text-gray-600 text-sm mb-6">{{ $t('Tell us a little about your event. We will contact you within 2 working days and set up your organiser account. It is free to ask — nothing is charged by sending this form.', 'Tuambie kidogo kuhusu tukio lako. Tutawasiliana nawe ndani ya siku 2 za kazi na kukufungulia akaunti ya mwandaaji. Kuomba ni bure — hakuna malipo kwa kutuma fomu hii.') }}</p>
-
-    @if ($sent)
-        <div class="rounded-xl bg-green-50 text-green-800 p-4 text-sm mb-6">
-            <strong>{{ $t('Thank you.', 'Asante.') }}</strong> {{ $t('We received your request and will contact you within 2 working days.', 'Tumepokea ombi lako na tutawasiliana nawe ndani ya siku 2 za kazi.') }}
-        </div>
-    @endif
 
     <form method="POST" action="{{ route('account-request.store', ['lang' => $sw ? 'sw' : null]) }}" class="space-y-4">
         @csrf

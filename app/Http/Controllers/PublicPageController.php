@@ -108,7 +108,7 @@ class PublicPageController extends Controller
 
         $this->notifyAccountRequest($accountRequest);
 
-        return redirect()->route('account-request', ['lang' => $request->query('lang')])->with('sent', 'received');
+        return redirect()->route('home', ['lang' => $request->query('lang')])->with('account_requested', true);
     }
 
     private function notifyAccountRequest(AccountRequest $r): void

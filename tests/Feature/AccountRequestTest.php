@@ -31,7 +31,9 @@ class AccountRequestTest extends TestCase
     {
         Mail::fake();
 
-        $this->post('/request-account', $this->payload())->assertRedirect(route('account-request'))->assertSessionHas('sent');
+        $this->post('/request-account', $this->payload())->assertRedirect(route('home'))->assertSessionHas('account_requested');
+
+        $this->get('/')->assertOk()->assertSee('We received your request');
 
         $r = AccountRequest::first();
         $this->assertSame('new', $r->status);

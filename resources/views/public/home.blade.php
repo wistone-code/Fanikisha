@@ -16,6 +16,13 @@
 @section('title', 'Fanikisha — '.$t('Event invitations, RSVP & contributions', 'Mialiko, RSVP na michango ya matukio'))
 
 @section('content')
+@if (session('account_requested'))
+    <div class="bg-green-50 text-green-800 border-b border-green-200">
+        <div class="max-w-5xl mx-auto px-5 py-3 text-sm text-center">
+            <strong>{{ $t('Thank you.', 'Asante.') }}</strong> {{ $t('We received your request and will contact you within 2 working days.', 'Tumepokea ombi lako na tutawasiliana nawe ndani ya siku 2 za kazi.') }}
+        </div>
+    </div>
+@endif
 <section class="bg-[#1F3A52] text-white">
     <div class="max-w-5xl mx-auto px-5 py-14 sm:py-20 text-center">
         <p class="text-xs tracking-widest uppercase text-sky-200 mb-3">{{ $t('Your Event Partner', 'Mshirika wako wa matukio') }}</p>
