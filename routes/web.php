@@ -34,6 +34,8 @@ Route::get('/terms', [PublicPageController::class, 'terms'])->name('terms');
 Route::get('/acceptable-use', [PublicPageController::class, 'acceptableUse'])->name('acceptable-use');
 Route::get('/data-request', [PublicPageController::class, 'dataRequestForm'])->name('data-request');
 Route::post('/data-request', [PublicPageController::class, 'dataRequestStore'])->middleware('throttle:5,10')->name('data-request.store');
+Route::get('/request-account', [PublicPageController::class, 'accountRequestForm'])->name('account-request');
+Route::post('/request-account', [PublicPageController::class, 'accountRequestStore'])->middleware('throttle:5,10')->name('account-request.store');
 
 // ---- Guest ---------------------------------------------------------------------------
 

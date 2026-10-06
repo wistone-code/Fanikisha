@@ -22,7 +22,7 @@
         <h1 class="text-3xl sm:text-5xl leading-tight font-bold mb-4">{{ $t('Invite, confirm and welcome your guests — from one phone.', 'Alika, thibitisha na wapokee wageni wako — kwa simu moja.') }}</h1>
         <p class="text-sky-100 max-w-2xl mx-auto sm:text-lg leading-relaxed mb-8">{{ $t('Fanikisha helps event organisers in Tanzania send digital invitation cards, collect RSVPs, check guests in at the door and manage contributions — built to work on any phone, even on slow networks.', 'Fanikisha inawasaidia waandaaji wa matukio Tanzania kutuma kadi za mwaliko za kidijitali, kukusanya RSVP, kuwapokea wageni mlangoni na kusimamia michango — inafanya kazi kwenye simu yoyote, hata mtandao ukiwa polepole.') }}</p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="mailto:{{ $c['email'] }}?subject=Fanikisha%20account" class="pbtn pbtn-light"><i class="fa-solid fa-envelope"></i> {{ $t('Request an account', 'Omba akaunti') }}</a>
+            <a href="{{ route('account-request', ['lang' => $sw ? 'sw' : null]) }}" class="pbtn pbtn-light"><i class="fa-solid fa-user-plus"></i> {{ $t('Request an account', 'Omba akaunti') }}</a>
         </div>
     </div>
 </section>
@@ -72,9 +72,10 @@
 <section class="max-w-3xl mx-auto px-5 pt-10">
     <div class="rounded-2xl bg-[#1F3A52] text-white p-8 text-center">
         <h2 class="text-2xl font-bold mb-2">{{ $t('Ready to plan your event?', 'Uko tayari kuandaa tukio lako?') }}</h2>
-        <p class="text-sky-100 mb-5 text-sm">{{ $t('Contact us and we will set up your organiser account.', 'Wasiliana nasi tukufungulie akaunti ya mwandaaji.') }}</p>
+        <p class="text-sky-100 mb-5 text-sm">{{ $t('Tell us about your event and we will set up your organiser account.', 'Tuambie kuhusu tukio lako tukufungulie akaunti ya mwandaaji.') }}</p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="mailto:{{ $c['email'] }}" class="pbtn pbtn-light"><i class="fa-solid fa-envelope"></i> {{ $c['email'] }}</a>
+            <a href="{{ route('account-request', ['lang' => $sw ? 'sw' : null]) }}" class="pbtn pbtn-light"><i class="fa-solid fa-user-plus"></i> {{ $t('Request an account', 'Omba akaunti') }}</a>
+            <a href="mailto:{{ $c['email'] }}" class="pbtn border border-white/30 text-white"><i class="fa-solid fa-envelope"></i> {{ $c['email'] }}</a>
             @if ($c['phone'])<a href="tel:{{ preg_replace('/\s+/', '', $c['phone']) }}" class="pbtn border border-white/30 text-white"><i class="fa-solid fa-phone"></i> {{ $c['phone'] }}</a>@endif
         </div>
     </div>
