@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\ComplianceController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -114,6 +115,11 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
         Route::patch('/account/email', [UserManagementController::class, 'updateOwnEmail'])->name('account.email');
 
         Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');
+
+        Route::get('/compliance', [ComplianceController::class, 'index'])->name('compliance');
+        Route::post('/compliance/blocked', [ComplianceController::class, 'addBlocked'])->name('compliance.blocked.add');
+        Route::delete('/compliance/blocked/{optout}', [ComplianceController::class, 'removeBlocked'])->name('compliance.blocked.remove');
+        Route::patch('/compliance/requests/{dataRequest}', [ComplianceController::class, 'updateRequest'])->name('compliance.request');
     });
 
     // Event self-service creation (accounts are limited to a single event).

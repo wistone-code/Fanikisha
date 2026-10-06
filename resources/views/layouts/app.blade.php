@@ -105,6 +105,8 @@
                     <div id="navMenu" class="hidden absolute left-0 mt-1 w-56 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40">
                         <a href="{{ route('admin.users.index') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">User Management</a>
                         <a href="{{ route('admin.logs.index') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Logs</a>
+                        @php($openRequests = \App\Models\DataRequest::whereIn('status', ['new', 'acknowledged'])->count())
+                        <a href="{{ route('admin.compliance') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Privacy &amp; opt-outs @if ($openRequests)<span class="badge" style="background:#fde8e8;color:#b42318;">{{ $openRequests }}</span>@endif</a>
                         <a href="{{ route('admin.account') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Account Settings</a>
                         <div class="border-t my-1"></div>
                         <form method="POST" action="{{ route('logout') }}">@csrf
