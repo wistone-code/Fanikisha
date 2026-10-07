@@ -35,13 +35,14 @@
     <div class="border-t pt-3 text-sm">
         <div class="font-semibold mb-1">Music file</div>
         @if ($event->card_has_music)
-        <p class="text-xs text-gray-500 mb-2">Music file saved{{ $musicSize ? ' ('.number_format($musicSize / 1048576, 1).' MB)' : '' }}. Guests tap “Play music” on their card. It plays instead of the music link above.</p>
+        <p class="text-xs mb-2" style="color:var(--primary)"><i class="fa-solid fa-circle-check"></i> Music saved{{ $musicSize ? ' ('.number_format($musicSize / 1048576, 1).' MB)' : '' }}. Guests see a “Play music” button under their card. It plays instead of the music link above.</p>
+        <audio controls preload="none" src="{{ route('design.music.preview') }}" class="w-full mb-2"></audio>
         <form method="POST" action="{{ route('design.music.remove') }}">@csrf @method('DELETE') <button class="btn btn-ghost !py-1 !px-2 text-xs text-red-600">Remove music</button></form>
-        @else
-        <form method="POST" action="{{ route('design.music.upload') }}" enctype="multipart/form-data" class="flex gap-2 flex-wrap">@csrf
-            <input type="file" name="music" accept="audio/*" required class="text-xs"><button class="btn btn-ghost !py-1 !px-2 text-xs">Upload (max 10 MB)</button></form>
-        @error('music')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        <div class="text-xs text-gray-500 mt-3 mb-1">Replace with another file</div>
         @endif
+        <form method="POST" action="{{ route('design.music.upload') }}" enctype="multipart/form-data" class="flex gap-2 flex-wrap items-center">@csrf
+            <input type="file" name="music" accept="audio/*" required class="text-xs max-w-full"><button class="btn btn-primary !py-1 !px-3 text-xs">Save music (max 10 MB)</button></form>
+        @error('music')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 </div>
 

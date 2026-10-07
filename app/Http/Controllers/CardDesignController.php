@@ -65,6 +65,15 @@ class CardDesignController extends Controller
         return back()->with('status', 'Music added to the cards');
     }
 
+    /** The host listens to the uploaded music to check it saved correctly. */
+    public function previewMusic(Request $request)
+    {
+        $event = app('currentEvent');
+        abort_unless($event->card_has_music, 404);
+
+        return app(GuestCardController::class)->streamMusic($request, $event->id);
+    }
+
     public function removeMusic(): RedirectResponse
     {
         $event = app('currentEvent');

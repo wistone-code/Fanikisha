@@ -238,7 +238,7 @@ class RsvpAndSeatingTest extends TestCase
 
     public function test_contributions_events_get_the_same_tabs(): void
     {
-        $event = \App\Models\Event::factory()->create(['mode' => 'contributions']);
+        $event = \App\Models\Event::factory()->create(['mode' => 'contributions', 'event_type' => 'Wedding']);
         $admin = $this->memberOf($event, 'admin');
 
         $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('Delivery')->assertSee('Seating')->assertSee('Photos');

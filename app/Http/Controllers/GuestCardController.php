@@ -155,12 +155,18 @@ class GuestCardController extends Controller
         $pledge = $this->find($token);
         abort_unless($pledge && $pledge->event->card_has_music, 404);
 
+        return $this->streamMusic($request, $pledge->event_id);
+    }
+
+    /** Streams an event's uploaded music (used for guests and for the host's preview). */
+    public function streamMusic(Request $request, int $eventId): Response|StreamedResponse
+    {
         // Read only the bytes asked for (the file lives in the database), so a 10 MB song never loads in full for each guest.
-        $meta = DB::table('event_assets')->where('event_id', $pledge->event_id)->where('kind', 'music')->selectRaw('mime, LENGTH(data) as n')->first();
+        $meta = DB::table('event_assets')->where('event_id', $eventId)->where('kind', 'music')->selectRaw('mime, LENGTH(data) as n')->first();
         abort_unless($meta, 404);
         $size = (int) $meta->n;
         $headers = ['Content-Type' => $meta->mime, 'Accept-Ranges' => 'bytes', 'Cache-Control' => 'public, max-age=3600'];
-        $slice = fn (int $from, int $len) => (string) DB::table('event_assets')->where('event_id', $pledge->event_id)->where('kind', 'music')
+        $slice = fn (int $from, int $len) => (string) DB::table('event_assets')->where('event_id', $eventId)->where('kind', 'music')
             ->selectRaw('SUBSTR(data, ?, ?) as part', [$from + 1, $len])->value('part');
 
         if (preg_match('/bytes=(\d*)-(\d*)/', (string) $request->header('Range'), $m)) {

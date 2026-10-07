@@ -290,6 +290,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
                 Route::get('/design', [CardDesignController::class, 'index'])->name('design.index');
                 Route::patch('/design/card', [CardDesignController::class, 'updateCard'])->name('design.card');
                 Route::post('/design/music', [CardDesignController::class, 'uploadMusic'])->name('design.music.upload');
+                Route::get('/design/music', [CardDesignController::class, 'previewMusic'])->name('design.music.preview');
                 Route::delete('/design/music', [CardDesignController::class, 'removeMusic'])->name('design.music.remove');
                 Route::post('/design/custom', [CardDesignController::class, 'uploadDesign'])->name('design.custom.upload');
                 Route::patch('/design/custom', [CardDesignController::class, 'updateLayout'])->name('design.custom.layout');

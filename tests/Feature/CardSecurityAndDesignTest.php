@@ -149,13 +149,15 @@ class CardSecurityAndDesignTest extends TestCase
         [$event, $admin] = $this->ecardEvent();
         $g = $this->guestCard($event);
 
-        $this->actingAs($admin)->get(route('design.index'))->assertSee('max 10 MB');
+        $this->actingAs($admin)->get(route('design.index'))->assertSee('Save music (max 10 MB)');
         $big = UploadedFile::fake()->createWithContent('long.mp3', str_repeat('A', 6 * 1024 * 1024))->mimeType('audio/mpeg');
         $this->actingAs($admin)->post(route('design.music.upload'), ['music' => $big])->assertSessionHasNoErrors();
         $this->assertTrue($event->fresh()->card_has_music);
-        $this->get(route('design.index'))->assertSee('Music file saved (6.0 MB)', false);
+        $this->get(route('design.index'))->assertSee('Music saved (6.0 MB)', false)->assertSee(route('design.music.preview'), false);
+        $this->get(route('design.music.preview'), ['Range' => 'bytes=0-3'])->assertStatus(206);
 
         $this->post('/logout');
+        $this->get(route('guest.rsvp', $g->invite_token))->assertSee('id="musicBtn"', false);
         $part = $this->get(route('guest.rsvp.music', $g->invite_token), ['Range' => 'bytes=5242880-5242889'])->assertStatus(206);
         $this->assertSame('AAAAAAAAAA', $part->getContent());
         $this->assertSame('bytes 5242880-5242889/6291456', $part->headers->get('Content-Range'));

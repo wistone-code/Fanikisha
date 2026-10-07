@@ -127,6 +127,11 @@
     @endif
     </div>
 
+    @if ($event->card_has_music || $event->card_music_url)
+    <button type="button" id="musicBtn" class="btn btn-primary w-full max-w-sm"><i class="fa-solid fa-music"></i> <span id="musicLabel">{{ $L['play'] }}</span></button>
+    <audio id="bgAudio" loop preload="none" src="{{ $event->card_has_music ? route('guest.rsvp.music', $pledge->invite_token) : $event->card_music_url }}"></audio>
+    @endif
+
     {{-- RSVP (outside the saved image so the picture stays clean) --}}
     <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 text-center">
         @if (session('rsvp_error'))<p class="text-sm text-red-600 mb-2">{{ session('rsvp_error') }}</p>@endif
@@ -183,11 +188,6 @@
         <a href="{{ route('guest.rsvp.calendar', $pledge->invite_token) }}" class="btn btn-ghost flex-1"><i class="fa-solid fa-calendar-plus"></i> {{ $L['add_calendar'] }}</a>
         @if ($maps)<a href="{{ $maps }}" target="_blank" rel="noopener" class="btn btn-ghost flex-1"><i class="fa-solid fa-diamond-turn-right"></i> {{ $L['view_map'] }}</a>@endif
     </div>
-
-    @if ($event->card_has_music || $event->card_music_url)
-    <button type="button" id="musicBtn" class="btn btn-ghost w-full max-w-sm"><i class="fa-solid fa-music"></i> <span id="musicLabel">{{ $L['play'] }}</span></button>
-    <audio id="bgAudio" loop preload="none" src="{{ $event->card_has_music ? route('guest.rsvp.music', $pledge->invite_token) : $event->card_music_url }}"></audio>
-    @endif
 
     @if ($event->card_video_url)
         @if ($videoEmbed)
