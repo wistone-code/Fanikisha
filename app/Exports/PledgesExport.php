@@ -15,7 +15,7 @@ class PledgesExport implements FromCollection, WithHeadings
 
     public function collection()
     {
-        $rows = $this->event->pledges->map(fn ($p) => [
+        $rows = $this->event->pledges()->contributors()->get()->map(fn ($p) => [
             'Name' => $this->sanitizeCell($p->name),
             'Pledge amount' => (float) $p->amount,
             'Paid' => (float) $p->paid,

@@ -18,7 +18,7 @@ class FinancialController extends Controller
         $tab = $request->get('tab', 'dashboard');
 
         if ($tab === 'individual') {
-            $pledges = $event->pledges;
+            $pledges = $event->pledges()->contributors()->get();
             $counts = ['Completed' => 0, 'Pending' => 0, 'Overdue' => 0];
             foreach ($pledges as $p) {
                 $counts[$p->status()]++;

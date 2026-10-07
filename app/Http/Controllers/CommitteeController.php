@@ -24,7 +24,7 @@ class CommitteeController extends Controller
         return view('event.committees.index', [
             'event' => $event,
             'committees' => $event->committees()->with('members.pledge')->latest()->get(),
-            'pledges' => $event->pledges,
+            'pledges' => $event->pledges()->contributors()->get(),
             'isAdmin' => $request->user()->isAdminOn($event),
         ]);
     }

@@ -172,8 +172,8 @@ class Event extends Model
     /** Aggregate financial figures used across the Home and Financial Status screens. */
     public function stats(): array
     {
-        $totalPledged = $this->pledges()->sum('amount');
-        $collected = $this->pledges()->sum('paid');
+        $totalPledged = $this->pledges()->contributors()->sum('amount');
+        $collected = $this->pledges()->contributors()->sum('paid');
         $budget = $this->providers()->sum('budget');
         $expenditure = $this->providers()->sum('paid');
 
@@ -185,7 +185,7 @@ class Event extends Model
             'expenditure' => (float) $expenditure,
             'balance' => (float) ($collected - $expenditure),
             'variance' => (float) ($budget - $collected),
-            'pledge_count' => $this->pledges()->count(),
+            'pledge_count' => $this->pledges()->contributors()->count(),
         ];
     }
 

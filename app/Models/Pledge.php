@@ -16,6 +16,7 @@ class Pledge extends Model
         'card_code', 'plus_ones', 'meal_choice', 'dietary_note', 'host_message',
         'group_name', 'seating_table_id', 'seating_area_id', 'seat_number',
         'thank_you_sent_at', 'invite_revoked_at', 'scan_attempts', 'event_day_reminder_sent_at',
+        'guest_only', 'on_invite_list',
     ];
 
     protected static function booted(): void
@@ -41,6 +42,8 @@ class Pledge extends Model
             'thank_you_sent_at' => 'datetime',
             'invite_revoked_at' => 'datetime',
             'event_day_reminder_sent_at' => 'datetime',
+            'guest_only' => 'boolean',
+            'on_invite_list' => 'boolean',
         ];
     }
 
@@ -104,7 +107,13 @@ class Pledge extends Model
      */
     public function scopeOutstanding($query)
     {
-        return $query->whereColumn('paid', '<', 'amount');
+        return $query->where('guest_only', false)->whereColumn('paid', '<', 'amount');
+    }
+
+    /** Real contributors only — invited guests (guest_only) never count in pledges, finance or reminders. */
+    public function scopeContributors($query)
+    {
+        return $query->where('guest_only', false);
     }
 
     public function remaining(): float

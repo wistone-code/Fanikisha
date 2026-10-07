@@ -33,7 +33,7 @@ class PledgeController extends Controller
 
         return view('event.pledges.index', [
             'event' => $event,
-            'pledges' => $event->pledges()->latest()->get(),
+            'pledges' => $event->pledges()->contributors()->latest()->get(),
             'isAdmin' => $isAdmin,
         ]);
     }
@@ -50,8 +50,7 @@ class PledgeController extends Controller
             // longer asks for this (only "Edit" does), so don't assume the key is
             // present in $data at all.
             'paid' => $data['paid'] ?? 0,
-            // Always generated immediately (unlike invite_token, which only
-            // appears once paid in full) so the "Pay now" link works right away.
+            // Always generated immediately so the "Pay now" link works right away.
             'pay_token' => Str::random(32),
             // Set once here, at save time — not re-evaluated if the threshold
             // changes later, so existing pledges keep whatever type they got.
@@ -94,18 +93,6 @@ class PledgeController extends Controller
         ]);
 
         $status = 'Updated';
-        $reLocked = false;
-
-        // A "Paid" correction (e.g. an amount entered by mistake, then fixed)
-        // can bring a pledge back below fully paid. If their invitation was
-        // already activated based on that mistaken figure, it should no
-        // longer be reachable — otherwise a guest could keep an invite link
-        // that was only ever valid because of a data-entry error.
-        if ($pledge->invite_token && ! $pledge->isPaidInFull()) {
-            $pledge->update(['invite_token' => null]);
-            $reLocked = true;
-        }
-
         // Only fires when the paid amount actually went up (not on every save) and there's a phone to text.
         if ((float) $pledge->paid > $previousPaid) {
             $status = "Payment recorded for {$pledge->name} — Paid: ".number_format($pledge->paid).', Balance: '.number_format($pledge->remaining());
@@ -121,10 +108,6 @@ class PledgeController extends Controller
                     ? ($cleared ? ' — fully paid, thank-you SMS sent' : ' (SMS sent)')
                     : ' — but SMS failed: '.($result['error'] ?? 'unknown error');
             }
-        }
-
-        if ($reLocked) {
-            $status .= " — invitation link removed (no longer paid in full).";
         }
 
         return back()->with('status', $status);
@@ -348,7 +331,7 @@ class PledgeController extends Controller
     public function exportPdf()
     {
         $event = app('currentEvent');
-        $pledges = $event->pledges;
+        $pledges = $event->pledges()->contributors()->get();
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.pledges-pdf', [
             'event' => $event,

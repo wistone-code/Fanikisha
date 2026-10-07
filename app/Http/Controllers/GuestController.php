@@ -48,19 +48,18 @@ class GuestController extends Controller
             ]);
         }
 
-        $pledges = $isAdmin ? $event->pledges : $event->pledges()->whereColumn('paid', '>=', 'amount')->where('amount', '>', 0)->get();
+        // The invitation list is chosen: new guests plus pledgers picked from the pledge list.
+        $listed = $event->pledges()->where('on_invite_list', true)->orderBy('name')->get();
+        $pledges = $isAdmin ? $listed : $listed;
+        $pickable = $isAdmin ? $event->pledges()->contributors()->where('on_invite_list', false)->orderBy('name')->get() : collect();
 
-        return view('event.guests.event-invitation', compact('event', 'pledges', 'isAdmin'));
+        return view('event.guests.event-invitation', compact('event', 'pledges', 'pickable', 'isAdmin'));
     }
 
-    /** E-card accounts have no payments, so every guest's card is active straight away. */
+    /** A card can be sent as soon as its link exists — payment never gates an invitation. */
     private function canSendInvite(Pledge $pledge): bool
     {
-        if (! $pledge->invite_token) {
-            return false;
-        }
-
-        return $pledge->event->isEcard() || $pledge->isPaidInFull();
+        return (bool) $pledge->invite_token;
     }
 
     // ---- E-card-only accounts ---------------------------------------------------------
@@ -144,6 +143,61 @@ class GuestController extends Controller
         return back()->with('status', "{$data['name']} added — their e-card is ready to send");
     }
 
+    private function abortUnlessInvitationList(): void
+    {
+        $event = app('currentEvent');
+        abort_if($event->isEcard() || $event->isFuneral(), 404);
+    }
+
+    /** Contribution accounts: invite someone who is not a contributor. Their link is live straight away. */
+    public function inviteNewGuest(Request $request, PhoneNumberService $phones): RedirectResponse
+    {
+        $this->abortUnlessInvitationList();
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'card_type' => ['required', 'in:single,double'],
+        ]);
+
+        $event = app('currentEvent');
+        $guest = $this->newEcardGuest($event, $data['name'], $data['phone'] ?? null, $data['card_type'], $phones);
+        $guest->forceFill(['guest_only' => true, 'on_invite_list' => true])->save();
+
+        return back()->with('status', "{$data['name']} added to the invitation list.");
+    }
+
+    /** Contribution accounts: put chosen pledgers from the pledge list onto the invitation list. */
+    public function invitePledgers(Request $request): RedirectResponse
+    {
+        $this->abortUnlessInvitationList();
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ], ['ids.required' => 'Tick at least one person from the pledge list.']);
+
+        $count = app('currentEvent')->pledges()->contributors()->whereIn('id', $data['ids'])->update(['on_invite_list' => true]);
+
+        return back()->with('status', "{$count} ".($count === 1 ? 'person' : 'people').' added to the invitation list.');
+    }
+
+    /** Take a pledger back off the invitation list — only while no invitation has gone out. */
+    public function unlistPledger(Pledge $pledge): RedirectResponse
+    {
+        $this->abortUnlessInvitationList();
+        $this->assertPledgeInCurrentEvent($pledge);
+        abort_if($pledge->guest_only, 404);
+
+        if ($pledge->invite_sent_at) {
+            return back()->withErrors(['invite' => 'This invitation was already sent, so it cannot be removed from the list.']);
+        }
+
+        $pledge->update(['on_invite_list' => false]);
+
+        return back()->with('status', "{$pledge->name} removed from the invitation list.");
+    }
+
     /** Bulk add from a CSV/text file or pasted rows. Columns: Name, Phone, Card (single/double, optional). */
     public function importGuests(Request $request, PhoneNumberService $phones): RedirectResponse
     {
@@ -223,20 +277,19 @@ class GuestController extends Controller
 
     public function destroyGuest(Pledge $pledge): RedirectResponse
     {
-        $this->abortUnlessEcard();
         $this->assertPledgeInCurrentEvent($pledge);
+        // E-card accounts remove any guest; contribution accounts only remove invited guests, never a pledger.
+        abort_unless(app('currentEvent')->isEcard() || $pledge->guest_only, 404);
 
         $pledge->delete();
 
         return back()->with('status', 'Guest removed');
     }
 
-    /** Activates a pledge's RSVP link. Only possible once it's paid in full — a write action, so admin-only. */
+    /** Activates a pledger's RSVP link — no payment needed. A write action, so admin-only. */
     public function sendInvite(Pledge $pledge): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
-
-        abort_unless($pledge->isPaidInFull(), 403, 'This pledge must be paid in full first.');
 
         if (! $pledge->invite_token) {
             $pledge->update(['invite_token' => Str::random(32)]);
@@ -249,7 +302,7 @@ class GuestController extends Controller
     public function inviteSms(Pledge $pledge, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
-        abort_unless($this->canSendInvite($pledge), 403, 'The invitation link activates once the pledge is paid in full.');
+        abort_unless($this->canSendInvite($pledge), 403, 'Activate the invitation link first.');
 
         $event = app('currentEvent');
         $result = $sms->sendSingle($messages->forInvitation($event, $pledge), $pledge->phone);
@@ -269,7 +322,7 @@ class GuestController extends Controller
         if ($blocked = app(\App\Services\OptOutService::class)->blockedRedirect($pledge->phone)) {
             return $blocked;
         }
-        abort_unless($this->canSendInvite($pledge), 403, 'The invitation link activates once the pledge is paid in full.');
+        abort_unless($this->canSendInvite($pledge), 403, 'Activate the invitation link first.');
 
         $event = app('currentEvent');
         $digits = $phones->digitsOnly($pledge->phone);
