@@ -2,38 +2,122 @@
 @section('title', 'User Management — '.config('app.name'))
 
 @section('content')
-<div class="flex justify-between items-start mb-4 flex-wrap gap-3">
+<style>
+    .ad-title { font-family: Georgia, 'Times New Roman', serif; }
+    .ad-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.7rem 1.1rem; border-bottom:1px solid #e5e7eb; background:#f9fafb; }
+    .ad-h { font: 600 .72rem/1 inherit; letter-spacing:.08em; text-transform:uppercase; color:#6b7280; }
+    .ad-bar { height:.4rem; border-radius:9999px; background:#e5e7eb; overflow:hidden; }
+    .ad-bar > span { display:block; height:100%; border-radius:9999px; }
+    .ad-section { font-family: Georgia, 'Times New Roman', serif; font-size:1.05rem; font-weight:600; }
+</style>
+
+<div class="flex justify-between items-end mb-6 flex-wrap gap-3 border-b pb-4">
     <div>
-        <h2 class="text-xl font-semibold">All accounts</h2>
-        <p class="text-sm text-gray-500">Create accounts. The admin account cannot see event data.</p>
+        <h2 class="ad-title text-2xl font-semibold">Dashboard</h2>
+        <p class="text-sm text-gray-500 mt-1">Accounts, packages and SMS across Fanikisha. The admin account cannot see event data.</p>
     </div>
-    <button onclick="document.getElementById('newAccountModal').classList.remove('hidden')" class="btn btn-primary">
-        <i class="fa-solid fa-user-plus"></i> New account
-    </button>
+    <div class="flex gap-2 flex-wrap">
+        @if (Route::has('admin.sms-usage'))<a href="{{ route('admin.sms-usage') }}" class="btn btn-ghost"><i class="fa-solid fa-comment-sms"></i> SMS usage</a>@endif
+        <a href="{{ route('admin.logs.index') }}" class="btn btn-ghost"><i class="fa-solid fa-clock-rotate-left"></i> Activity logs</a>
+        <button onclick="document.getElementById('newAccountModal').classList.remove('hidden')" class="btn btn-primary">
+            <i class="fa-solid fa-user-plus"></i> New account
+        </button>
+    </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-    <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-users"></i> Total accounts</div><div class="text-xl font-semibold mt-1">{{ $totalAccounts }}</div></div>
-    <a href="{{ route('admin.users.index', ['status' => 'attention', 'q' => $search ?: null]) }}" class="card p-5 block {{ $atQuotaCount > 0 ? 'ring-1 ring-red-200' : '' }}">
-        <div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> Needs attention</div>
-        <div class="text-xl font-semibold mt-1 {{ $atQuotaCount > 0 ? 'text-red-600' : '' }}">{{ $atQuotaCount }}</div>
-        <div class="text-xs text-gray-400 mt-1">at/over SMS quota</div>
-    </a>
-    <a href="{{ route('admin.users.index', ['status' => 'no_event', 'q' => $search ?: null]) }}" class="card p-5 block">
-        <div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-hourglass-half"></i> No event yet</div>
-        <div class="text-xl font-semibold mt-1">{{ $noEventCount }}</div>
-    </a>
+{{-- Key numbers --}}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
     <div class="card p-5">
-        <div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-comment-sms"></i> SMS sent (all-time)</div>
-        <div class="text-xl font-semibold mt-1">{{ number_format($totalSmsSent) }}</div>
-        <div class="text-xs text-gray-400 mt-1">~TZS {{ number_format($estimatedSmsCost) }} estimated</div>
+        <div class="ad-h"><i class="fa-solid fa-users"></i> Accounts</div>
+        <div class="text-2xl font-semibold mt-2">{{ $totalAccounts }}</div>
+        <div class="text-xs text-gray-400 mt-1">{{ $newAccounts }} new in 30 days{{ $suspendedCount ? ' · '.$suspendedCount.' suspended' : '' }}</div>
     </div>
+    <div class="card p-5">
+        <div class="ad-h"><i class="fa-solid fa-calendar-days"></i> Events</div>
+        <div class="text-2xl font-semibold mt-2">{{ $eventCount }}</div>
+        <div class="text-xs text-gray-400 mt-1">{{ $upcomingCount }} upcoming · {{ $soonCount }} in next 30 days</div>
+    </div>
+    <div class="card p-5">
+        <div class="ad-h"><i class="fa-solid fa-comment-sms"></i> SMS sent (all-time)</div>
+        <div class="text-2xl font-semibold mt-2">{{ number_format($totalSmsSent) }}</div>
+        <div class="text-xs text-gray-400 mt-1">~TZS {{ number_format($estimatedSmsCost) }} estimated{{ $quotaUsedPct !== null ? ' · '.$quotaUsedPct.'% of quotas used' : '' }}</div>
+    </div>
+    <a href="{{ route('admin.users.index', ['status' => 'attention', 'q' => $search ?: null]) }}" class="card p-5 block {{ $atQuotaCount > 0 ? 'ring-1 ring-red-200' : '' }}">
+        <div class="ad-h"><i class="fa-solid fa-triangle-exclamation"></i> Needs attention</div>
+        <div class="text-2xl font-semibold mt-2 {{ $atQuotaCount > 0 ? 'text-red-600' : '' }}">{{ $atQuotaCount }}</div>
+        <div class="text-xs text-gray-400 mt-1">at/over SMS quota · <span class="underline">{{ $noEventCount }} without an event</span></div>
+    </a>
+</div>
+
+{{-- Packages, upcoming events, SMS leaders --}}
+<div class="grid lg:grid-cols-3 gap-4 mb-4">
+    <div class="card overflow-hidden">
+        <div class="ad-head"><span class="ad-h">Packages</span><span class="text-xs text-gray-400">{{ $totalAccounts }} accounts</span></div>
+        <div class="p-4 space-y-3 text-sm">
+            @foreach (config('packages.packages') as $key => $pkg)
+            @php($n = $packageCounts[$key] ?? 0)
+            <div>
+                <div class="flex justify-between"><span class="font-medium">{{ $pkg['label'] }}</span><span class="text-gray-500">{{ $n }}</span></div>
+                <div class="ad-bar mt-1"><span style="width: {{ $totalAccounts ? round($n / max($totalAccounts, 1) * 100) : 0 }}%; background: var(--primary)"></span></div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+
+    <div class="card overflow-hidden">
+        <div class="ad-head"><span class="ad-h">Upcoming events</span><span class="text-xs text-gray-400">next {{ $upcomingEvents->count() }}</span></div>
+        <div class="divide-y text-sm">
+            @forelse ($upcomingEvents as $ev)
+            <div class="px-4 py-2.5 flex items-center justify-between gap-3">
+                <div class="min-w-0"><div class="font-medium truncate">{{ $ev->name }}</div><div class="text-xs text-gray-400 truncate">{{ $ev->event_type }}{{ $ev->owner ? ' · '.$ev->owner->name : '' }}</div></div>
+                <div class="text-right shrink-0"><div class="text-xs font-semibold">{{ $ev->event_date->format('M j') }}</div><div class="text-[11px] text-gray-400">{{ $ev->event_date->diffForHumans(null, true) }}</div></div>
+            </div>
+            @empty
+            <div class="px-4 py-8 text-center text-gray-400 text-sm">No upcoming events.</div>
+            @endforelse
+        </div>
+    </div>
+
+    <div class="card overflow-hidden">
+        <div class="ad-head"><span class="ad-h">Most SMS used</span>@if (Route::has('admin.sms-usage'))<a href="{{ route('admin.sms-usage') }}" class="text-xs underline text-gray-500">Full report</a>@endif</div>
+        <div class="p-4 space-y-3 text-sm">
+            @forelse ($topSms as $ev)
+            @php($pct = $ev->sms_quota ? min(100, (int) round($ev->sms_sent_count / $ev->sms_quota * 100)) : null)
+            <div>
+                <div class="flex justify-between gap-2"><span class="font-medium truncate">{{ $ev->name }}</span><span class="text-gray-500 shrink-0">{{ number_format($ev->sms_sent_count) }}{{ $ev->sms_quota ? ' / '.number_format($ev->sms_quota) : '' }}</span></div>
+                @if ($pct !== null)<div class="ad-bar mt-1"><span style="width: {{ $pct }}%; background: {{ $pct >= 100 ? '#dc2626' : ($pct >= 80 ? '#d97706' : 'var(--primary)') }}"></span></div>@endif
+            </div>
+            @empty
+            <div class="py-4 text-center text-gray-400 text-sm">No SMS sent yet.</div>
+            @endforelse
+        </div>
+    </div>
+</div>
+
+{{-- Recent activity --}}
+<div class="card overflow-hidden mb-8">
+    <div class="ad-head"><span class="ad-h">Recent activity</span><a href="{{ route('admin.logs.index') }}" class="text-xs underline text-gray-500">All logs</a></div>
+    <div class="divide-y text-sm">
+        @forelse ($recentActivity as $log)
+        <div class="px-4 py-2 flex items-start justify-between gap-3">
+            <div class="min-w-0"><span class="font-medium">{{ $log->actor?->name ?? 'System' }}</span> <span class="text-gray-500">{{ $log->description }}</span></div>
+            <div class="text-xs text-gray-400 shrink-0">{{ $log->created_at?->diffForHumans() }}</div>
+        </div>
+        @empty
+        <div class="px-4 py-6 text-center text-gray-400 text-sm">No activity recorded yet.</div>
+        @endforelse
+    </div>
+</div>
+
+<div class="flex items-end justify-between mb-3 flex-wrap gap-2">
+    <div><h3 class="ad-section">All accounts</h3><p class="text-xs text-gray-500">Create, edit, change package, reset passwords or suspend.</p></div>
+    <div class="text-xs text-gray-400">{{ $accounts->total() }} shown</div>
 </div>
 
 <div class="card p-4 mb-4">
     <form method="GET" class="flex flex-wrap items-center gap-3">
         <input type="hidden" name="status" value="{{ $status }}">
-        <input type="text" name="q" value="{{ $search }}" placeholder="Search by name or username…" class="flex-1 min-w-[200px] border rounded-lg px-3 py-2 text-sm">
+        <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, username or email…" class="flex-1 min-w-[200px] border rounded-lg px-3 py-2 text-sm">
         <div class="flex gap-1 text-xs font-semibold">
             <a href="{{ route('admin.users.index', ['q' => $search ?: null]) }}" class="px-3 py-1.5 rounded-full {{ $status === 'all' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500' }}">All</a>
             <a href="{{ route('admin.users.index', ['status' => 'attention', 'q' => $search ?: null]) }}" class="px-3 py-1.5 rounded-full {{ $status === 'attention' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500' }}">Needs attention</a>
@@ -46,11 +130,11 @@
     <table class="w-full text-sm sortable-table" data-no-search>
         <thead>
             <tr class="text-left text-xs uppercase text-gray-400 border-b">
-                <th class="px-4 py-3" data-sort="text">Username</th>
-                <th class="px-4 py-3" data-sort="text">Email</th>
+                <th class="px-4 py-3" data-sort="text">Account</th>
+                <th class="px-4 py-3" data-sort="text">Package</th>
                 <th class="px-4 py-3" data-sort="text">Role</th>
                 <th class="px-4 py-3">Event</th>
-                <th class="px-4 py-3" data-sort="number">SMS Quota</th>
+                <th class="px-4 py-3" data-sort="number">SMS quota</th>
                 <th class="px-4 py-3" data-sort="text">Created by</th>
                 <th class="px-4 py-3"></th>
             </tr>
@@ -58,12 +142,13 @@
         <tbody>
             @forelse ($accounts as $account)
             <tr class="border-b last:border-0 {{ $account->at_quota ? 'bg-red-50' : '' }} {{ $account->is_suspended ? 'opacity-60' : '' }}">
-                <td class="px-4 py-3 font-semibold">
-                    {{ $account->username }}
-                    @if ($account->is_suspended)<span class="badge bg-red-100 text-red-700 ml-1">Suspended</span>@endif
+                <td class="px-4 py-3">
+                    <div class="font-semibold">{{ $account->name }}
+                        @if ($account->is_suspended)<span class="badge bg-red-100 text-red-700 ml-1">Suspended</span>@endif</div>
+                    <div class="text-xs text-gray-500">{{ $account->username }} &middot; {{ $account->email }}</div>
                 </td>
-                <td class="px-4 py-3">{{ $account->email }}</td>
-                <td class="px-4 py-3"><span class="badge {{ $account->role_label === 'Admin' ? 'badge-admin' : 'badge-viewer' }}">{{ $account->role_label }}</span><div class="text-[11px] text-gray-400 mt-1">{{ config('packages.packages.'.($account->package ?: 'full').'.label') }}</div></td>
+                <td class="px-4 py-3"><span class="badge bg-teal-50 text-teal-700">{{ config('packages.packages.'.($account->package ?: 'full').'.label') }}</span></td>
+                <td class="px-4 py-3"><span class="badge {{ $account->role_label === 'Admin' ? 'badge-admin' : 'badge-viewer' }}">{{ $account->role_label }}</span></td>
                 <td class="px-4 py-3">
                     @if ($account->event_name)
                     <div class="font-medium">{{ $account->event_name }}</div>
@@ -76,11 +161,13 @@
                     @if (! $account->event_id)
                     <span class="text-gray-400 text-xs">No event yet</span>
                     @else
+                    @php($qpct = $account->sms_quota ? min(100, (int) round($account->sms_sent_count / $account->sms_quota * 100)) : null)
                     <span class="text-xs {{ $account->at_quota ? 'text-red-600 font-semibold' : 'text-gray-600' }}">
                         {{ $account->sms_sent_count }} / {{ $account->sms_quota ?? '∞' }}
                         @if ($account->at_quota)<i class="fa-solid fa-triangle-exclamation ml-1"></i>@endif
                     </span>
                     <button onclick="document.getElementById('editQuota{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1 !px-2 ml-1"><i class="fa-solid fa-pen text-xs"></i></button>
+                    @if ($qpct !== null)<div class="ad-bar mt-1 w-24"><span style="width: {{ $qpct }}%; background: {{ $qpct >= 100 ? '#dc2626' : ($qpct >= 80 ? '#d97706' : 'var(--primary)') }}"></span></div>@endif
                     @endif
                 </td>
                 <td class="px-4 py-3 text-gray-500">{{ $account->created_by_label }}</td>

@@ -98,7 +98,39 @@ class UserManagementController extends Controller
 
         return view('admin.users.index', compact(
             'accounts', 'search', 'status', 'totalAccounts', 'atQuotaCount', 'noEventCount', 'totalSmsSent', 'estimatedSmsCost', 'eligibleTargets'
-        ));
+        ) + $this->dashboard());
+    }
+
+    /**
+     * Whole-platform overview for the admin dashboard. Only identifying metadata and cost-control numbers
+     * (the same things the accounts table already shows) — never any event's guests, pledges or money.
+     *
+     * @return array<string, mixed>
+     */
+    private function dashboard(): array
+    {
+        $people = User::where('is_super_user', false);
+
+        $packageCounts = [];
+        foreach ((clone $people)->selectRaw("COALESCE(package, 'full') as pkg, COUNT(*) as n")->groupBy('pkg')->pluck('n', 'pkg') as $key => $n) {
+            $packageCounts[$key] = (int) $n;
+        }
+
+        $today = now()->startOfDay();
+        $quotaTotals = Event::whereNotNull('sms_quota')->selectRaw('COALESCE(SUM(sms_sent_count),0) as sent, COALESCE(SUM(sms_quota),0) as quota')->first();
+
+        return [
+            'packageCounts' => $packageCounts,
+            'suspendedCount' => (clone $people)->where('is_suspended', true)->count(),
+            'newAccounts' => (clone $people)->where('created_at', '>=', now()->subDays(30))->count(),
+            'eventCount' => Event::count(),
+            'upcomingCount' => Event::whereDate('event_date', '>=', $today)->count(),
+            'soonCount' => Event::whereDate('event_date', '>=', $today)->whereDate('event_date', '<=', $today->copy()->addDays(30))->count(),
+            'upcomingEvents' => Event::with('owner')->whereDate('event_date', '>=', $today)->orderBy('event_date')->limit(5)->get(),
+            'topSms' => Event::with('owner')->where('sms_sent_count', '>', 0)->orderByDesc('sms_sent_count')->limit(5)->get(),
+            'quotaUsedPct' => $quotaTotals && (int) $quotaTotals->quota > 0 ? (int) round($quotaTotals->sent / $quotaTotals->quota * 100) : null,
+            'recentActivity' => \App\Models\ActivityLog::with(['actor', 'targetUser'])->latest('created_at')->limit(6)->get(),
+        ];
     }
 
     public function store(Request $request, PasswordGeneratorService $passwords, AccountMailer $mailer, AccountUniquenessService $unique, PhoneNumberService $phones): RedirectResponse
