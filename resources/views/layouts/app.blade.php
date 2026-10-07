@@ -193,6 +193,7 @@
             <i class="fa-solid fa-mobile-screen-button mt-0.5" style="color:var(--primary);"></i>
             <div class="flex-1">
                 <strong>Install Fanikisha on your iPhone.</strong>
+                <span id="iosInAppNote" style="display:none;">This page is open inside another app (WhatsApp, Facebook…). Tap <strong>⋯</strong> or <strong>Open in Safari</strong> first, then:</span>
                 Tap <i class="fa-solid fa-arrow-up-from-bracket"></i> <strong>Share</strong>, then <strong>Add to Home Screen</strong>.
             </div>
             <button type="button" id="iosInstallClose" class="text-gray-400 hover:text-gray-600" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
@@ -676,7 +677,13 @@ if ('serviceWorker' in navigator) {
 
     const ua = navigator.userAgent || '';
     const isIos = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (isIos && !isDismissed()) show(tip);
+    if (isIos && !isDismissed()) {
+        if (/FBAN|FBAV|Instagram|WhatsApp|Line\/|MicroMessenger|Snapchat|TikTok/i.test(ua)) {
+            const note = document.getElementById('iosInAppNote');
+            if (note) note.style.display = 'inline';
+        }
+        show(tip);
+    }
 
     const close = document.getElementById('iosInstallClose');
     if (close) close.addEventListener('click', function () { remember(); hide(tip); });

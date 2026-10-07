@@ -63,6 +63,13 @@ self.addEventListener('activate', (event) => {
     })());
 });
 
+// Safari refuses to show a page when the worker answers a navigation with a response that followed a
+// redirect ("Response served by service worker has redirections"). Rebuilding it as a plain response fixes that.
+async function plain(response) {
+    if (!response || !response.redirected) return response;
+    return new Response(await response.blob(), { status: response.status, statusText: response.statusText, headers: response.headers });
+}
+
 function isCacheable(response) {
     // ok responses, plus opaque ones (cross-origin no-cors, status 0) for fonts and icon CSS.
     return response && (response.ok || response.type === 'opaque');
@@ -117,14 +124,14 @@ self.addEventListener('fetch', (event) => {
                                 .then(pruneBuildFiles)
                                 .catch(() => {});
                         }
-                        return response;
+                        return plain(response);
                     })
                     .catch(() => caches.match(request, { ignoreVary: true }).then((cached) => cached || caches.match(OFFLINE_URL)))
             );
             return;
         }
 
-        event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
+        event.respondWith(fetch(request).then(plain).catch(() => caches.match(OFFLINE_URL)));
         return;
     }
 

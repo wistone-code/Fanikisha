@@ -143,4 +143,29 @@ class PwaTest extends TestCase
         $this->assertStringContainsString('#1F3A52', $html);
         $this->assertStringNotContainsString('fonts.googleapis', $html, 'the offline page must not need the network');
     }
+
+    public function test_public_home_page_is_installable_on_iphone_with_its_own_icon_and_title(): void
+    {
+        $this->get('/')->assertOk()
+            ->assertSee('rel="manifest"', false)
+            ->assertSee('apple-touch-icon" sizes="180x180"', false)
+            ->assertSee('apple-mobile-web-app-title', false);
+
+        foreach (['apple-touch-icon.png', 'apple-touch-icon-precomposed.png'] as $file) {
+            $this->assertFileExists(public_path($file));
+            $this->assertSame(180, getimagesize(public_path($file))[0]);
+        }
+    }
+
+    public function test_worker_rebuilds_redirected_responses_for_safari_and_install_tip_handles_in_app_browsers(): void
+    {
+        $sw = File::get(public_path('sw.js'));
+        $this->assertStringContainsString('async function plain(', $sw);
+        $this->assertStringContainsString('.then(plain)', $sw);
+
+        [$event, $admin] = $this->ecardEvent();
+        $this->actingAs($admin)->get(route('guests.index'))->assertOk()
+            ->assertSee('iosInAppNote', false)
+            ->assertSee('Open in Safari', false);
+    }
 }

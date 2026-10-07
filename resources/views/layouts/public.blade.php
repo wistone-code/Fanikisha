@@ -10,12 +10,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>@yield('title', $c['brand'].' — Event invitations, RSVP & contributions')</title>
 <meta name="description" content="@yield('description', 'Fanikisha helps event organisers in Tanzania send digital invitation cards, collect RSVPs, check guests in at the door and manage contributions.')">
-<meta name="theme-color" content="#1F3A52">
+@include('partials.pwa-head', ['themeColor' => '#1F3A52'])
 <meta property="og:title" content="@yield('title', $c['brand'])">
 <meta property="og:description" content="@yield('description', 'Digital invitations, RSVP, check-in and contributions for weddings, funerals and events.')">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ url()->current() }}">
-<link rel="icon" href="/icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
