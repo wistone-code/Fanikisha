@@ -44,7 +44,7 @@
 </script>
 @endif
 
-<div class="grid grid-cols-1 {{ $isAdmin ? 'lg:grid-cols-2' : '' }} gap-5 items-start">
+<div class="space-y-8">
     <div>
         <div class="mb-3">
             <h2 class="text-xl font-semibold">Invitation list</h2>
@@ -114,7 +114,7 @@
     </div>
 
     @if ($isAdmin)
-    <div>
+    <div class="max-w-3xl">
         <div class="mb-3"><h2 class="text-xl font-semibold">Invitation message</h2></div>
         <div class="card p-5">
             <form method="POST" action="{{ route('guests.message.invitation') }}">
