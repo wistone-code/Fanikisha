@@ -14,12 +14,17 @@
 @if ($isAdmin)
 <div class="mb-5">
     <button type="button" id="addGuestBtn" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add guest</button>
-    <div id="addGuestPanel" class="card p-5 mt-3 max-w-md {{ $errors->has('name') || $errors->has('phone') ? '' : 'hidden' }}">
+    <div id="addGuestPanel" class="card p-5 mt-3 max-w-md {{ $errors->has('name') || $errors->has('phone') || $errors->has('card_type') ? '' : 'hidden' }}">
         <p class="text-sm text-gray-500 mb-3">For family, VIPs or anyone who is not a contributor. Their link is ready at once and they never appear in pledges or finance.</p>
         <form method="POST" action="{{ route('guests.invite.new') }}" class="space-y-3">
             @csrf
             <input name="name" value="{{ old('name') }}" required maxlength="255" placeholder="Name" class="w-full border rounded-lg px-3 py-2 text-sm">
             <input name="phone" value="{{ old('phone') }}" maxlength="32" inputmode="tel" placeholder="Phone (0712 345 678)" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <div><label class="text-xs font-semibold">Card type</label>
+                <select name="card_type" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    <option value="single" @selected(old('card_type', 'single') === 'single')>Single card (one person)</option>
+                    <option value="double" @selected(old('card_type') === 'double')>Double card (couple, two people)</option>
+                </select></div>
             <div class="flex gap-2">
                 <button class="btn btn-primary"><i class="fa-solid fa-check"></i> Save guest</button>
                 <button type="button" id="addGuestCancel" class="btn btn-ghost">Cancel</button>
@@ -119,9 +124,13 @@
         <h3 class="font-semibold mb-4">Edit guest</h3>
         <form method="POST" action="{{ route('guests.update', $p) }}" class="space-y-3">
             @csrf @method('PATCH')
-            <input type="hidden" name="card_type" value="{{ $p->card_type ?: 'single' }}">
             <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ $p->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Phone</label><input type="tel" name="phone" value="{{ $p->phone }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Card type</label>
+                <select name="card_type" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    <option value="single" @selected(($p->card_type ?: 'single') === 'single')>Single card (one person)</option>
+                    <option value="double" @selected($p->card_type === 'double')>Double card (couple, two people)</option>
+                </select></div>
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('editGuest{{ $p->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
                 <button class="btn btn-primary flex-1 justify-center">Save changes</button>

@@ -63,7 +63,7 @@ class InvitationListTest extends TestCase
 
         $this->actingAs($admin)->get(route('guests.index'))->assertOk()
             ->assertSee('Asha Pledger')->assertSee('Add guest')
-            ->assertDontSee('Choose from pledge list')->assertDontSee('card_type');
+            ->assertDontSee('Choose from pledge list')->assertSee('Single card (one person)')->assertSee('Double card (couple, two people)');
     }
 
     public function test_a_pledger_on_the_list_can_be_invited_without_paying(): void
@@ -131,5 +131,21 @@ class InvitationListTest extends TestCase
         $this->assertSame(['Real'], $event->pledges()->outstanding()->pluck('name')->all());
         $rows = (new \App\Exports\PledgesExport($event))->collection()->pluck('Name')->all();
         $this->assertNotContains('Guesty', $rows);
+    }
+
+    public function test_a_guest_can_be_added_as_a_double_card_and_counts_as_two_people(): void
+    {
+        [$event, $admin] = $this->fullEvent();
+
+        $this->actingAs($admin)->post(route('guests.invite.new'), ['name' => 'Mr and Mrs Kimaro', 'card_type' => 'double'])->assertSessionHas('status');
+        $this->actingAs($admin)->post(route('guests.invite.new'), ['name' => 'Odd One', 'card_type' => 'vip'])->assertSessionHasErrors('card_type');
+
+        $guest = Pledge::where('name', 'Mr and Mrs Kimaro')->first();
+        $this->assertSame('double', $guest->card_type);
+        $this->assertSame(2, $guest->headcount());
+        $this->assertNull(Pledge::where('name', 'Odd One')->first());
+
+        $this->actingAs($admin)->patch(route('guests.update', $guest), ['name' => 'Mr and Mrs Kimaro', 'card_type' => 'single']);
+        $this->assertSame(1, $guest->fresh()->headcount());
     }
 }
