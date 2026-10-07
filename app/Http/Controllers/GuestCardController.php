@@ -155,10 +155,13 @@ class GuestCardController extends Controller
         $pledge = $this->find($token);
         abort_unless($pledge && $pledge->event->card_has_music, 404);
 
-        $asset = EventAsset::where('event_id', $pledge->event_id)->where('kind', 'music')->firstOrFail();
-        $data = $asset->data;
-        $size = strlen($data);
-        $headers = ['Content-Type' => $asset->mime, 'Accept-Ranges' => 'bytes', 'Cache-Control' => 'public, max-age=3600'];
+        // Read only the bytes asked for (the file lives in the database), so a 10 MB song never loads in full for each guest.
+        $meta = DB::table('event_assets')->where('event_id', $pledge->event_id)->where('kind', 'music')->selectRaw('mime, LENGTH(data) as n')->first();
+        abort_unless($meta, 404);
+        $size = (int) $meta->n;
+        $headers = ['Content-Type' => $meta->mime, 'Accept-Ranges' => 'bytes', 'Cache-Control' => 'public, max-age=3600'];
+        $slice = fn (int $from, int $len) => (string) DB::table('event_assets')->where('event_id', $pledge->event_id)->where('kind', 'music')
+            ->selectRaw('SUBSTR(data, ?, ?) as part', [$from + 1, $len])->value('part');
 
         if (preg_match('/bytes=(\d*)-(\d*)/', (string) $request->header('Range'), $m)) {
             $start = $m[1] === '' ? max(0, $size - (int) $m[2]) : (int) $m[1];
@@ -168,13 +171,13 @@ class GuestCardController extends Controller
                 return response('', 416, ['Content-Range' => "bytes */{$size}"]);
             }
 
-            return response(substr($data, $start, $end - $start + 1), 206, $headers + [
+            return response($slice($start, $end - $start + 1), 206, $headers + [
                 'Content-Range' => "bytes {$start}-{$end}/{$size}",
                 'Content-Length' => $end - $start + 1,
             ]);
         }
 
-        return response($data, 200, $headers + ['Content-Length' => $size]);
+        return response($slice(0, $size), 200, $headers + ['Content-Length' => $size]);
     }
 
     /** A calendar file the guest can open to add the event with a reminder. */

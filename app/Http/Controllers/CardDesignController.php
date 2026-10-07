@@ -22,6 +22,7 @@ class CardDesignController extends Controller
 
         return view('event.design.index', [
             'event' => $event,
+            'musicSize' => $event->card_has_music ? (int) \Illuminate\Support\Facades\DB::table('event_assets')->where('event_id', $event->id)->where('kind', 'music')->selectRaw('LENGTH(data) as n')->value('n') : 0,
             'templates' => $templates->forType($event->event_type),
             'suited' => $templates->suitedFor($event->event_type),
             'layout' => $this->layoutFor($event),
@@ -46,14 +47,18 @@ class CardDesignController extends Controller
 
     public function uploadMusic(Request $request): RedirectResponse
     {
-        $request->validate(['music' => ['required', 'file', 'max:3072', 'mimetypes:audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/webm']]);
+        $request->validate(['music' => ['required', 'file', 'max:10240', 'mimes:mp3,mpga,m4a,mp4,aac,ogg,oga,wav,webm']], [
+            'music.max' => 'That file is too big. Music can be 10 MB at most (about 10 minutes of MP3).',
+            'music.mimes' => 'Please choose an audio file (MP3, M4A, AAC, OGG, WAV or WebM).',
+            'music.uploaded' => 'The upload did not finish. Check your network and try again with a file under 10 MB.',
+        ]);
 
         $event = app('currentEvent');
         $file = $request->file('music');
 
         EventAsset::updateOrCreate(
             ['event_id' => $event->id, 'kind' => 'music'],
-            ['mime' => $file->getMimeType() ?: 'audio/mpeg', 'data' => file_get_contents($file->getRealPath())],
+            ['mime' => str_starts_with((string) $file->getMimeType(), 'audio/') ? $file->getMimeType() : 'audio/mpeg', 'data' => file_get_contents($file->getRealPath())],
         );
         $event->update(['card_has_music' => true]);
 

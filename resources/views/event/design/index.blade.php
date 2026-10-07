@@ -35,11 +35,11 @@
     <div class="border-t pt-3 text-sm">
         <div class="font-semibold mb-1">Music file</div>
         @if ($event->card_has_music)
-        <p class="text-xs text-gray-500 mb-2">A music file is attached. Guests tap “Play music” on their card.</p>
+        <p class="text-xs text-gray-500 mb-2">Music file saved{{ $musicSize ? ' ('.number_format($musicSize / 1048576, 1).' MB)' : '' }}. Guests tap “Play music” on their card. It plays instead of the music link above.</p>
         <form method="POST" action="{{ route('design.music.remove') }}">@csrf @method('DELETE') <button class="btn btn-ghost !py-1 !px-2 text-xs text-red-600">Remove music</button></form>
         @else
         <form method="POST" action="{{ route('design.music.upload') }}" enctype="multipart/form-data" class="flex gap-2 flex-wrap">@csrf
-            <input type="file" name="music" accept="audio/*" required class="text-xs"><button class="btn btn-ghost !py-1 !px-2 text-xs">Upload (max 3 MB)</button></form>
+            <input type="file" name="music" accept="audio/*" required class="text-xs"><button class="btn btn-ghost !py-1 !px-2 text-xs">Upload (max 10 MB)</button></form>
         @error('music')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
         @endif
     </div>

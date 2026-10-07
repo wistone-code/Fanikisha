@@ -144,6 +144,28 @@ class CardSecurityAndDesignTest extends TestCase
         $this->assertSame(0, EventAsset::where('kind', 'music')->count());
     }
 
+    public function test_music_up_to_10mb_is_saved_and_larger_is_refused(): void
+    {
+        [$event, $admin] = $this->ecardEvent();
+        $g = $this->guestCard($event);
+
+        $this->actingAs($admin)->get(route('design.index'))->assertSee('max 10 MB');
+        $big = UploadedFile::fake()->createWithContent('long.mp3', str_repeat('A', 6 * 1024 * 1024))->mimeType('audio/mpeg');
+        $this->actingAs($admin)->post(route('design.music.upload'), ['music' => $big])->assertSessionHasNoErrors();
+        $this->assertTrue($event->fresh()->card_has_music);
+        $this->get(route('design.index'))->assertSee('Music file saved (6.0 MB)', false);
+
+        $this->post('/logout');
+        $part = $this->get(route('guest.rsvp.music', $g->invite_token), ['Range' => 'bytes=5242880-5242889'])->assertStatus(206);
+        $this->assertSame('AAAAAAAAAA', $part->getContent());
+        $this->assertSame('bytes 5242880-5242889/6291456', $part->headers->get('Content-Range'));
+
+        $tooBig = UploadedFile::fake()->createWithContent('huge.mp3', str_repeat('A', 10 * 1024 * 1024 + 2048))->mimeType('audio/mpeg');
+        $this->actingAs($admin)->delete(route('design.music.remove'));
+        $this->post(route('design.music.upload'), ['music' => $tooBig])->assertSessionHasErrors('music');
+        $this->assertFalse($event->fresh()->card_has_music);
+    }
+
     public function test_non_audio_files_are_rejected_as_music(): void
     {
         [, $admin] = $this->ecardEvent();
