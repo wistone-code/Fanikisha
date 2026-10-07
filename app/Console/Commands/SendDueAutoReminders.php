@@ -39,7 +39,7 @@ class SendDueAutoReminders extends Command
                 continue;
             }
 
-            $outstanding = $event->pledges()->whereColumn('paid', '<', 'amount')->whereNotNull('phone')->get();
+            $outstanding = $event->pledges()->outstanding()->whereNotNull('phone')->get();
 
             if ($outstanding->isEmpty()) {
                 // Nothing to send, but still mark as checked so it doesn't re-evaluate every run today.

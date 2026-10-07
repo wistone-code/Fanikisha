@@ -98,6 +98,15 @@ class Pledge extends Model
         return $this->hasMany(CommitteeMember::class);
     }
 
+    /**
+     * Pledgers who still owe something. Anyone who has cleared their whole pledge (paid >= amount) is NOT
+     * in this set, so they never receive a reminder or the broadcast — they get a thank-you instead.
+     */
+    public function scopeOutstanding($query)
+    {
+        return $query->whereColumn('paid', '<', 'amount');
+    }
+
     public function remaining(): float
     {
         return (float) $this->amount - (float) $this->paid;

@@ -156,6 +156,23 @@ class MessageTemplateService
         ]);
     }
 
+    /**
+     * Sent instead of any reminder once a pledger has cleared the whole amount. Fixed wording (like the
+     * payment confirmation above), in the event's SMS language. Never mentions a balance.
+     */
+    public function forPledgeThankYou(Event $event, Pledge $pledge): string
+    {
+        $template = $event->sms_language === 'sw'
+            ? 'Habari {name}, asante sana kwa mchango wako wa {paid} kwa ajili ya {event}. Umekamilisha mchango wako wote. Tunakushukuru!'
+            : 'Dear {name}, thank you for your contribution of {paid} to {event}. Your pledge is now fully paid. We truly appreciate your support!';
+
+        return strtr($template, [
+            '{name}' => $pledge->name,
+            '{event}' => $event->name,
+            '{paid}' => number_format((float) $pledge->paid),
+        ]);
+    }
+
     public function forUnopenedReminder(Event $event, Pledge $pledge): string
     {
         return strtr($event->messageOrDefault('unopened_reminder'), $this->common($event, $pledge));

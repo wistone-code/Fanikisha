@@ -27,7 +27,7 @@ class PledgeController extends Controller
         if ($tab === 'remind') {
             return view('event.pledges.remind', [
                 'event' => $event,
-                'outstanding' => $event->pledges()->whereColumn('paid', '<', 'amount')->get(),
+                'outstanding' => $event->pledges()->outstanding()->get(),
             ]);
         }
 
@@ -112,9 +112,14 @@ class PledgeController extends Controller
 
             if ($pledge->phone) {
                 $event = app('currentEvent');
-                $result = $sms->sendSingle($messages->forPledgePayment($event, $pledge), $pledge->phone);
+                // Cleared the whole pledge: thank them for the contribution (no balance, no reminder wording).
+                $cleared = $pledge->isPaidInFull();
+                $text = $cleared ? $messages->forPledgeThankYou($event, $pledge) : $messages->forPledgePayment($event, $pledge);
+                $result = $sms->sendSingle($text, $pledge->phone);
 
-                $status .= $result['successful'] ? ' (SMS sent)' : ' — but SMS failed: '.($result['error'] ?? 'unknown error');
+                $status .= $result['successful']
+                    ? ($cleared ? ' — fully paid, thank-you SMS sent' : ' (SMS sent)')
+                    : ' — but SMS failed: '.($result['error'] ?? 'unknown error');
             }
         }
 
@@ -279,10 +284,14 @@ class PledgeController extends Controller
         $this->assertPledgeInCurrentEvent($pledge);
 
         $event = app('currentEvent');
-        $result = $sms->sendSingle($messages->forReminder($event, $pledge), $pledge->phone);
+
+        // Someone who has already paid everything is thanked, never reminded.
+        $cleared = $pledge->isPaidInFull();
+        $text = $cleared ? $messages->forPledgeThankYou($event, $pledge) : $messages->forReminder($event, $pledge);
+        $result = $sms->sendSingle($text, $pledge->phone);
 
         return back()->with('status', $result['successful']
-            ? "Reminder sent to {$pledge->name}."
+            ? ($cleared ? "{$pledge->name} has paid in full — a thank-you was sent instead of a reminder." : "Reminder sent to {$pledge->name}.")
             : 'SMS send failed: '.($result['error'] ?? 'Unknown error'));
     }
 
@@ -295,7 +304,7 @@ class PledgeController extends Controller
 
         $event = app('currentEvent');
         $digits = $phones->digitsOnly($pledge->phone);
-        $text = rawurlencode($messages->forReminder($event, $pledge));
+        $text = rawurlencode($pledge->isPaidInFull() ? $messages->forPledgeThankYou($event, $pledge) : $messages->forReminder($event, $pledge));
 
         return redirect()->away("https://wa.me/{$digits}?text={$text}");
     }
@@ -310,7 +319,7 @@ class PledgeController extends Controller
             return back()->withErrors(['broadcast_message' => 'Write a broadcast message first, then save it before sending.']);
         }
 
-        $outstanding = $event->pledges()->whereColumn('paid', '<', 'amount')->whereNotNull('phone')->get();
+        $outstanding = $event->pledges()->outstanding()->whereNotNull('phone')->get();
 
         if ($outstanding->isEmpty()) {
             return back()->withErrors(['broadcast_message' => 'No outstanding pledgers with a phone number to message.']);
