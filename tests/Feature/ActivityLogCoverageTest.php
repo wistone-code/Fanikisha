@@ -106,4 +106,65 @@ class ActivityLogCoverageTest extends TestCase
         $this->actingAs($this->superUser())->get(route('admin.logs.index', ['user' => $admin->id]))->assertOk()
             ->assertSee('Admin did a thing for Filter Fest')->assertDontSee('Somebody else logged in');
     }
+
+    private const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+    private const IPHONE_APP = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+
+    public function test_device_labels_name_iphones_and_other_phones(): void
+    {
+        $this->assertSame('iPhone, Safari', \App\Support\DeviceLabel::fromUserAgent(self::IPHONE));
+        $this->assertSame('iPhone, Home Screen app', \App\Support\DeviceLabel::fromUserAgent(self::IPHONE_APP));
+        $this->assertSame('iPhone, Chrome', \App\Support\DeviceLabel::fromUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0 Mobile/15E148 Safari/604.1'));
+        $this->assertSame('Android, Chrome', \App\Support\DeviceLabel::fromUserAgent('Mozilla/5.0 (Linux; Android 13; SM-A135F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36'));
+        $this->assertSame('Windows, Chrome', \App\Support\DeviceLabel::fromUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36'));
+        $this->assertSame('unknown device', \App\Support\DeviceLabel::fromUserAgent(null));
+    }
+
+    public function test_an_iphone_sign_in_with_a_stray_space_works_and_shows_the_device_in_the_log(): void
+    {
+        $user = User::factory()->create(['username' => 'asha', 'password' => Hash::make('right-pass-1')]);
+
+        $this->withHeader('User-Agent', self::IPHONE)
+            ->post(route('login.attempt'), ['username' => "Asha\u{00A0}", 'password' => 'right-pass-1'])->assertRedirect();
+
+        $log = ActivityLog::where('action', 'account.login')->where('target_user_id', $user->id)->latest('id')->first();
+        $this->assertNotNull($log);
+        $this->assertStringContainsString('iPhone, Safari', $log->description);
+    }
+
+    public function test_a_sign_in_with_an_unknown_username_is_logged_with_the_device(): void
+    {
+        $this->withHeader('User-Agent', self::IPHONE)
+            ->post(route('login.attempt'), ['username' => 'nobody-here', 'password' => 'x'])->assertSessionHasErrors('username');
+
+        $log = ActivityLog::where('action', 'account.login_failed')->latest('id')->first();
+        $this->assertNotNull($log);
+        $this->assertStringContainsString('no account named "nobody-here"', $log->description);
+        $this->assertStringContainsString('iPhone, Safari', $log->description);
+        $this->assertNull($log->target_user_id);
+    }
+
+    public function test_someone_already_signed_in_on_an_iphone_is_logged_once_per_session(): void
+    {
+        $user = User::factory()->create();
+
+        $this->withHeader('User-Agent', self::IPHONE_APP)->actingAs($user)->get(route('dashboard'));
+        $this->get(route('dashboard'));
+
+        $rows = ActivityLog::where('action', 'account.session')->where('target_user_id', $user->id)->get();
+        $this->assertCount(1, $rows);
+        $this->assertStringContainsString('iPhone, Home Screen app', $rows->first()->description);
+
+        // A normal form sign-in marks the session, so it is never double-logged.
+        $other = User::factory()->create(['username' => 'bina', 'password' => Hash::make('right-pass-1')]);
+        $this->post(route('logout'));
+        $this->post(route('login.attempt'), ['username' => 'bina', 'password' => 'right-pass-1']);
+        $this->get(route('dashboard'));
+        $this->assertSame(0, ActivityLog::where('action', 'account.session')->where('target_user_id', $other->id)->count());
+    }
+
+    public function test_the_login_form_turns_off_iphone_autocapitalize_and_autocorrect(): void
+    {
+        $this->get(route('login'))->assertOk()->assertSee('autocapitalize="none"', false)->assertSee('autocorrect="off"', false);
+    }
 }

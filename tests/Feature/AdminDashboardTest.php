@@ -85,7 +85,7 @@ class AdminDashboardTest extends TestCase
 
     public function test_an_empty_platform_still_renders(): void
     {
-        $this->actingAs($this->admin())->get(route('admin.users.index'))->assertOk()
+        $this->actingAs($this->admin())->withSession(['activity_noted' => true])->get(route('admin.users.index'))->assertOk()
             ->assertSee('No upcoming events')->assertSee('No SMS sent yet')->assertSee('No activity recorded yet');
     }
 

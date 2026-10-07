@@ -16,7 +16,7 @@
     @csrf
     <div>
         <label class="text-xs font-semibold">Username</label>
-        <input type="text" name="username" value="{{ old('username') }}" autocomplete="username" required
+        <input type="text" name="username" value="{{ old('username') }}" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required
                class="w-full border rounded-lg px-3 py-2.5 text-sm mt-1" placeholder="Admin">
     </div>
     <div>

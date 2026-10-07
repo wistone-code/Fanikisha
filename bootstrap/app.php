@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append(SecurityHeaders::class);
+        $middleware->web(append: [\App\Http\Middleware\NoteSignedInDevice::class]);
 
         // IMPORTANT if deployed behind a load balancer / reverse proxy (nginx,
         // Cloudflare, a PaaS router, etc.): without this, $request->ip() returns

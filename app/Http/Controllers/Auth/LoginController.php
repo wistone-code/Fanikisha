@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Http\Middleware\NoteSignedInDevice;
 use App\Services\ActivityLogger;
+use App\Support\DeviceLabel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +37,9 @@ class LoginController extends Controller
 
     public function authenticate(Request $request): RedirectResponse
     {
+        // Phones often add a trailing space or an invisible character when they autofill or autocorrect the username.
+        $request->merge(['username' => trim(preg_replace('/[\x{00A0}\x{200B}-\x{200D}\x{FEFF}]/u', ' ', (string) $request->input('username')))]);
+
         $credentials = $request->validate([
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
@@ -52,14 +57,18 @@ class LoginController extends Controller
         // paths take the same amount of time, closing that side channel.
         $passwordMatches = Hash::check($credentials['password'], $user->password ?? self::DUMMY_HASH);
 
+        $device = DeviceLabel::current();
+
         if (! $user) {
+            ActivityLogger::log('account.login_failed', 'Failed sign-in: no account named "'.\Illuminate\Support\Str::limit($credentials['username'], 40, '…').'" · '.$device, null, actor: null);
+
             throw ValidationException::withMessages([
                 'username' => 'This account does not exist. Contact Fanikisha for help.',
             ]);
         }
 
         if (! $passwordMatches) {
-            ActivityLogger::log('account.login_failed', "Failed sign-in for {$user->name} ({$user->username}): wrong password", $user, actor: null);
+            ActivityLogger::log('account.login_failed', "Failed sign-in for {$user->name} ({$user->username}): wrong password · {$device}", $user, actor: null);
 
             throw ValidationException::withMessages([
                 'username' => 'Incorrect password.',
@@ -67,7 +76,7 @@ class LoginController extends Controller
         }
 
         if ($user->is_suspended) {
-            ActivityLogger::log('account.login_failed', "Blocked sign-in for {$user->name} ({$user->username}): account is suspended", $user, actor: null);
+            ActivityLogger::log('account.login_failed', "Blocked sign-in for {$user->name} ({$user->username}): account is suspended · {$device}", $user, actor: null);
 
             throw ValidationException::withMessages([
                 'username' => 'This account has been suspended. Contact Fanikisha for help.',
@@ -80,7 +89,8 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        ActivityLogger::log('account.login', "{$user->name} ({$user->username}) logged in", $user, actor: $user);
+        $request->session()->put(NoteSignedInDevice::FLAG, true);
+        ActivityLogger::log('account.login', "{$user->name} ({$user->username}) logged in · {$device}", $user, actor: $user);
 
         return redirect()->intended(route('dashboard'));
     }
@@ -89,7 +99,7 @@ class LoginController extends Controller
     {
         $user = Auth::user();
         if ($user) {
-            ActivityLogger::log('account.logout', "{$user->name} ({$user->username}) logged out", $user, actor: $user);
+            ActivityLogger::log('account.logout', "{$user->name} ({$user->username}) logged out · ".DeviceLabel::current(), $user, actor: $user);
         }
 
         Auth::logout();

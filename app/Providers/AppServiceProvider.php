@@ -40,7 +40,10 @@ class AppServiceProvider extends ServiceProvider
         // its own entry, so that request is skipped to avoid a duplicate.
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($event) {
             if ($event->remember && ! request()->routeIs('login.attempt')) {
-                \App\Services\ActivityLogger::log('account.login', "{$event->user->name} ({$event->user->username}) signed back in (remembered device)", $event->user, actor: $event->user);
+                \App\Services\ActivityLogger::log('account.login', "{$event->user->name} ({$event->user->username}) signed back in (remembered device) · ".\App\Support\DeviceLabel::current(), $event->user, actor: $event->user);
+                if (app()->bound('session.store')) {
+                    session()->put(\App\Http\Middleware\NoteSignedInDevice::FLAG, true);
+                }
             }
         });
 
