@@ -250,10 +250,8 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
             Route::patch('/guests/{pledge}', [GuestController::class, 'updateGuest'])->name('guests.update');
             Route::delete('/guests/{pledge}', [GuestController::class, 'destroyGuest'])->name('guests.destroy');
 
-            // Contribution accounts: build the invitation list — add a new guest or pick from the pledge list.
+            // Contribution accounts: pledgers are on the invitation list automatically; guests are added by hand.
             Route::post('/invitations/guest', [GuestController::class, 'inviteNewGuest'])->name('guests.invite.new');
-            Route::post('/invitations/select', [GuestController::class, 'invitePledgers'])->name('guests.invite.select');
-            Route::delete('/invitations/{pledge}', [GuestController::class, 'unlistPledger'])->name('guests.invite.unlist');
 
             Route::get('/guests-export', [DeliveryController::class, 'export'])->name('guests.export');
             Route::post('/delivery/send-all', [DeliveryController::class, 'sendAll'])->name('delivery.send-all');

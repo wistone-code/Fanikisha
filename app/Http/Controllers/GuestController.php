@@ -48,12 +48,10 @@ class GuestController extends Controller
             ]);
         }
 
-        // The invitation list is chosen: new guests plus pledgers picked from the pledge list.
-        $listed = $event->pledges()->where('on_invite_list', true)->orderBy('name')->get();
-        $pledges = $isAdmin ? $listed : $listed;
-        $pickable = $isAdmin ? $event->pledges()->contributors()->where('on_invite_list', false)->orderBy('name')->get() : collect();
+        // Every pledger is on the invitation list automatically, plus any guest added by hand.
+        $pledges = $event->pledges()->orderBy('name')->get();
 
-        return view('event.guests.event-invitation', compact('event', 'pledges', 'pickable', 'isAdmin'));
+        return view('event.guests.event-invitation', compact('event', 'pledges', 'isAdmin'));
     }
 
     /** A card can be sent as soon as its link exists — payment never gates an invitation. */
@@ -157,45 +155,14 @@ class GuestController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:32'],
-            'card_type' => ['required', 'in:single,double'],
+            'card_type' => ['nullable', 'in:single,double'],
         ]);
 
         $event = app('currentEvent');
-        $guest = $this->newEcardGuest($event, $data['name'], $data['phone'] ?? null, $data['card_type'], $phones);
-        $guest->forceFill(['guest_only' => true, 'on_invite_list' => true])->save();
+        $guest = $this->newEcardGuest($event, $data['name'], $data['phone'] ?? null, $data['card_type'] ?? 'single', $phones);
+        $guest->forceFill(['guest_only' => true])->save();
 
         return back()->with('status', "{$data['name']} added to the invitation list.");
-    }
-
-    /** Contribution accounts: put chosen pledgers from the pledge list onto the invitation list. */
-    public function invitePledgers(Request $request): RedirectResponse
-    {
-        $this->abortUnlessInvitationList();
-
-        $data = $request->validate([
-            'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['integer'],
-        ], ['ids.required' => 'Tick at least one person from the pledge list.']);
-
-        $count = app('currentEvent')->pledges()->contributors()->whereIn('id', $data['ids'])->update(['on_invite_list' => true]);
-
-        return back()->with('status', "{$count} ".($count === 1 ? 'person' : 'people').' added to the invitation list.');
-    }
-
-    /** Take a pledger back off the invitation list — only while no invitation has gone out. */
-    public function unlistPledger(Pledge $pledge): RedirectResponse
-    {
-        $this->abortUnlessInvitationList();
-        $this->assertPledgeInCurrentEvent($pledge);
-        abort_if($pledge->guest_only, 404);
-
-        if ($pledge->invite_sent_at) {
-            return back()->withErrors(['invite' => 'This invitation was already sent, so it cannot be removed from the list.']);
-        }
-
-        $pledge->update(['on_invite_list' => false]);
-
-        return back()->with('status', "{$pledge->name} removed from the invitation list.");
     }
 
     /** Bulk add from a CSV/text file or pasted rows. Columns: Name, Phone, Card (single/double, optional). */
