@@ -21,7 +21,7 @@ class DeactivateLinkTest extends TestCase
         $p = Pledge::factory()->create(['event_id' => $event->id, 'name' => 'Linked Lina', 'pay_token' => Str::random(32), 'invite_token' => Str::random(32), 'invite_sent_at' => now()]);
         $old = $p->invite_token;
 
-        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('Deactivate link')->assertSee(route('delivery.revoke', $p), false);
+        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('Reset link')->assertSee(route('rsvp.reset', $p), false)->assertDontSee('Deactivate link');
 
         $this->actingAs($admin)->post(route('delivery.revoke', $p))->assertSessionHas('status');
         $this->assertNull($p->fresh()->invite_token);
@@ -38,18 +38,31 @@ class DeactivateLinkTest extends TestCase
         $this->assertNotSame(200, $this->get(route('guest.rsvp', $old))->getStatusCode());
     }
 
+    public function test_reset_link_on_the_invitation_list_returns_the_guest_to_send_invite(): void
+    {
+        $event = Event::factory()->create(['mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(10)->toDateString(), 'package' => 'full']);
+        $admin = $this->memberOf($event, 'admin');
+        $p = Pledge::factory()->create(['event_id' => $event->id, 'name' => 'Linked Lina', 'pay_token' => Str::random(32), 'invite_token' => Str::random(32), 'invite_sent_at' => now()]);
+
+        $this->actingAs($admin)->post(route('rsvp.reset', $p))->assertSessionHas('status');
+        $this->assertNull($p->fresh()->invite_token);
+
+        $this->actingAs($admin)->get(route('guests.index'))->assertOk()
+            ->assertSee('Not generated yet')->assertSee('Send invite')->assertDontSee('Reset link')->assertDontSee('Deactivated');
+    }
+
     public function test_ecard_guest_list_has_the_same_controls(): void
     {
         [$event, $admin] = $this->ecardEvent();
         $g = $this->guestCard($event, ['name' => 'Card Carol']);
 
-        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('Deactivate link');
+        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('Reset link')->assertDontSee('Deactivate link');
 
         $this->actingAs($admin)->post(route('delivery.revoke', $g));
         $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('Link deactivated')->assertSee('Reactivate');
 
         $this->actingAs($admin)->post(route('delivery.reissue', $g));
-        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('Deactivate link')->assertDontSee('Link deactivated');
+        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('Reset link')->assertDontSee('Link deactivated');
     }
 
     public function test_viewers_see_no_deactivate_controls_and_cannot_use_them(): void
@@ -58,8 +71,9 @@ class DeactivateLinkTest extends TestCase
         $viewer = $this->memberOf($event, 'viewer');
         $g = $this->guestCard($event);
 
-        $this->actingAs($viewer)->get(route('guests.index'))->assertOk()->assertDontSee('Deactivate link');
+        $this->actingAs($viewer)->get(route('guests.index'))->assertOk()->assertDontSee('Reset link');
         $this->actingAs($viewer)->post(route('delivery.revoke', $g))->assertForbidden();
+        $this->actingAs($viewer)->post(route('rsvp.reset', $g))->assertForbidden();
         $this->assertNotNull($g->fresh()->invite_token);
     }
 
@@ -69,6 +83,6 @@ class DeactivateLinkTest extends TestCase
         $admin = $this->memberOf($event, 'admin');
         Pledge::factory()->create(['event_id' => $event->id, 'pay_token' => Str::random(32), 'invite_token' => Str::random(32)]);
 
-        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertDontSee('Deactivate link');
+        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertDontSee('Reset link');
     }
 }

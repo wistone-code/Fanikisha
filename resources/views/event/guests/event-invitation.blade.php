@@ -93,8 +93,8 @@
                                 <span class="text-xs text-gray-400">No phone number</span>
                             @endif
                             @if ($cards && $isAdmin && $p->invite_token)
-                                <form method="POST" action="{{ route('delivery.revoke', $p) }}" class="inline" data-confirm="Deactivate {{ $p->name }}'s invitation link? It will stop working straight away. You can reactivate it later with a new link." data-confirm-title="Deactivate link?" data-confirm-button="Deactivate">@csrf
-                                    <button class="btn btn-ghost !py-1.5 !px-2.5" title="Deactivate link"><i class="fa-solid fa-link-slash"></i></button>
+                                <form method="POST" action="{{ route('rsvp.reset', $p) }}" class="inline" data-confirm="Reset {{ $p->name }}'s invitation link? The old link stops working and any RSVP answer is cleared. You will need to send a new invite." data-confirm-title="Reset link?" data-confirm-button="Reset">@csrf
+                                    <button class="btn btn-ghost !py-1.5 !px-2.5" title="Reset link"><i class="fa-solid fa-rotate-left"></i></button>
                                 </form>
                             @endif
                             @if ($isAdmin && $p->guest_only)

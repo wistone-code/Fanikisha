@@ -65,8 +65,8 @@
                             @endif
                             <a href="{{ route('guests.whatsapp', $g) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i></a>
                             @endif
-                            <form method="POST" action="{{ route('delivery.revoke', $g) }}" class="inline" data-confirm="Deactivate {{ $g->name }}'s card link? It will stop working straight away. You can reactivate it later with a new link." data-confirm-title="Deactivate link?" data-confirm-button="Deactivate">@csrf
-                                <button class="btn btn-ghost !py-1.5 !px-2.5" title="Deactivate link"><i class="fa-solid fa-link-slash"></i></button>
+                            <form method="POST" action="{{ route('rsvp.reset', $g) }}" class="inline" data-confirm="Reset {{ $g->name }}'s card link? The old link stops working and any RSVP answer is cleared. A new link is created straight away." data-confirm-title="Reset link?" data-confirm-button="Reset">@csrf
+                                <button class="btn btn-ghost !py-1.5 !px-2.5" title="Reset link"><i class="fa-solid fa-rotate-left"></i></button>
                             </form>
                             @endif
                             <button type="button" onclick="document.getElementById('editGuest{{ $g->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i></button>
