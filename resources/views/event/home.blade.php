@@ -5,7 +5,6 @@
 <div class="rounded-2xl p-8 mb-6 text-white" style="background:radial-gradient(120% 160% at 0% 0%, #35597A 0%, var(--primary) 45%, #0B1721 100%);">
     <div class="flex justify-between items-center flex-wrap gap-6">
         <div>
-            @if ($event->event_type)<div class="text-xs uppercase tracking-wide opacity-75 font-semibold mb-1">{{ $event->event_type }}</div>@endif
             <h1 class="text-3xl font-semibold mb-1">{{ $event->name }}</h1>
             <div class="text-sm opacity-90">{{ $event->event_date->format('M j, Y') }}@if($event->place) &middot; {{ $event->place }}@endif</div>
         </div>
