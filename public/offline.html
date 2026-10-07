@@ -3,22 +3,84 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>You're offline — Fanikisha</title>
+<title>Fanikisha</title>
+<meta name="theme-color" content="#1F3A52">
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
 <style>
-    body{font-family:'Inter',sans-serif;background:#F6F8F9;color:#1B2429;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;}
-    .card{background:#fff;border:1px solid #e2e6e9;border-radius:16px;padding:32px 24px;max-width:360px;}
+    /* System fonts only: this page must look right with no connection at all. */
+    *{box-sizing:border-box;}
+    body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:#F6F8F9;color:#1B2429;margin:0;min-height:100vh;display:flex;flex-direction:column;}
+    .bar{background:#1F3A52;color:#fff;display:flex;align-items:center;gap:10px;padding:12px 18px;padding-top:calc(12px + env(safe-area-inset-top));border-bottom:3px solid #7A93A8;font-weight:700;font-size:17px;}
+    .bar img{width:30px;height:30px;border-radius:7px;display:block;}
+    main{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;}
+    .card{background:#fff;border:1px solid #e2e6e9;border-radius:16px;padding:28px 22px;max-width:380px;width:100%;}
     h1{font-size:20px;margin:0 0 8px;}
-    p{color:#5c6b73;font-size:14px;line-height:1.5;margin:0 0 20px;}
-    button{background:#1F3A52;color:#fff;border:none;border-radius:9px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;}
+    p{color:#5c6b73;font-size:14px;line-height:1.55;margin:0 0 18px;}
+    .btn{display:block;width:100%;border:none;border-radius:10px;padding:13px 18px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;font-family:inherit;}
+    .btn-primary{background:#1F3A52;color:#fff;margin-bottom:10px;}
+    .btn-ghost{background:#fff;color:#1F3A52;border:1px solid #cfd6db;}
+    .note{font-size:12.5px;margin:14px 0 0;color:#5c6b73;}
+    [hidden]{display:none !important;}
 </style>
 </head>
 <body>
-    <div class="card">
-        <h1>You're offline</h1>
-        <p>Fanikisha needs an internet connection to load your event's data. Check your signal and try again.</p>
-        <button onclick="location.reload()">Try again</button>
-    </div>
+    <div class="bar"><img src="/icons/icon-192.png" alt="" width="30" height="30"><span>Fanikisha</span></div>
+    <main>
+        <div class="card">
+            <h1 id="title">You're offline</h1>
+            <p id="msg">Fanikisha needs an internet connection to load your event's data. Check your signal and try again.</p>
+            <a id="checkinBtn" class="btn btn-primary" href="/checkin" hidden>Open check-in (saved on this phone)</a>
+            <button id="retryBtn" class="btn btn-ghost" type="button">Try again</button>
+            <p id="noCheckin" class="note" hidden>Door check-in works without signal only if it was prepared while you were online. Open Check-in on this phone with internet and tap "Prepare for offline" before the event.</p>
+        </div>
+    </main>
+<script>
+(function () {
+    var T = {
+        en: {
+            title: "You're offline",
+            msg: "Fanikisha needs an internet connection to load your event's data. Check your signal and try again.",
+            checkin: 'Open check-in (saved on this phone)',
+            retry: 'Try again',
+            none: 'Door check-in works without signal only if it was prepared while you were online. Open Check-in on this phone with internet and tap "Prepare for offline" before the event.',
+            page: 'Fanikisha'
+        },
+        sw: {
+            title: 'Huna mtandao',
+            msg: 'Fanikisha inahitaji mtandao ili kupakia taarifa za tukio lako. Angalia mawimbi yako kisha jaribu tena.',
+            checkin: 'Fungua kuingia mlangoni (imehifadhiwa kwenye simu hii)',
+            retry: 'Jaribu tena',
+            none: 'Kuingia mlangoni kunafanya kazi bila mtandao tu kama kuliandaliwa ukiwa na mtandao. Fungua Check-in kwenye simu hii ukiwa na mtandao, kisha bonyeza "Prepare for offline" kabla ya tukio.',
+            page: 'Fanikisha'
+        }
+    };
+
+    var lang = ((navigator.languages && navigator.languages[0]) || navigator.language || 'en').toLowerCase().indexOf('sw') === 0 ? 'sw' : 'en';
+    var t = T[lang];
+    document.documentElement.lang = lang;
+    document.getElementById('title').textContent = t.title;
+    document.getElementById('msg').textContent = t.msg;
+    document.getElementById('checkinBtn').textContent = t.checkin;
+    document.getElementById('retryBtn').textContent = t.retry;
+    document.getElementById('noCheckin').textContent = t.none;
+    document.getElementById('retryBtn').addEventListener('click', function () { location.reload(); });
+
+    // Is the check-in page saved on this phone? (Saved by the "Prepare for offline" button.)
+    var found = false;
+    function show() {
+        document.getElementById('checkinBtn').hidden = !found;
+        document.getElementById('noCheckin').hidden = found;
+    }
+    if (window.caches && caches.match) {
+        caches.match('/checkin', { ignoreSearch: true, ignoreVary: true })
+            .then(function (res) { found = !!res; show(); })
+            .catch(function () { show(); });
+    } else {
+        show();
+    }
+})();
+</script>
 </body>
 </html>

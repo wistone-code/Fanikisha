@@ -4,9 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>@yield('title', config('app.name'))</title>
-<link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
-<meta name="theme-color" content="{{ $theme['primary'] ?? '#1F3A52' }}">
+@include('partials.pwa-head', ['themeColor' => $theme['primary'] ?? '#1F3A52'])
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -127,6 +125,11 @@
 
             <div class="flex-1"></div>
 
+            {{-- Shown only when the browser says the app can be installed (Android/desktop Chrome) and it is not installed yet. --}}
+            <button type="button" id="installBtn" class="hidden items-center gap-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 text-xs font-semibold" style="display:none;">
+                <i class="fa-solid fa-download"></i> Install app
+            </button>
+
             @auth
             @php($rightEvent = app('currentEvent'))
             @php($isSuperUser = auth()->user()->is_super_user)
@@ -162,6 +165,15 @@
     </header>
 
     <main class="flex-1 max-w-6xl mx-auto w-full px-5 py-6">
+        {{-- iPhone/iPad only: Safari has no install button, so explain the two taps. Hidden once dismissed or installed. --}}
+        <div id="iosInstallTip" class="hidden mb-4 card p-3 text-sm items-start gap-3" style="display:none;">
+            <i class="fa-solid fa-mobile-screen-button mt-0.5" style="color:var(--primary);"></i>
+            <div class="flex-1">
+                <strong>Install Fanikisha on your iPhone.</strong>
+                Tap <i class="fa-solid fa-arrow-up-from-bracket"></i> <strong>Share</strong>, then <strong>Add to Home Screen</strong>.
+            </div>
+            <button type="button" id="iosInstallClose" class="text-gray-400 hover:text-gray-600" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
         @yield('content')
     </main>
 </div>
@@ -590,12 +602,62 @@ document.querySelectorAll('form[action$="/logout"]').forEach(function (form) {
 // delays the actual page content — see public/sw.js for what it does.
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/sw.js').catch(function () {
+        // ?v=... changes on every deploy (App\Support\PwaVersion), which is what makes phones pick up a new worker.
+        navigator.serviceWorker.register('/sw.js?v={{ \App\Support\PwaVersion::hash() }}').catch(function () {
             // Fails silently — e.g. on http (non-HTTPS) local dev. The app
             // works identically either way; this is a pure enhancement.
         });
     });
 }
+</script>
+
+<script>
+// "Install app" button (Android / desktop Chrome) and the "Add to Home Screen" tip (iPhone / iPad).
+(function () {
+    const KEY = 'fk_install_tip_dismissed';
+    const btn = document.getElementById('installBtn');
+    const tip = document.getElementById('iosInstallTip');
+    let deferredPrompt = null;
+
+    function installed() {
+        return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    }
+    function isDismissed() {
+        try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; }
+    }
+    function remember() {
+        try { localStorage.setItem(KEY, '1'); } catch (e) { /* private mode: it simply shows again next time */ }
+    }
+    function show(el) { if (el) { el.style.display = 'flex'; el.classList.remove('hidden'); } }
+    function hide(el) { if (el) { el.style.display = 'none'; el.classList.add('hidden'); } }
+
+    if (installed()) return; // already running as an app: nothing to offer
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        show(btn);
+    });
+
+    if (btn) {
+        btn.addEventListener('click', async function () {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            try { await deferredPrompt.userChoice; } catch (e) { /* ignore */ }
+            deferredPrompt = null;
+            hide(btn);
+        });
+    }
+
+    window.addEventListener('appinstalled', function () { hide(btn); hide(tip); });
+
+    const ua = navigator.userAgent || '';
+    const isIos = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIos && !isDismissed()) show(tip);
+
+    const close = document.getElementById('iosInstallClose');
+    if (close) close.addEventListener('click', function () { remember(); hide(tip); });
+})();
 </script>
 
 </body>

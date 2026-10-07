@@ -8,19 +8,24 @@
 //   - Nothing else. Pledges, finances, providers and every other page are never cached: that data
 //     changes constantly and a stale copy would be worse than none.
 //
-// HOW TO BUST THE CACHE ON DEPLOY: change CACHE_VERSION below whenever the check-in page, this file,
-// or the scanner library changes in a way phones must pick up. On activation the worker deletes every
-// cache that does not carry the current version, and phones fetch a fresh copy of the check-in page
-// the next time they are online. Vite's /build/ files already change name when their content changes,
-// so those never go stale.
+// VERSIONING IS AUTOMATIC. The page registers this file as /sw.js?v=<code> (see App\Support\PwaVersion),
+// and the code changes whenever the build, this file, the offline page, the manifest or the icons change.
+// No one edits a version number by hand any more.
+//   - The SHELL cache carries that code in its name, so each deploy gets a fresh one and the old ones
+//     are deleted when the new worker activates.
+//   - The RUNTIME cache (the saved check-in page and its files) keeps ONE stable name on purpose: a
+//     deploy the night before an event must never wipe the saved check-in page. Instead, old built
+//     CSS/JS files are removed only after a fresh check-in page has been saved, and only the ones that
+//     page no longer uses (see pruneBuildFiles).
 //
 // Guest data (the offline guest list and queued scans) is NOT stored here — it lives in the page's
-// IndexedDB — so bumping the version never loses un-synced check-ins.
-const CACHE_VERSION = 'v3';
-const SHELL_CACHE = 'fanikisha-shell-' + CACHE_VERSION;
-const RUNTIME_CACHE = 'fanikisha-runtime-' + CACHE_VERSION;
+// IndexedDB — so a new version never loses un-synced check-ins.
+const VERSION = new URL(self.location.href).searchParams.get('v') || 'dev';
+const SHELL_CACHE = 'fanikisha-shell-' + VERSION;
+const RUNTIME_CACHE = 'fanikisha-runtime';
+const LEGACY_RUNTIME_PREFIX = 'fanikisha-runtime-'; // older workers used fanikisha-runtime-v3 etc.
 const OFFLINE_URL = '/offline.html';
-const PRECACHE_URLS = [OFFLINE_URL, '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
+const PRECACHE_URLS = [OFFLINE_URL, '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/favicon-32.png', '/icons/apple-touch-icon.png'];
 
 // Third-party hosts whose files the app's pages need (icon font, text fonts).
 const CROSS_ORIGIN_HOSTS = ['cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
@@ -31,12 +36,31 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((keys) =>
-            Promise.all(keys.filter((key) => key !== SHELL_CACHE && key !== RUNTIME_CACHE).map((key) => caches.delete(key)))
-        )
-    );
-    self.clients.claim();
+    event.waitUntil((async () => {
+        const keys = await caches.keys();
+        const runtime = await caches.open(RUNTIME_CACHE);
+
+        for (const key of keys) {
+            if (key === SHELL_CACHE || key === RUNTIME_CACHE) continue;
+
+            // A phone updating from an older worker: rescue its saved check-in page and files first,
+            // so an update never leaves a prepared phone without its offline check-in.
+            if (key.startsWith(LEGACY_RUNTIME_PREFIX)) {
+                try {
+                    const old = await caches.open(key);
+                    for (const request of await old.keys()) {
+                        if (await runtime.match(request)) continue;
+                        const response = await old.match(request);
+                        if (response) await runtime.put(request, response);
+                    }
+                } catch (e) { /* nothing to rescue */ }
+            }
+
+            await caches.delete(key); // old shell caches and old versioned runtime caches
+        }
+
+        await self.clients.claim();
+    })());
 });
 
 function isCacheable(response) {
@@ -51,6 +75,24 @@ function isStaticAsset(url) {
 
 function isCheckinPage(url) {
     return url.origin === self.location.origin && (url.pathname === '/checkin' || url.pathname === '/checkin/');
+}
+
+// Remove saved /build/ CSS and JS files that the freshly saved check-in page no longer uses, so
+// old deploys' files do not pile up. Safe by design: it only ever looks at files in /build/ ending in
+// .css or .js, only runs when the page actually names some, and never touches anything else.
+async function pruneBuildFiles(pageHtml) {
+    try {
+        const used = new Set((pageHtml.match(/\/build\/[^"'\s)<>?#]+/g) || []));
+        if (![...used].some((path) => /\.(css|js)$/.test(path))) return;
+
+        const cache = await caches.open(RUNTIME_CACHE);
+        for (const request of await cache.keys()) {
+            const path = new URL(request.url).pathname;
+            if (path.startsWith('/build/') && /\.(css|js)$/.test(path) && !used.has(path)) {
+                await cache.delete(request);
+            }
+        }
+    } catch (e) { /* cleanup is best-effort */ }
 }
 
 self.addEventListener('fetch', (event) => {
@@ -68,7 +110,12 @@ self.addEventListener('fetch', (event) => {
                         // Keep a copy only of a real page (not a redirect to the login screen).
                         if (response.ok && !response.redirected) {
                             const copy = response.clone();
-                            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+                            const forPrune = response.clone();
+                            caches.open(RUNTIME_CACHE)
+                                .then((cache) => cache.put(request, copy))
+                                .then(() => forPrune.text())
+                                .then(pruneBuildFiles)
+                                .catch(() => {});
                         }
                         return response;
                     })
@@ -137,7 +184,14 @@ self.addEventListener('message', (event) => {
                             if (isCacheable(response) && !response.redirected) return cache.put(request, response);
                         })
                         .catch(() => {});
-                }))
+                })).then(async () => {
+                    // Tidy up old built files now that a fresh copy of the check-in page is saved.
+                    const first = data.urls[0] && new URL(data.urls[0], self.location.origin);
+                    if (first && isCheckinPage(first)) {
+                        const page = await cache.match(data.urls[0], { ignoreVary: true });
+                        if (page) await pruneBuildFiles(await page.clone().text());
+                    }
+                })
             ).then(() => { if (reply) reply.postMessage({ done: true }); })
         );
         return;

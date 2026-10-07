@@ -35,6 +35,7 @@
         <button type="button" id="clearOfflineBtn" class="btn btn-ghost !py-1.5 !px-3 text-xs text-red-600"><i class="fa-solid fa-trash"></i> Clear offline data</button>
     </div>
     <p id="offlineMsg" class="text-xs text-gray-500 mt-2">Before the event, tap <strong>Prepare for offline</strong> while you have internet. Scanning then keeps working without a connection, and check-ins upload by themselves when signal returns.</p>
+    <p class="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-2"><i class="fa-brands fa-apple"></i> <strong>iPhone:</strong> install the app first (Share, then Add to Home Screen) and tap <strong>Prepare for offline</strong> the day before the event, or the morning of it. Safari can erase saved data for websites that are not used for about a week.</p>
 </div>
 
 <div id="conflictCard" class="hidden card p-4 mb-4 border-2 border-amber-500 bg-amber-50">
