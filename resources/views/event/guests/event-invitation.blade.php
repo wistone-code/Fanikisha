@@ -63,6 +63,8 @@
                         <td class="px-4 py-3">
                             @if (!$cards)
                                 <span class="text-xs text-gray-500">{{ $p->phone ?: 'No phone number' }}</span>
+                            @elseif (!$p->invite_token && $p->invite_revoked_at)
+                                <span class="badge" style="background:#fde8e8;color:#b42318;"><i class="fa-solid fa-link-slash text-[9px]"></i> Deactivated</span>
                             @elseif (!$p->invite_token)
                                 <span class="text-gray-400 text-xs">Not generated yet</span>
                             @else
@@ -71,7 +73,11 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                            @if ($cards && !$p->invite_token && $isAdmin)
+                            @if ($cards && !$p->invite_token && $isAdmin && $p->invite_revoked_at)
+                                <form method="POST" action="{{ route('delivery.reissue', $p) }}" class="inline">@csrf
+                                    <button class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-solid fa-rotate-right"></i> Reactivate</button>
+                                </form>
+                            @elseif ($cards && !$p->invite_token && $isAdmin)
                                 <form method="POST" action="{{ route('guests.send-invite', $p) }}" class="inline">@csrf
                                     <button class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-solid fa-paper-plane"></i> Send invite</button>
                                 </form>
@@ -85,6 +91,11 @@
                                 <a href="{{ route('guests.whatsapp', $p) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
                             @elseif ($p->invite_token && $cards)
                                 <span class="text-xs text-gray-400">No phone number</span>
+                            @endif
+                            @if ($cards && $isAdmin && $p->invite_token)
+                                <form method="POST" action="{{ route('delivery.revoke', $p) }}" class="inline" data-confirm="Deactivate {{ $p->name }}'s invitation link? It will stop working straight away. You can reactivate it later with a new link." data-confirm-title="Deactivate link?" data-confirm-button="Deactivate">@csrf
+                                    <button class="btn btn-ghost !py-1.5 !px-2.5" title="Deactivate link"><i class="fa-solid fa-link-slash"></i></button>
+                                </form>
                             @endif
                             @if ($isAdmin && $p->guest_only)
                                 <button type="button" onclick="document.getElementById('editGuest{{ $p->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5" title="Edit"><i class="fa-solid fa-pen"></i></button>

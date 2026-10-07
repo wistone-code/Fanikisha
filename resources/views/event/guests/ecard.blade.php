@@ -47,6 +47,12 @@
                         </td>
                         @if ($isAdmin)
                         <td class="px-4 py-3 text-right whitespace-nowrap">
+                            @if (! $g->invite_token)
+                            <span class="badge" style="background:#fde8e8;color:#b42318;"><i class="fa-solid fa-link-slash text-[9px]"></i> Link deactivated</span>
+                            <form method="POST" action="{{ route('delivery.reissue', $g) }}" class="inline">@csrf
+                                <button class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-solid fa-rotate-right"></i> Reactivate</button>
+                            </form>
+                            @else
                             <button type="button" data-copy="{{ $g->inviteLink() }}" class="btn btn-ghost !py-1.5 !px-2.5 copy-link-btn" title="Copy card link"><i class="fa-solid fa-link"></i></button>
                             @if ($optOuts->inSet($optSet, $g->phone))
                             <span class="text-xs text-gray-400">Will not be messaged</span>
@@ -58,6 +64,10 @@
                             </form>
                             @endif
                             <a href="{{ route('guests.whatsapp', $g) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i></a>
+                            @endif
+                            <form method="POST" action="{{ route('delivery.revoke', $g) }}" class="inline" data-confirm="Deactivate {{ $g->name }}'s card link? It will stop working straight away. You can reactivate it later with a new link." data-confirm-title="Deactivate link?" data-confirm-button="Deactivate">@csrf
+                                <button class="btn btn-ghost !py-1.5 !px-2.5" title="Deactivate link"><i class="fa-solid fa-link-slash"></i></button>
+                            </form>
                             @endif
                             <button type="button" onclick="document.getElementById('editGuest{{ $g->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-pen"></i></button>
                             <form method="POST" action="{{ route('guests.destroy', $g) }}" class="inline" data-confirm="Remove this guest? Their card link will stop working." data-confirm-title="Remove guest?">
