@@ -112,8 +112,8 @@
                 </td>
             </tr>
 
-            <div id="changePackage{{ $account->id }}" onclick="if(event.target===this) this.classList.add('hidden')" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-                <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+            <div id="changePackage{{ $account->id }}" onclick="if(event.target===this) this.classList.add('hidden')" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
+                <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
                     <h3 class="font-semibold mb-1">Change package</h3>
                     <p class="text-sm text-gray-500 mb-4">For <strong>{{ $account->name }}</strong>. Nothing is deleted — features are hidden or shown again.</p>
                     <form method="POST" action="{{ route('admin.users.package', $account) }}" class="space-y-2">
@@ -132,8 +132,8 @@
                 </div>
             </div>
 
-            <div id="editAccount{{ $account->id }}" onclick="if(event.target===this) this.classList.add('hidden')" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-                <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+            <div id="editAccount{{ $account->id }}" onclick="if(event.target===this) this.classList.add('hidden')" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
+                <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
                     <h3 class="font-semibold mb-1">Edit account</h3>
                     <p class="text-sm text-gray-500 mb-4">Update name, username, and email for <strong>{{ $account->name }}</strong>.</p>
                     <form method="POST" action="{{ route('admin.users.update', $account) }}" class="space-y-3">
@@ -206,8 +206,8 @@
 
 
             @if ($account->event_id)
-            <div id="editQuota{{ $account->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-                <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+            <div id="editQuota{{ $account->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
+                <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
                     <h3 class="font-semibold mb-1">Edit SMS quota</h3>
                     <p class="text-sm text-gray-500 mb-4">Cap for <strong>{{ $account->name }}</strong>. Currently used: {{ $account->sms_sent_count }}. Leave blank for unlimited.</p>
                     <form method="POST" action="{{ route('admin.users.sms-quota', $account) }}">
@@ -252,8 +252,8 @@
 </div>
 @endif
 
-<div id="newAccountModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+<div id="newAccountModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
         <h3 class="font-semibold mb-4">Create new account</h3>
         <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-3">
             @csrf
