@@ -19,6 +19,8 @@ class ProvidersExport implements FromCollection, WithHeadings
             'Name' => $this->sanitizeCell($p->name),
             'Service' => $this->sanitizeCell($p->service),
             'Budget' => (float) $p->budget,
+            'Paid' => (float) $p->paid,
+            'Remaining' => (float) $p->remaining(),
             'Contact' => $this->sanitizeCell($p->phone),
         ]);
 
@@ -26,12 +28,14 @@ class ProvidersExport implements FromCollection, WithHeadings
             'Name' => 'Total',
             'Service' => '',
             'Budget' => $rows->sum('Budget'),
+            'Paid' => $rows->sum('Paid'),
+            'Remaining' => $rows->sum('Remaining'),
             'Contact' => '',
         ]);
     }
 
     public function headings(): array
     {
-        return ['Name', 'Service', 'Budget', 'Contact'];
+        return ['Name', 'Service', 'Budget', 'Paid', 'Remaining', 'Contact'];
     }
 }

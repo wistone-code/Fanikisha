@@ -32,6 +32,11 @@ class AccountMailer
             return false;
         }
 
+        // Nothing leaves the server with the log/array mailers, so don't claim an email was sent.
+        if (! config('services.resend.key') && in_array(config('mail.default'), ['log', 'array'], true)) {
+            return false;
+        }
+
         try {
             // Railway's Hobby plan blocks outbound SMTP, so when a Resend API key is
             // configured we send over HTTPS instead. Without a key we fall back to

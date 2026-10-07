@@ -18,7 +18,7 @@ class SendDueAutoReminders extends Command
     {
         $now = now();
 
-        $events = Event::where('reminder_auto_enabled', true)->get();
+        $events = Event::lean()->where('reminder_auto_enabled', true)->get();
 
         if ($events->isEmpty()) {
             $this->info('No events have automatic reminders enabled.');
@@ -81,7 +81,8 @@ class SendDueAutoReminders extends Command
             return true;
         }
 
-        $daysSinceLastSend = $event->reminder_auto_last_sent_at->diffInDays($now);
+        // Whole calendar days: a send at 09:00:05 yesterday must count as "one day ago" at 09:00:02 today.
+        $daysSinceLastSend = $event->reminder_auto_last_sent_at->copy()->startOfDay()->diffInDays($now->copy()->startOfDay());
 
         return $daysSinceLastSend >= max(1, (int) $event->reminder_auto_frequency_days);
     }

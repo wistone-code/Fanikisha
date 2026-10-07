@@ -96,7 +96,14 @@ class EventController extends Controller
             $data['pledge_deadline'] = $data['event_date'];
         }
 
+        $dateChanged = $event->event_date?->toDateString() !== \Illuminate\Support\Carbon::parse($data['event_date'])->toDateString();
+
         $event->update($data);
+
+        // A new date means guests need the day-of and thank-you messages for that new date.
+        if ($dateChanged) {
+            $event->pledges()->update(['event_day_reminder_sent_at' => null, 'thank_you_sent_at' => null]);
+        }
 
         ActivityLogger::log('event.updated', "{$request->user()->name} updated the settings of \"{$event->name}\"", $request->user(), $event);
 
@@ -188,7 +195,7 @@ class EventController extends Controller
 
         abort_unless($event->hasCardPhoto(), 404);
 
-        return response($event->card_photo)->header('Content-Type', $event->card_photo_mime);
+        return response($event->cardPhotoBytes())->header('Content-Type', $event->card_photo_mime);
     }
 
     /** Saves the admin's own mobile money number/network so pledgers can pay them directly. */
@@ -255,6 +262,7 @@ class EventController extends Controller
 
         $data = $request->validate([
             'username' => ['required', 'string', 'max:255'],
+            'current_password' => ['required', 'current_password'],
         ]);
 
         if ($warnings = $unique->conflicts($data['username'], null, null, $user->id)) {
@@ -273,6 +281,7 @@ class EventController extends Controller
 
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
+            'current_password' => ['required', 'current_password'],
         ]);
 
         if ($warnings = $unique->conflicts(null, $data['email'], null, $user->id)) {
@@ -292,6 +301,7 @@ class EventController extends Controller
     {
         $data = $request->validate([
             'phone' => ['nullable', 'string', 'max:20'],
+            'current_password' => ['required', 'current_password'],
         ]);
 
         if ($warnings = $unique->conflicts(null, null, $data['phone'] ?? null, $request->user()->id)) {

@@ -24,7 +24,7 @@ class ScheduleController extends Controller
             'event' => $event,
             'items' => $event->scheduleItems,
             'isAdmin' => $request->user()->isAdminOn($event),
-            'pledgers' => $event->pledges()->whereNotNull('phone')->get(),
+            'pledgers' => $event->pledges()->whereNotNull('phone')->get(['id', 'name', 'phone']),
             'broadcastMessage' => $messages->forSchedule($event),
         ]);
     }
@@ -136,7 +136,10 @@ class ScheduleController extends Controller
             }
 
             try {
-                $date = \Carbon\Carbon::parse($dateRaw)->toDateString();
+                // 12/03/2026 means 12 March here (day first), whichever way the computer would guess.
+                $date = preg_match('#^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$#', $dateRaw, $m)
+                    ? \Carbon\Carbon::createFromDate((int) $m[3], (int) $m[2], (int) $m[1])->toDateString()
+                    : \Carbon\Carbon::parse($dateRaw)->toDateString();
             } catch (\Throwable $e) {
                 $skipped++;
 

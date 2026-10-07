@@ -16,7 +16,7 @@ class SendEventDayReminders extends Command
     {
         $today = now()->toDateString();
 
-        foreach (Event::where('event_day_reminder_enabled', true)->whereDate('event_date', $today)->get() as $event) {
+        foreach (Event::lean()->where('event_day_reminder_enabled', true)->whereDate('event_date', $today)->get() as $event) {
             [$h, $m] = array_map('intval', explode(':', $event->event_day_reminder_time ?: '07:00'));
 
             if (now()->lt(now()->startOfDay()->setTime($h, $m))) {

@@ -59,9 +59,17 @@ class ForgotPasswordController extends Controller
             ])->withInput();
         }
 
+        // A person can't keep asking for fresh codes to get more guesses (each code allows only a few tries), or to flood someone with messages.
+        if (PasswordResetCode::where('user_id', $user->id)->where('created_at', '>=', now()->subHour())->count() >= 5) {
+            return back()->withErrors([
+                'username' => 'Too many reset codes were requested for this account. Please wait an hour and try again, or contact your administrator.',
+            ])->withInput();
+        }
+
         $code = $passwords->generateSixDigitCode();
 
-        PasswordResetCode::where('user_id', $user->id)->whereNull('consumed_at')->delete();
+        // Older codes are cancelled (marked used) rather than deleted, so they still count towards the hourly limit.
+        PasswordResetCode::where('user_id', $user->id)->whereNull('consumed_at')->update(['consumed_at' => now()]);
 
         PasswordResetCode::create([
             'user_id' => $user->id,
@@ -164,16 +172,25 @@ class ForgotPasswordController extends Controller
         }
 
         $reset->update(['consumed_at' => now()]);
-        Session::put('password_reset_verified', true);
+        $request->session()->regenerate();
+        Session::put('password_reset_verified', now()->timestamp);
 
         return redirect()->route('password.forgot.reset');
     }
 
     // ---- Step 3: choose a new password ----------------------------------------------
 
+    /** Verified a moment ago? (The proof expires after 15 minutes.) */
+    private function verifiedRecently(): bool
+    {
+        $at = (int) Session::get('password_reset_verified');
+
+        return $at > 0 && ($at === 1 || now()->timestamp - $at <= 900);
+    }
+
     public function showReset(): View|RedirectResponse
     {
-        if (! Session::get('password_reset_verified') || ! Session::has(self::SESSION_KEY)) {
+        if (! $this->verifiedRecently() || ! Session::has(self::SESSION_KEY)) {
             return redirect()->route('password.forgot.identify');
         }
 
@@ -182,7 +199,7 @@ class ForgotPasswordController extends Controller
 
     public function reset(Request $request): RedirectResponse
     {
-        abort_unless(Session::get('password_reset_verified'), 419);
+        abort_unless($this->verifiedRecently(), 419);
         $userId = Session::get(self::SESSION_KEY);
         abort_unless($userId, 419);
 
@@ -197,6 +214,7 @@ class ForgotPasswordController extends Controller
             // password themselves, so there's no need to force another change.
             'must_change_password' => false,
         ])->save();
+        \App\Support\SessionCleaner::endOthers($user);
 
         Session::forget([self::SESSION_KEY, self::CHANNEL_KEY, 'password_reset_verified']);
 

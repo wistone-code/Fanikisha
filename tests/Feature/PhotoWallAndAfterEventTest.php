@@ -149,6 +149,7 @@ class PhotoWallAndAfterEventTest extends TestCase
 
         $this->get(route('wall.full', ['WALLTOKEN123', $p->id]))->assertOk();
         foreach (range(1, 3) as $i) {
+            $this->flushSession(); // three different people
             $this->postJson(route('wall.report', ['WALLTOKEN123', $p->id]))->assertOk();
         }
 
@@ -334,7 +335,9 @@ class PhotoWallAndAfterEventTest extends TestCase
 
         $this->artisan('reminders:event-day')->assertSuccessful();
 
-        Http::assertNothingSent(); // would need 2, has 1
-        $this->assertSame(0, $event->fresh()->sms_sent_count);
+        // Needs 2, has 1: the one it can afford is sent and counted, the other waits for more quota instead of nobody being texted.
+        Http::assertSentCount(1);
+        $this->assertSame(1, $event->fresh()->sms_sent_count);
+        $this->assertSame(1, $event->pledges()->whereNotNull('event_day_reminder_sent_at')->count());
     }
 }

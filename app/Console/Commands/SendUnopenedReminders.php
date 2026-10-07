@@ -23,7 +23,7 @@ class SendUnopenedReminders extends Command
             return self::SUCCESS;
         }
 
-        foreach (Event::where('auto_remind_unopened', true)->get() as $event) {
+        foreach (Event::lean()->where('auto_remind_unopened', true)->get() as $event) {
             $daysLeft = (int) $today->diffInDays($event->event_date->startOfDay(), false);
 
             // From N days out until the day before; a guest is reminded once, so a missed run catches up next time.
@@ -40,7 +40,7 @@ class SendUnopenedReminders extends Command
 
             $result = $sms->forEvent($event)->sendPersonalised($targets->map(fn (Pledge $p) => (object) [
                 'key' => $p->id, 'phone' => $p->phone, 'message' => $messages->forUnopenedReminder($event, $p),
-            ]));
+            ]), fn ($id) => Pledge::whereKey($id)->update(['unopened_reminded_at' => now()]), partial: true);
 
             if (! empty($result['ok_keys'])) {
                 Pledge::whereIn('id', $result['ok_keys'])->update(['unopened_reminded_at' => now()]);

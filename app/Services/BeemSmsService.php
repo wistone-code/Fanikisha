@@ -47,7 +47,7 @@ class BeemSmsService
      * @param  Collection  $items  objects/arrays with ->phone and ->message
      * @return array{successful: bool, sent: int, failed: int, ok_keys?: array, error?: string}
      */
-    public function sendPersonalised(Collection $items): array
+    public function sendPersonalised(Collection $items, ?callable $onSent = null, bool $partial = false): array
     {
         $items = $items->map(fn ($i) => (object) (array) $i)->filter(fn ($i) => filled($i->phone) && filled($i->message))->values();
 
@@ -55,7 +55,24 @@ class BeemSmsService
             return ['successful' => false, 'sent' => 0, 'failed' => 0, 'error' => 'No recipients with a phone number.'];
         }
 
+        // People who opted out are never texted and never counted. Scheduled jobs are told they are "handled" so they are not retried every run.
+        $optOuts = app(OptOutService::class);
+        $optSet = $optOuts->suppressedAmong($items->pluck('phone')->all());
+        [$blocked, $items] = $items->partition(fn ($i) => $optOuts->inSet($optSet, $i->phone));
+        $items = $items->values();
+        if ($onSent) {
+            $blocked->each(fn ($i) => $onSent($i->key ?? null));
+        }
+        if ($items->isEmpty()) {
+            return ['successful' => false, 'sent' => 0, 'failed' => 0, 'error' => 'Everyone on this list has opted out of messages.'];
+        }
+
         $event = $this->quotaEvent();
+
+        // Scheduled jobs send as many as the quota allows and carry on next run, rather than sending nothing.
+        if ($partial && $event && ($left = $event->smsRemaining()) !== null && $left > 0 && $left < $items->count()) {
+            $items = $items->take($left)->values();
+        }
 
         if ($event && ! $event->hasSmsCapacity($items->count())) {
             $remaining = $event->smsRemaining();
@@ -74,16 +91,22 @@ class BeemSmsService
             $result = $this->sendBulkUnchecked($item->message, collect([(object) ['phone' => $item->phone]]));
 
             if ($result['successful']) {
-                $sent += $result['valid'] ?? 1;
+                $delivered = $result['valid'] ?? 1;
+                $sent += $delivered;
                 $okKeys[] = $item->key ?? $index;
+
+                // Count the message and let the caller flag this guest straight away: if the run is cut short
+                // (timeout, deploy, overlap with the next run) nobody who already got a text is texted again.
+                if ($event) {
+                    $event->increment('sms_sent_count', $delivered);
+                }
+                if ($onSent) {
+                    $onSent($item->key ?? $index);
+                }
             } else {
                 $failed++;
                 $lastError = $result['error'] ?? null;
             }
-        }
-
-        if ($event && $sent > 0) {
-            $event->increment('sms_sent_count', $sent);
         }
 
         return ['successful' => $sent > 0, 'sent' => $sent, 'failed' => $failed, 'ok_keys' => $okKeys] + ($lastError && $sent === 0 ? ['error' => $lastError] : []);
@@ -204,14 +227,9 @@ class BeemSmsService
      */
     private function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+        // Use the app-wide normaliser so opt-out matching, storage and sending all agree (and foreign numbers are not forced onto +255).
+        $normalised = app(PhoneNumberService::class)->normalize($phone) ?? '';
 
-        if (str_starts_with($digits, '0')) {
-            $digits = '255'.substr($digits, 1);
-        } elseif (! str_starts_with($digits, '255')) {
-            $digits = '255'.$digits;
-        }
-
-        return $digits;
+        return preg_replace('/\D+/', '', $normalised) ?? '';
     }
 }

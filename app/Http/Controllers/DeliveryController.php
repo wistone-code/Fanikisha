@@ -43,8 +43,9 @@ class DeliveryController extends Controller
 
         $rows = $all->filter(fn (Pledge $p) => match ($stage) {
             'not_sent' => $p->invite_sent_at === null,
+            'sent' => $p->invite_sent_at !== null,
             'unopened' => $p->invite_sent_at !== null && $p->first_opened_at === null,
-            'opened' => $p->first_opened_at !== null && $p->rsvp_status === null,
+            'opened' => $p->first_opened_at !== null,
             'responded' => $p->rsvp_status !== null,
             'arrived' => $p->checked_in_at !== null,
             'flagged' => isset($shared[$p->id]) || $p->scan_attempts > 0,
@@ -147,7 +148,8 @@ class DeliveryController extends Controller
 
     /** Everything that makes a guest's invitation "live": the link, when it was sent, opened and scanned. */
     private const LINK_BLANK = ['invite_token' => null, 'invite_revoked_at' => null, 'invite_sent_at' => null, 'invite_channel' => null,
-        'first_opened_at' => null, 'last_opened_at' => null, 'open_count' => 0, 'scan_attempts' => 0];
+        'first_opened_at' => null, 'last_opened_at' => null, 'open_count' => 0, 'scan_attempts' => 0,
+        'unopened_reminded_at' => null, 'event_day_reminder_sent_at' => null];
 
     /**
      * Start a guest's invitation over: the RSVP answer is cleared AND the old link is cancelled.
@@ -216,6 +218,8 @@ class DeliveryController extends Controller
             'last_opened_at' => null,
             'open_count' => 0,
             'scan_attempts' => 0,
+            'unopened_reminded_at' => null,
+            'event_day_reminder_sent_at' => null,
         ]);
 
         DB::table('card_views')->where('pledge_id', $pledge->id)->delete();

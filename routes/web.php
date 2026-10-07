@@ -79,6 +79,7 @@ Route::get('/wall/{wallToken}/photos/{photo}', [PublicPhotoWallController::class
 Route::get('/pay/{token}', function (string $token) {
     $pledge = \App\Models\Pledge::where('pay_token', $token)->firstOrFail();
     $event = $pledge->event;
+    abort_unless($event->hasFeature('money') && ! $pledge->guest_only, 404);
     $theme = app(\App\Services\EventThemeService::class)->forEvent($event);
 
     return view('guest.pay', ['pledge' => $pledge, 'event' => $event, 'theme' => $theme]);

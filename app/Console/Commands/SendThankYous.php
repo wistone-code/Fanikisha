@@ -16,7 +16,7 @@ class SendThankYous extends Command
     {
         $today = now()->startOfDay();
 
-        foreach (Event::where('thank_you_enabled', true)->get() as $event) {
+        foreach (Event::lean()->where('thank_you_enabled', true)->get() as $event) {
             $daysAfter = (int) $event->event_date->startOfDay()->diffInDays($today, false);
 
             if ($daysAfter < 1 || $daysAfter > ThankYouService::MAX_DAYS_AFTER) {

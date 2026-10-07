@@ -33,7 +33,7 @@ class PledgeController extends Controller
 
         return view('event.pledges.index', [
             'event' => $event,
-            'pledges' => $event->pledges()->contributors()->latest()->get(),
+            'pledges' => $event->pledges()->contributors()->latest()->get()->each->setRelation('event', $event), // so each row's status does not run its own query
             'isAdmin' => $isAdmin,
         ]);
     }
@@ -67,6 +67,11 @@ class PledgeController extends Controller
         $this->assertPledgeInCurrentEvent($pledge);
 
         $data = $this->validated($request);
+
+        // Re-read the row under a lock so two admins (or a double tap) adding payments at once both count.
+        \Illuminate\Support\Facades\DB::transaction(function () use (&$pledge) {
+            $pledge = Pledge::whereKey($pledge->id)->lockForUpdate()->firstOrFail();
+        });
         $previousPaid = (float) $pledge->paid;
 
         // "Add payment" is the normal path — the field is blank on the Edit
@@ -101,7 +106,7 @@ class PledgeController extends Controller
                 $event = app('currentEvent');
                 // Cleared the whole pledge: thank them for the contribution (no balance, no reminder wording).
                 $cleared = $pledge->isPaidInFull();
-                $text = $cleared ? $messages->forPledgeThankYou($event, $pledge) : $messages->forPledgePayment($event, $pledge);
+                $text = $cleared ? $messages->forPledgeThankYou($event, $pledge) : $messages->forPledgePayment($event, $pledge, (float) $pledge->paid - $previousPaid);
                 $result = $sms->sendSingle($text, $pledge->phone);
 
                 $status .= $result['successful']
@@ -138,7 +143,7 @@ class PledgeController extends Controller
                 $rows = collect(explode("\n", trim($docx->extract($file->getRealPath()))))
                     ->map(fn ($line) => trim($line))
                     ->filter(fn ($line) => $line !== '')
-                    ->map(fn ($line) => preg_split('/\t|,/', $line));
+                    ->map(fn ($line) => \App\Support\ImportRows::splitLine($line, 3, true));
             } else {
                 // A real CSV reader (rather than a plain comma-split) correctly
                 // handles a quoted field that itself contains a comma, e.g. a
@@ -146,7 +151,7 @@ class PledgeController extends Controller
                 $handle = fopen($file->getRealPath(), 'r');
 
                 while (($line = fgetcsv($handle)) !== false) {
-                    $rows->push($line);
+                    $rows->push(\App\Support\ImportRows::stripBom($line));
                 }
 
                 fclose($handle);
@@ -154,7 +159,7 @@ class PledgeController extends Controller
         } elseif ($request->filled('import_text')) {
             $rows = collect(explode("\n", trim($request->input('import_text'))))
                 ->filter(fn ($line) => trim($line) !== '')
-                ->map(fn ($line) => preg_split('/\t|,/', trim($line)));
+                ->map(fn ($line) => \App\Support\ImportRows::splitLine($line, 3, true));
         }
 
         if ($rows->isEmpty()) {
@@ -163,6 +168,7 @@ class PledgeController extends Controller
 
         $imported = 0;
         $skipped = 0;
+        $seen = $event->pledges()->get(['name', 'phone', 'amount'])->map(fn ($p) => mb_strtolower(trim($p->name)).'|'.$p->phone.'|'.(float) $p->amount)->flip();
 
         foreach ($rows as $row) {
             $name = trim((string) ($row[0] ?? ''));
@@ -170,11 +176,20 @@ class PledgeController extends Controller
             $amountRaw = str_replace([',', ' '], '', trim((string) ($row[2] ?? '')));
             $amount = is_numeric($amountRaw) ? (float) $amountRaw : null;
 
-            if ($name === '' || $amount === null || $amount <= 0) {
+            if ($name === '' || $amount === null || $amount <= 0 || $amount > 100000000000) {
                 $skipped++;
 
                 continue;
             }
+
+            // The same file uploaded twice must not double every pledge and the totals.
+            $key = mb_strtolower($name).'|'.$phones->normalize($phone ?: null).'|'.$amount;
+            if ($seen->has($key)) {
+                $skipped++;
+
+                continue;
+            }
+            $seen[$key] = true;
 
             $event->pledges()->create([
                 'name' => $name,

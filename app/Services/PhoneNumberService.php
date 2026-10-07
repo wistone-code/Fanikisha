@@ -22,6 +22,14 @@ class PhoneNumberService
             return null;
         }
 
+        // 00255… is another way of writing +255…
+        if (str_starts_with($digits, '00') && strlen($digits) > 8) {
+            $digits = '+'.substr($digits, 2);
+        }
+
+        // A stray 0 after the country code (+2550712345678 or 2550712345678) is dropped.
+        $digits = preg_replace('/^\+?2550(?=[67]\d{8}$)/', '+255', $digits);
+
         if (str_starts_with($digits, '+255')) {
             return $digits;
         }

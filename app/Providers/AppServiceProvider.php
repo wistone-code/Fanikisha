@@ -59,7 +59,9 @@ class AppServiceProvider extends ServiceProvider
         // limit by cycling usernames, and a shared office IP can't accidentally lock
         // out other legitimate accounts just because one person mistyped a password.
         RateLimiter::for('login', function ($request) {
-            $key = strtolower((string) $request->input('username')).'|'.$request->ip();
+            // Same clean-up the login form applies (spaces, non-breaking and zero-width characters), so "bob", "bob " and "bob\u{200B}" share one bucket.
+            $username = strtolower(trim((string) preg_replace('/[\x{00A0}\x{200B}-\x{200D}\x{FEFF}]/u', ' ', (string) $request->input('username'))));
+            $key = $username.'|'.$request->ip();
 
             return Limit::perMinute(5)->by($key);
         });

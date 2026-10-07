@@ -162,11 +162,9 @@ class CheckinController extends Controller
             'name' => $pledge->name,
             'checked_in_at' => $pledge->checked_in_at?->format('g:i A, M j'),
             'checked_in_by' => $by,
-            'amount' => number_format($pledge->amount),
-            'paid' => number_format($pledge->paid),
-            'remain' => number_format($pledge->remaining()),
             'seat' => $event->seating_published ? $pledge->seatLabel() : null,
             'people' => $pledge->headcount() ?: 1,
+            'declined' => $pledge->rsvp_status === 'not_attending',
             'group' => $pledge->group_name,
             'meal' => $pledge->meal_choice,
         ];
@@ -296,7 +294,7 @@ class CheckinController extends Controller
         $event = app('currentEvent');
         abort_unless($pledge->event_id === $event->id, 404);
 
-        $pledge->update(['checked_in_at' => null]);
+        $pledge->update(['checked_in_at' => null, 'checked_in_by' => null, 'scan_attempts' => 0]);
 
         return back()->with('status', 'Check-in removed for '.$pledge->name);
     }
@@ -320,7 +318,8 @@ class CheckinController extends Controller
                     $w->orWhere('card_code', $code);
                 }
                 if (strlen($digits) >= 4) {
-                    $w->orWhere('phone', 'like', '%'.$digits);
+                    // A local number typed as 0712 345 678 is stored as +255712345678, so match without the leading 0 as well.
+                    $w->orWhere('phone', 'like', '%'.$digits)->orWhere('phone', 'like', '%'.ltrim($digits, '0'));
                 }
             }))
             ->orderBy('name')

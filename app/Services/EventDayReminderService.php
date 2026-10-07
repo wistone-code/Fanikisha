@@ -25,7 +25,7 @@ class EventDayReminderService
 
         $result = $this->sms->forEvent($event)->sendPersonalised($targets->map(fn (Pledge $p) => (object) [
             'key' => $p->id, 'phone' => $p->phone, 'message' => $this->messages->forEventDayReminder($event, $p),
-        ]));
+        ]), fn ($id) => Pledge::whereKey($id)->update(['event_day_reminder_sent_at' => now()]), partial: true);
 
         if (! empty($result['ok_keys'])) {
             Pledge::whereIn('id', $result['ok_keys'])->update(['event_day_reminder_sent_at' => now()]);

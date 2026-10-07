@@ -61,8 +61,8 @@ class ScheduleImportService
 
             $model = 'gemini-3.6-flash';
 
-            $response = Http::timeout(60)->post(
-                "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}",
+            $response = Http::timeout(60)->withHeaders(['x-goog-api-key' => $apiKey])->post(
+                "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent",
                 [
                     'contents' => [[
                         'parts' => [...$imageParts, ['text' => $instructions]],

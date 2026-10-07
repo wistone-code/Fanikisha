@@ -19,6 +19,11 @@ trait SanitizesExcelCells
             return $value;
         }
 
+        // A plain phone number such as +255712345678 is text of digits only, not a formula, so it stays as it is.
+        if (preg_match('/^\+\d[\d ]{5,20}$/', $value)) {
+            return $value;
+        }
+
         return preg_match('/^[=+\-@\t\r]/', $value) ? "'".$value : $value;
     }
 }

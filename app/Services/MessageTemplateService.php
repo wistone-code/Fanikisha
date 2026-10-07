@@ -27,11 +27,17 @@ class MessageTemplateService
     /** The "remind all" broadcast text is a single group message, not personalized. */
     public function forBroadcast(Event $event): string
     {
-        return strtr($event->messageOrDefault('broadcast'), [
+        return $this->withoutLeftovers(strtr($event->messageOrDefault('broadcast'), [
             '{event}' => $event->name,
             '{place}' => $event->place ?? '',
             '{date}' => $event->event_date->format('d.m.Y'),
-        ]);
+        ]));
+    }
+
+    /** A group message has no single person or link, so an unfilled {name}/{link} is removed instead of being sent as raw text. */
+    private function withoutLeftovers(string $text): string
+    {
+        return trim(preg_replace('/[ \t]{2,}/', ' ', preg_replace('/\{[a-z_ ]+\}/i', '', $text)));
     }
 
     /**
@@ -55,11 +61,11 @@ class MessageTemplateService
      */
     public function forMeeting(Event $event): string
     {
-        return strtr($event->messageOrDefault('meeting'), [
+        return $this->withoutLeftovers(strtr($event->messageOrDefault('meeting'), [
             '{event}' => $event->name,
             '{place}' => $event->place ?? '',
             '{date}' => $event->event_date->format('d.m.Y'),
-        ]);
+        ]));
     }
 
     /** Formats every schedule item as a text list — this is what "Share" sends. */
@@ -121,7 +127,7 @@ class MessageTemplateService
      * Fixed structure (not user-editable via a saved message, unlike the others
      * above), but the language still follows the event's sms_language setting.
      */
-    public function forProviderPayment(Event $event, Provider $provider): string
+    public function forProviderPayment(Event $event, Provider $provider, ?float $justPaid = null): string
     {
         $template = $event->sms_language === 'sw'
             ? 'Habari {name}, kimelipwa kiasi cha {paid} kwa ajili ya {service} ({event}), kiasi kilichobaki {remain}. Asante!'
@@ -131,7 +137,7 @@ class MessageTemplateService
             '{name}' => $provider->name,
             '{service}' => $provider->service,
             '{event}' => $event->name,
-            '{paid}' => number_format((float) $provider->paid),
+            '{paid}' => number_format($justPaid ?? (float) $provider->paid),
             '{budget}' => number_format((float) $provider->budget),
             '{remain}' => number_format($provider->remaining()),
         ]);
@@ -142,7 +148,7 @@ class MessageTemplateService
      * Fixed structure (not user-editable via a saved message, unlike the others
      * above), but the language still follows the event's sms_language setting.
      */
-    public function forPledgePayment(Event $event, Pledge $pledge): string
+    public function forPledgePayment(Event $event, Pledge $pledge, ?float $justPaid = null): string
     {
         $template = $event->sms_language === 'sw'
             ? 'Habari {name}, umepunguza kiasi cha {paid} kwa ajili ya {event}, bado {remain}. Asante'
@@ -151,7 +157,7 @@ class MessageTemplateService
         return strtr($template, [
             '{name}' => $pledge->name,
             '{event}' => $event->name,
-            '{paid}' => number_format((float) $pledge->paid),
+            '{paid}' => number_format($justPaid ?? (float) $pledge->paid),
             '{remain}' => number_format($pledge->remaining()),
         ]);
     }

@@ -32,7 +32,7 @@ class ThankYouService
 
         $result = $this->sms->forEvent($event)->sendPersonalised($targets->map(fn (Pledge $p) => (object) [
             'key' => $p->id, 'phone' => $p->phone, 'message' => $this->messages->forThankYou($event, $p),
-        ]));
+        ]), fn ($id) => Pledge::whereKey($id)->update(['thank_you_sent_at' => now()]), partial: true);
 
         if (! empty($result['ok_keys'])) {
             Pledge::whereIn('id', $result['ok_keys'])->update(['thank_you_sent_at' => now()]);

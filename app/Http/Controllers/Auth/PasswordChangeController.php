@@ -19,6 +19,11 @@ class PasswordChangeController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        // This screen is only for the first sign-in / admin-reset password. Changing it later needs the current password (updateOwn).
+        if (! $request->user()->must_change_password) {
+            return redirect()->route('dashboard');
+        }
+
         $data = $request->validate([
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
         ]);
@@ -27,6 +32,7 @@ class PasswordChangeController extends Controller
             'password' => Hash::make($data['password']),
             'must_change_password' => false,
         ])->save();
+        \App\Support\SessionCleaner::endOthers($request->user(), $request->session()->getId());
 
         return redirect()->route('dashboard');
     }
@@ -49,6 +55,7 @@ class PasswordChangeController extends Controller
             'password' => Hash::make($data['password']),
             'must_change_password' => false,
         ])->save();
+        \App\Support\SessionCleaner::endOthers($user, $request->session()->getId());
 
         return back()->with('status', 'Password changed.');
     }

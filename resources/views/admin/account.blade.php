@@ -11,7 +11,9 @@
         <form method="POST" action="{{ route('admin.account.email') }}" class="space-y-3">
             @csrf @method('PATCH')
             <div><label class="text-xs font-semibold">Email</label><input type="email" name="email" value="{{ $account->email }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Current password <span class="text-gray-400 font-normal">(to confirm it's you)</span></label><input type="password" name="current_password" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             @error('email')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            @error('current_password')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             <button class="btn btn-primary"><i class="fa-solid fa-check"></i> Save email</button>
         </form>
     </div>

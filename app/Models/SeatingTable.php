@@ -28,6 +28,7 @@ class SeatingTable extends Model
     /** Seats taken: each guest plus their confirmed plus-ones, and a double card counts as two people. */
     public function seatsTaken(): int
     {
-        return (int) $this->guests->sum(fn (Pledge $g) => $g->headcount());
+        // Guests whose card was cancelled or reset no longer appear on the seating list, so they must not use up seats.
+        return (int) $this->guests->filter(fn (Pledge $g) => filled($g->invite_token))->sum(fn (Pledge $g) => $g->headcount());
     }
 }

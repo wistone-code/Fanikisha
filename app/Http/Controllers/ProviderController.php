@@ -74,7 +74,7 @@ class ProviderController extends Controller
 
             if ($provider->phone) {
                 $event = app('currentEvent');
-                $result = $sms->sendSingle($messages->forProviderPayment($event, $provider), $provider->phone);
+                $result = $sms->sendSingle($messages->forProviderPayment($event, $provider, (float) $provider->paid - $previousPaid), $provider->phone);
 
                 $status .= $result['successful'] ? ' (SMS sent)' : ' — but SMS failed: '.($result['error'] ?? 'unknown error');
             }

@@ -88,9 +88,9 @@ class PhotoWallController extends Controller
     public function download(): BinaryFileResponse|RedirectResponse
     {
         $event = app('currentEvent');
-        $photos = $event->photos()->where('hidden', false)->orderBy('id')->get();
+        $photos = $event->photos()->where('hidden', false)->orderBy('id');
 
-        if ($photos->isEmpty()) {
+        if (! $photos->exists()) {
             return back()->with('error', 'No photos to download yet.');
         }
 
@@ -98,8 +98,10 @@ class PhotoWallController extends Controller
         $zip = new \ZipArchive;
         $zip->open($path, \ZipArchive::OVERWRITE);
 
-        foreach ($photos as $i => $p) {
-            $zip->addFromString(sprintf('photo-%03d.jpg', $i + 1), $p->image);
+        // One photo in memory at a time (a wall can hold a thousand full-size pictures).
+        $i = 0;
+        foreach ($photos->select(['id', 'image'])->cursor() as $p) {
+            $zip->addFromString(sprintf('photo-%03d.jpg', ++$i), $p->image);
         }
 
         $zip->close();

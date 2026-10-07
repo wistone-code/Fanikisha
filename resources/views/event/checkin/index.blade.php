@@ -255,6 +255,7 @@
             + '<div class="text-gray-600 text-sm">at ' + escapeHtml(data.checked_in_at) + '</div>'
             + (data.seat ? '<div class="mt-2 inline-block rounded-lg px-3 py-1 text-base font-bold" style="background:var(--primary);color:#fff;"><i class="fa-solid fa-chair"></i> ' + escapeHtml(data.seat) + '</div>' : '')
             + (data.people > 1 ? '<div class="text-gray-700 text-sm mt-1"><i class="fa-solid fa-user-group"></i> ' + data.people + ' people on this card</div>' : '')
+            + (data.declined ? '<div class="mt-1 inline-block rounded px-2 py-0.5 text-xs font-semibold" style="background:#fef3c7;color:#92400e;">Replied that they are NOT attending</div>' : '')
             + (data.group ? '<div class="text-gray-500 text-xs">Group: ' + escapeHtml(data.group) + '</div>' : '')
             + (data.meal ? '<div class="text-gray-500 text-xs">Meal: ' + escapeHtml(data.meal) + '</div>' : '')
             + (data.offline ? '<div class="text-amber-700 text-xs mt-1"><i class="fa-solid fa-cloud-arrow-up"></i> Saved on this phone — uploads when signal returns.</div>' : '');
@@ -275,7 +276,7 @@
         row.innerHTML = '<span class="text-sm">' + escapeHtml(name) + (seat ? ' <span class="text-xs text-gray-400">· ' + escapeHtml(seat) + '</span>' : '') + '</span>'
             + '<div class="flex items-center gap-2">'
             + '<span class="text-xs text-gray-500">' + escapeHtml(checkedInAt) + '</span>'
-            + (!undoUrl ? '<span class="text-[10px] text-amber-700">waiting to sync</span>' : !isAdmin ? '' : '<form method="POST" action="' + undoUrl + '" data-confirm="Remove ' + escapeHtml(name) + '\'s check-in? They\'ll show as not-yet-arrived again." data-confirm-title="Undo check-in?" data-confirm-button="Undo" data-confirm-icon="fa-rotate-left">'
+            + (!undoUrl ? '<span class="text-[10px] text-amber-700">waiting to sync</span>' : !isAdmin ? '' : '<form method="POST" action="' + undoUrl + '" data-confirm="Remove ' + escapeAttr(name) + '\'s check-in? They\'ll show as not-yet-arrived again." data-confirm-title="Undo check-in?" data-confirm-button="Undo" data-confirm-icon="fa-rotate-left">'
             + '<input type="hidden" name="_token" value="' + csrfToken + '">'
             + '<input type="hidden" name="_method" value="DELETE">'
             + '<button class="btn btn-ghost !py-1 !px-2 text-xs text-red-600" title="Undo check-in"><i class="fa-solid fa-rotate-left"></i></button>'
@@ -497,7 +498,7 @@
         guest.checked_in_at = displayTime(now);
         guest.pending = true;
         await dbPut('guests', guest);
-        await dbPut('queue', { token: token, name: guest.name, scanned_at: now.toISOString() });
+        await dbPut('queue', { token: token, eventId: currentEventId, name: guest.name, scanned_at: now.toISOString() });
         refreshStatus();
 
         return { found: true, already: false, offline: true, id: null, name: guest.name, checked_in_at: guest.checked_in_at, seat: guest.seat, people: guest.people };
@@ -561,7 +562,8 @@
             const queue = await dbAll('queue');
             const sync = await dbGet('meta', 'sync');
 
-            document.getElementById('cachedCount').textContent = guests.length;
+            const savedAt = meta && meta.savedAt ? new Date(meta.savedAt) : null;
+            document.getElementById('cachedCount').textContent = guests.length + (sameEvent && savedAt && !isNaN(savedAt) ? ' (list saved ' + displayTime(savedAt) + ')' : '');
             document.getElementById('queueCount').textContent = queue.length;
             document.getElementById('lastSync').textContent = sync ? displayTime(new Date(sync.at)) : 'never';
         } catch (e) { /* IndexedDB unavailable (e.g. private mode) — offline mode just stays off */ }
@@ -605,7 +607,7 @@
             const data = await res.json();
 
             // Keep any unsynced scans: their guests stay marked as checked in locally.
-            const queue = await dbAll('queue');
+            const queue = (await dbAll('queue')).filter(function (q) { return !q.eventId || q.eventId === currentEventId; });
             const pending = {};
             queue.forEach(function (q) { pending[q.token] = true; });
 
@@ -638,7 +640,8 @@
         let queue = [];
 
         try {
-            queue = await dbAll('queue');
+            // Scans made for another event stay where they are (they are uploaded when that event's check-in page is opened).
+            queue = (await dbAll('queue')).filter(function (q) { return !q.eventId || q.eventId === currentEventId; });
             if (!queue.length) {
                 if (!silent) setMsg('Nothing waiting to sync.');
                 return;
@@ -724,7 +727,21 @@
         document.getElementById('conflictCard').classList.add('hidden');
     });
 
-    window.addEventListener('online', function () { refreshStatus(); syncNow(true); });
+    // While there is signal, keep the saved guest list fresh: a card cancelled or reissued after "Prepare" must not be accepted at the door later.
+    async function refreshListIfStale() {
+        if (!navigator.onLine || document.hidden || syncing) return;
+        try {
+            const meta = await dbGet('meta', 'cache');
+            if (!meta || meta.eventId !== currentEventId) return; // this phone was never prepared for this event
+            const age = Date.now() - new Date(meta.savedAt).getTime();
+            if (isNaN(age) || age > 10 * 60 * 1000) {
+                await syncNow(true);
+                await prepareOffline();
+            }
+        } catch (e) { /* try again next time */ }
+    }
+
+    window.addEventListener('online', function () { refreshStatus(); syncNow(true).then(refreshListIfStale); });
     window.addEventListener('offline', refreshStatus);
 
     // Live numbers and the latest arrivals from every door.
@@ -750,6 +767,7 @@
     setInterval(pollStats, 20000);
 
     refreshStatus();
-    if (navigator.onLine) syncNow(true);
+    if (navigator.onLine) syncNow(true).then(refreshListIfStale);
+    setInterval(refreshListIfStale, 5 * 60 * 1000);
 </script>
 @endsection

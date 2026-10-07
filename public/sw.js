@@ -70,6 +70,14 @@ async function plain(response) {
     return new Response(await response.blob(), { status: response.status, statusText: response.statusText, headers: response.headers });
 }
 
+// A weak venue connection can hang instead of failing. After this long, fall back to the saved copy.
+function withTimeout(promise, ms) {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('timeout')), ms);
+        promise.then((value) => { clearTimeout(timer); resolve(value); }, (error) => { clearTimeout(timer); reject(error); });
+    });
+}
+
 function isCacheable(response) {
     // ok responses, plus opaque ones (cross-origin no-cors, status 0) for fonts and icon CSS.
     return response && (response.ok || response.type === 'opaque');
@@ -112,7 +120,7 @@ self.addEventListener('fetch', (event) => {
     if (request.mode === 'navigate') {
         if (isCheckinPage(url)) {
             event.respondWith(
-                fetch(request)
+                withTimeout(fetch(request), 8000)
                     .then((response) => {
                         // Keep a copy only of a real page (not a redirect to the login screen).
                         if (response.ok && !response.redirected) {

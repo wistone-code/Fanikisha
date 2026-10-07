@@ -93,7 +93,7 @@ class SeatingController extends Controller
 
         $areaId = $this->ownedAreaId($data['seating_area_id'] ?? null);
         $count = (int) ($data['count'] ?? 1);
-        $start = $event->seatingTables()->count();
+        $start = $event->seatingTables()->exists() ? ((int) $event->seatingTables()->max('sort_order')) + 1 : 0;
 
         // "Add 10 tables" creates "Table 1…10" style names from the base name.
         for ($i = 0; $i < $count; $i++) {
@@ -146,6 +146,21 @@ class SeatingController extends Controller
         $table = $tableId ? $event->seatingTables()->find($tableId) : null;
         abort_if($tableId && ! $table, 404);
 
+        if ($table) {
+            // Room check: everyone already at the table (except this guest) plus this guest's own party.
+            $others = $table->guests()->whereKeyNot($pledge->id)->whereNotNull('invite_token')->get();
+            $taken = (int) $others->sum(fn (Pledge $g) => $g->headcount());
+            $party = max(1, $pledge->headcount());
+
+            if ($table->capacity && $taken + $party > $table->capacity) {
+                return back()->with('error', "{$table->name} is full — {$taken} of {$table->capacity} seats are taken and {$pledge->name} needs {$party}.");
+            }
+
+            if (! empty($data['seat_number']) && $others->contains(fn (Pledge $g) => (int) $g->seat_number === (int) $data['seat_number'])) {
+                return back()->with('error', "Seat {$data['seat_number']} at {$table->name} is already taken.");
+            }
+        }
+
         $pledge->update([
             'seating_table_id' => $table?->id,
             // A table already belongs to an area, so the guest inherits it.
@@ -169,7 +184,8 @@ class SeatingController extends Controller
 
         $free = $tables->mapWithKeys(fn ($t) => [$t->id => $t->capacity - $t->seatsTaken()])->all();
 
-        $todo = $event->pledges()->whereNotNull('invite_token')->whereNull('seating_table_id')
+        // Guests already given a table, or a zone, are never moved.
+        $todo = $event->pledges()->whereNotNull('invite_token')->whereNull('seating_table_id')->whereNull('seating_area_id')
             ->where(fn ($q) => $q->whereNull('rsvp_status')->orWhere('rsvp_status', '!=', 'not_attending'))
             ->orderBy('group_name')->orderBy('name')->get();
 
@@ -178,16 +194,19 @@ class SeatingController extends Controller
         // Whole groups first, so family members land at the same table when one has room.
         foreach ($todo->groupBy(fn ($g) => $g->group_name ?: '__'.$g->id) as $members) {
             $need = $members->sum(fn ($g) => $g->headcount() ?: 1);
-            $tableId = collect($free)->filter(fn ($room) => $room >= $need)->sortKeys()->keys()->first()
-                ?? collect($free)->sortDesc()->keys()->first();
+            $together = collect($free)->filter(fn ($room) => $room >= $need)->sortKeys()->keys()->first();
 
-            if ($tableId === null || ($free[$tableId] ?? 0) <= 0) {
-                break;
-            }
-
+            // A group that fits nowhere as a whole is split up, one person at a time, but a table is never overfilled.
             foreach ($members as $g) {
+                $size = $g->headcount() ?: 1;
+                $tableId = $together ?? collect($free)->filter(fn ($room) => $room >= $size)->sortDesc()->keys()->first();
+
+                if ($tableId === null) {
+                    continue;
+                }
+
                 $g->update(['seating_table_id' => $tableId, 'seating_area_id' => $tables->firstWhere('id', $tableId)->seating_area_id]);
-                $free[$tableId] -= ($g->headcount() ?: 1);
+                $free[$tableId] -= $size;
                 $placed++;
             }
         }

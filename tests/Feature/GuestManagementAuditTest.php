@@ -277,7 +277,8 @@ class GuestManagementAuditTest extends TestCase
 
         $see('not_sent', ['NotSentNina'], ['SentSam', 'OpenedOlga']);
         $see('unopened', ['SentSam'], ['NotSentNina', 'OpenedOlga']);
-        $see('opened', ['OpenedOlga'], ['NotSentNina', 'RespondedRita']);
+        $see('sent', ['SentSam', 'OpenedOlga', 'RespondedRita'], ['NotSentNina']);
+        $see('opened', ['OpenedOlga', 'RespondedRita', 'ArrivedAmos'], ['NotSentNina', 'SentSam']); // same people as the "Opened" tile counts
         $see('responded', ['RespondedRita'], ['NotSentNina', 'OpenedOlga']);
         $see('arrived', ['ArrivedAmos'], ['NotSentNina', 'RespondedRita']);
     }

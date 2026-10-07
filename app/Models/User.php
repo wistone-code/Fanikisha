@@ -64,7 +64,7 @@ class User extends Authenticatable
      */
     public function currentEvent(): ?Event
     {
-        return $this->eventMemberships()->with('event')->first()?->event;
+        return $this->eventMemberships()->with(['event' => fn ($q) => $q->lean()])->first()?->event;
     }
 
     public function roleOn(Event $event): ?string

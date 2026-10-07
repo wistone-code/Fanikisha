@@ -33,6 +33,9 @@ RUN composer config policy.advisories.block false
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# php's built-in server handles one request at a time by default; several workers keep door staff scanning while a bulk SMS runs.
+ENV PHP_CLI_SERVER_WORKERS=8
+
 EXPOSE 8080
 
 CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8080

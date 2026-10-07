@@ -109,12 +109,18 @@ class TeamController extends Controller
         $event = app('currentEvent');
         abort_unless($member->event_id === $event->id, 404);
 
+        // Another admin must not be able to take over the owner's account; the owner can reset their own.
+        if ($member->isOwner() && $member->user_id !== auth()->id()) {
+            abort(403, "The event owner's password can't be reset by another team member.");
+        }
+
         $plainPassword = $passwords->generate();
 
         $member->user->forceFill([
             'password' => Hash::make($plainPassword),
             'must_change_password' => true,
         ])->save();
+        \App\Support\SessionCleaner::endOthers($member->user);
 
         ActivityLogger::log('team.password_reset', "Reset password for team member {$member->user->name} ({$member->user->username}) on \"{$event->name}\"", $member->user, $event);
 

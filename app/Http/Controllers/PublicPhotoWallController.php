@@ -161,6 +161,17 @@ class PublicPhotoWallController extends Controller
         $event = $this->wall($wallToken);
         abort_unless($photo->event_id === $event->id, 404);
 
+        // Same gates as viewing: only people who can see the wall can report on it, and each person counts once per photo.
+        abort_if(filled($event->photo_wall_pin) && ! $request->session()->get("wall_pin_{$event->id}"), 403);
+        abort_if($event->photo_wall_access === 'guests' && ! $this->guestFrom($request, $event), 403);
+        abort_if($photo->hidden, 404);
+
+        $reported = (array) $request->session()->get("wall_reported_{$event->id}", []);
+        if (in_array($photo->id, $reported, true)) {
+            return response()->json(['ok' => true]);
+        }
+        $request->session()->put("wall_reported_{$event->id}", array_merge($reported, [$photo->id]));
+
         $photo->increment('reports');
 
         if ($photo->reports >= self::AUTO_HIDE_REPORTS) {

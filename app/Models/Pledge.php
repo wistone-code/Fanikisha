@@ -118,7 +118,7 @@ class Pledge extends Model
 
     public function remaining(): float
     {
-        return (float) $this->amount - (float) $this->paid;
+        return max(0.0, (float) $this->amount - (float) $this->paid);
     }
 
     public function isPaidInFull(): bool

@@ -182,14 +182,14 @@ class GuestController extends Controller
             $handle = fopen($request->file('import_file')->getRealPath(), 'r');
 
             while (($line = fgetcsv($handle)) !== false) {
-                $rows->push($line);
+                $rows->push(\App\Support\ImportRows::stripBom($line));
             }
 
             fclose($handle);
         } elseif ($request->filled('import_text')) {
             $rows = collect(preg_split('/\r\n|\r|\n/', trim($request->input('import_text'))))
                 ->filter(fn ($line) => trim($line) !== '')
-                ->map(fn ($line) => preg_split('/\t|,/', trim($line)));
+                ->map(fn ($line) => \App\Support\ImportRows::splitLine($line));
         }
 
         if ($rows->isEmpty()) {
@@ -203,6 +203,7 @@ class GuestController extends Controller
         $event = app('currentEvent');
         $imported = 0;
         $skipped = 0;
+        $seen = $event->pledges()->get(['name', 'phone'])->map(fn ($p) => mb_strtolower(trim($p->name)).'|'.$p->phone)->flip();
 
         foreach ($rows as $row) {
             $name = trim((string) ($row[0] ?? ''));
@@ -216,11 +217,20 @@ class GuestController extends Controller
                 continue;
             }
 
+            // The same file uploaded twice must not double the guest list.
+            $key = mb_strtolower($name).'|'.$phones->normalize($phone ?: null);
+            if ($seen->has($key)) {
+                $skipped++;
+
+                continue;
+            }
+            $seen[$key] = true;
+
             $this->newEcardGuest($event, $name, $phone, $card, $phones);
             $imported++;
         }
 
-        return back()->with('status', "Added {$imported} guest(s)".($skipped > 0 ? ", skipped {$skipped} row(s) without a name" : '').'.');
+        return back()->with('status', "Added {$imported} guest(s)".($skipped > 0 ? ", skipped {$skipped} row(s) without a name or already on the list" : '').'.');
     }
 
     public function updateGuest(Request $request, Pledge $pledge, PhoneNumberService $phones): RedirectResponse
@@ -366,6 +376,7 @@ class GuestController extends Controller
     public function broadcastSms(Request $request, MessageTemplateService $messages, PhoneNumberService $phones, BeemSmsService $sms): RedirectResponse
     {
         $event = app('currentEvent');
+        abort_unless($event->isFuneral() && $event->hasFeature('money'), 404);
 
         $validated = $request->validate([
             'phones' => ['array', 'max:500'],

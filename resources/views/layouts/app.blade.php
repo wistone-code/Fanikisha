@@ -69,10 +69,10 @@
 @endauth
 
 @if (session('status'))
-<div id="toast" class="fixed top-4 right-4 z-50 bg-[#1B2429] text-white px-4 py-3 rounded-lg shadow-lg text-sm">
+<div id="toast" role="status" class="fixed top-4 right-4 z-50 max-w-sm bg-[#1B2429] text-white px-4 py-3 rounded-lg shadow-lg text-sm">
     {{ session('status') }}
 </div>
-<script>setTimeout(()=>document.getElementById('toast')?.remove(), 3000);</script>
+<script>setTimeout(()=>document.getElementById('toast')?.remove(), 5000);</script>
 @endif
 
 @if (session('error'))
@@ -213,8 +213,10 @@
         <form method="POST" action="{{ route('account.username.update') }}" class="space-y-3">
             @csrf @method('PATCH')
             <h4 class="text-sm font-semibold">Username</h4>
-            <input type="text" name="username" value="{{ auth()->user()->username }}" class="w-full border rounded-lg px-3 py-2 text-sm" required>
+            <input type="text" name="username" value="{{ auth()->user()->username }}" autocapitalize="none" autocorrect="off" class="w-full border rounded-lg px-3 py-2 text-sm" required>
+            <input type="password" name="current_password" placeholder="Current password (to confirm)" autocomplete="current-password" class="w-full border rounded-lg px-3 py-2 text-sm" required>
             @error('username')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            @error('current_password')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             <button class="btn btn-primary w-full justify-center">Save username</button>
         </form>
 
@@ -224,6 +226,7 @@
             @csrf @method('PATCH')
             <h4 class="text-sm font-semibold">Email</h4>
             <input type="email" name="email" value="{{ auth()->user()->email }}" class="w-full border rounded-lg px-3 py-2 text-sm" required>
+            <input type="password" name="current_password" placeholder="Current password (to confirm)" autocomplete="current-password" class="w-full border rounded-lg px-3 py-2 text-sm" required>
             @error('email')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             <button class="btn btn-primary w-full justify-center">Save email</button>
         </form>
@@ -235,6 +238,7 @@
             <h4 class="text-sm font-semibold">Phone</h4>
             <p class="text-xs text-gray-500">Used to send you a code if you ever need to reset your password.</p>
             <input type="tel" name="phone" value="{{ auth()->user()->phone }}" placeholder="e.g. +255700000000" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <input type="password" name="current_password" placeholder="Current password (to confirm)" autocomplete="current-password" class="w-full border rounded-lg px-3 py-2 text-sm" required>
             @error('phone')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             <button class="btn btn-primary w-full justify-center">Save phone</button>
         </form>

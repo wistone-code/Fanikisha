@@ -32,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // range(s) in production — '*' here is a permissive placeholder that
         // trusts the immediate upstream unconditionally and MUST be tightened
         // before going live.
-        $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_FOR |
+        $middleware->trustProxies(at: ($proxies = env('TRUSTED_PROXIES', '*')) === '*' ? '*' : array_map('trim', explode(',', $proxies)), headers: Request::HEADER_X_FORWARDED_FOR |
             Request::HEADER_X_FORWARDED_HOST |
             Request::HEADER_X_FORWARDED_PORT |
             Request::HEADER_X_FORWARDED_PROTO);

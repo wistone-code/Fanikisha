@@ -8,6 +8,10 @@ class ImageResizer
     /** @return array{image: string, thumb: string}|null null when the file is not a usable image */
     public function process(string $bytes, int $maxSide = 1400, int $thumbSide = 360): ?array
     {
+        if (! $this->safeSize($bytes)) {
+            return null;
+        }
+
         $src = @imagecreatefromstring($bytes);
 
         if (! $src) {
@@ -22,9 +26,21 @@ class ImageResizer
         ];
     }
 
+    /** A small file can decode to gigabytes of pixels; refuse anything over ~40 megapixels before decoding it. */
+    private function safeSize(string $bytes): bool
+    {
+        $info = @getimagesizefromstring($bytes);
+
+        return $info !== false && $info[0] > 0 && $info[1] > 0 && ($info[0] * $info[1]) <= 40_000_000;
+    }
+
     /** Resizes any image to fit inside $maxWidth, keeping PNG transparency; returns [bytes, mime, width, height]. */
     public function fit(string $bytes, int $maxWidth = 1080): ?array
     {
+        if (! $this->safeSize($bytes)) {
+            return null;
+        }
+
         $src = @imagecreatefromstring($bytes);
 
         if (! $src) {

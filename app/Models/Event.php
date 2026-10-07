@@ -167,9 +167,28 @@ class Event extends Model
         return $this->sms_quota === null || ($this->sms_sent_count + $count) <= $this->sms_quota;
     }
 
+    /** The photo is stored with its type; the type is only ever set when a photo exists, so it can be checked without loading the picture. */
     public function hasCardPhoto(): bool
     {
-        return ! empty($this->card_photo);
+        return ! empty($this->card_photo_mime);
+    }
+
+    /**
+     * Every column except the card photo (a picture of up to 5 MB). Used on the pages that load the event on every
+     * request, so a slow phone connection and the database are not asked to move the photo each time.
+     */
+    public function scopeLean($query)
+    {
+        static $columns = null;
+        $columns ??= array_values(array_diff(\Illuminate\Support\Facades\Schema::getColumnListing($this->getTable()), ['card_photo']));
+
+        return $query->select($columns);
+    }
+
+    /** The picture itself, read only when it is actually being shown. */
+    public function cardPhotoBytes(): ?string
+    {
+        return self::whereKey($this->getKey())->value('card_photo');
     }
 
     public function hasPayoutNumber(): bool
@@ -193,7 +212,8 @@ class Event extends Model
         return [
             'total_pledged' => (float) $totalPledged,
             'collected' => (float) $collected,
-            'remain' => (float) ($totalPledged - $collected),
+            // Money still to come in: what each person still owes. One person overpaying must not hide what others owe.
+            'remain' => (float) $this->pledges()->contributors()->whereColumn('paid', '<', 'amount')->selectRaw('COALESCE(SUM(amount - paid), 0) as owed')->value('owed'),
             'budget' => (float) $budget,
             'expenditure' => (float) $expenditure,
             'balance' => (float) ($collected - $expenditure),

@@ -49,7 +49,10 @@ class GuestCardController extends Controller
         }
 
         $event = $pledge->event;
-        $tracker->recordOpen($pledge, $request);
+        // The page shown right after answering or opting out is the same visit, not a new open.
+        if (! session()->pull('card_just_acted')) {
+            $tracker->recordOpen($pledge, $request);
+        }
 
         $lang = CardLabels::normalize($request->query('lang'), $event->card_default_lang ?? 'en');
 
@@ -77,7 +80,7 @@ class GuestCardController extends Controller
 
         $optOuts->add($pledge->phone, 'card', $pledge->event_id);
 
-        return redirect()->route('guest.rsvp', array_filter(['token' => $token, 'lang' => $request->query('lang')]))->with('stopped', true);
+        return redirect()->route('guest.rsvp', array_filter(['token' => $token, 'lang' => $request->query('lang')]))->with('stopped', true)->with('card_just_acted', true);
     }
 
     public function respond(Request $request, string $token): RedirectResponse
@@ -128,7 +131,7 @@ class GuestCardController extends Controller
 
         $pledge->update($update);
 
-        return redirect()->route('guest.rsvp', [$token, 'lang' => $lang]);
+        return redirect()->route('guest.rsvp', [$token, 'lang' => $lang])->with('card_just_acted', true);
     }
 
     public function photo(string $token): Response
@@ -136,7 +139,7 @@ class GuestCardController extends Controller
         $pledge = $this->find($token);
         abort_unless($pledge && $pledge->event->hasCardPhoto(), 404);
 
-        return response($pledge->event->card_photo)->header('Content-Type', $pledge->event->card_photo_mime)->header('Cache-Control', 'public, max-age=3600');
+        return response($pledge->event->cardPhotoBytes())->header('Content-Type', $pledge->event->card_photo_mime)->header('Cache-Control', 'public, max-age=3600');
     }
 
     public function design(string $token): Response

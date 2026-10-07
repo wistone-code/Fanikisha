@@ -61,7 +61,7 @@
                         <div><label class="text-xs font-semibold">Event</label><input type="text" name="title" value="{{ $item->title }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         <div class="grid grid-cols-2 gap-2">
                             <div><label class="text-xs font-semibold">Date</label><input type="date" name="date" value="{{ $item->date->format('Y-m-d') }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-                            <div><label class="text-xs font-semibold">Time</label><input type="time" name="time" value="{{ $item->time }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                            <div><label class="text-xs font-semibold">Time</label><input type="time" name="time" value="{{ $item->time ? substr($item->time, 0, 5) : '' }}" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
                         </div>
                         <div class="flex gap-2 pt-2">
                             <button type="button" onclick="document.getElementById('editItem{{ $item->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>

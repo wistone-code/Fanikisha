@@ -17,19 +17,21 @@
     <h1>{{ $event->name }} — Service Providers</h1>
     <div class="sub">{{ $providers->count() }} provider{{ $providers->count() === 1 ? '' : 's' }} &middot; Generated {{ now()->format('M j, Y') }}</div>
     <table>
-        <thead><tr><th>Name</th><th>Service</th><th>Budget</th><th>Contact</th></tr></thead>
+        <thead><tr><th>Name</th><th>Service</th><th>Budget</th><th>Paid</th><th>Remaining</th><th>Contact</th></tr></thead>
         <tbody>
         @foreach ($providers as $p)
             <tr>
                 <td>{{ $p->name }}</td>
                 <td>{{ $p->service }}</td>
                 <td>{{ number_format($p->budget) }}</td>
+                <td>{{ number_format($p->paid) }}</td>
+                <td>{{ number_format($p->remaining()) }}</td>
                 <td>{{ $p->phone }}</td>
             </tr>
         @endforeach
         </tbody>
         <tfoot>
-            <tr><td colspan="2">Total</td><td>{{ number_format($totalBudget) }}</td><td></td></tr>
+            <tr><td colspan="2">Total</td><td>{{ number_format($totalBudget) }}</td><td>{{ number_format($providers->sum('paid')) }}</td><td>{{ number_format($providers->sum(fn ($p) => $p->remaining())) }}</td><td></td></tr>
         </tfoot>
     </table>
 </body>

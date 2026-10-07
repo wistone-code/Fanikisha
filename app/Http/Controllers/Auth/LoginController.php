@@ -63,7 +63,7 @@ class LoginController extends Controller
             ActivityLogger::log('account.login_failed', 'Failed sign-in: no account named "'.\Illuminate\Support\Str::limit($credentials['username'], 40, '…').'" · '.$device, null, actor: null);
 
             throw ValidationException::withMessages([
-                'username' => 'This account does not exist. Contact Fanikisha for help.',
+                'username' => 'Incorrect username or password.',
             ]);
         }
 
@@ -71,7 +71,7 @@ class LoginController extends Controller
             ActivityLogger::log('account.login_failed', "Failed sign-in for {$user->name} ({$user->username}): wrong password · {$device}", $user, actor: null);
 
             throw ValidationException::withMessages([
-                'username' => 'Incorrect password.',
+                'username' => 'Incorrect username or password.',
             ]);
         }
 

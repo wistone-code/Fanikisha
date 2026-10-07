@@ -212,6 +212,7 @@ class UserManagementController extends Controller
             'password' => Hash::make($plainPassword),
             'must_change_password' => true,
         ])->save();
+        \App\Support\SessionCleaner::endOthers($user);
 
         ActivityLogger::log('account.password_reset', "Reset password for {$user->name} ({$user->username})", $user);
 
@@ -330,6 +331,22 @@ class UserManagementController extends Controller
         ]));
     }
 
+    /** The event this account owns (not one it only helps with as a team member). */
+    private function ownEvent(User $user): ?Event
+    {
+        $event = $user->currentEvent();
+
+        if (! $event) {
+            return null;
+        }
+
+        // Team members are created by the event's own owner (accounts are created by the System Admin), and their "current event" is the owner's.
+        $creator = $user->created_by ? User::find($user->created_by) : null;
+        $isTeamMember = $creator && ! $creator->is_super_user && $creator->eventMemberships()->where('event_id', $event->id)->exists();
+
+        return $isTeamMember ? null : $event;
+    }
+
     /** Moves an account between packages. Nothing is deleted — features are hidden or shown again. */
     public function updatePackage(Request $request, User $user): RedirectResponse
     {
@@ -341,8 +358,14 @@ class UserManagementController extends Controller
         $user->update(['package' => $data['package']]);
 
         // Their own event follows the package. E-card is a different kind of event (no money side), so mode follows too.
-        $event = $user->currentEvent();
+        // A team member's "current event" is the owner's, which this account does not control, so it is left alone.
+        $event = $this->ownEvent($user);
         if ($event) {
+            // E-card guests are plain guests. Moving to a money package must not turn them into pledgers with a zero pledge.
+            if ($event->mode === Event::MODE_ECARD && $data['package'] !== 'ecard') {
+                $event->pledges()->where('guest_only', false)->where('amount', 0)->update(['guest_only' => true]);
+            }
+
             $event->update([
                 'package' => $data['package'],
                 'mode' => $data['package'] === 'ecard' ? Event::MODE_ECARD : Event::MODE_CONTRIBUTIONS,
@@ -359,8 +382,8 @@ class UserManagementController extends Controller
     {
         abort_if($user->is_super_user, 404);
 
-        $event = $user->currentEvent();
-        abort_unless($event, 404, 'This account has no event yet.');
+        $event = $this->ownEvent($user);
+        abort_unless($event, 404, 'This account has no event of its own yet.');
 
         $data = $request->validate([
             'sms_quota' => ['nullable', 'integer', 'min:0'],
@@ -385,6 +408,7 @@ class UserManagementController extends Controller
 
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'current_password' => ['required', 'current_password'],
         ]);
 
         $user->update(['email' => $data['email']]);
