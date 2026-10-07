@@ -78,8 +78,7 @@
             <div class="col-span-2"><label class="text-xs font-semibold">Venue name</label><input type="text" name="venue_name" maxlength="160" value="{{ $event->venue_name }}" class="w-full border rounded-lg px-3 py-2"></div>
         </div>
         <div><label class="text-xs font-semibold">Address / area</label><input type="text" name="venue_address" maxlength="255" value="{{ $event->venue_address }}" class="w-full border rounded-lg px-3 py-2"></div>
-        <div><label class="text-xs font-semibold">Landmark — English</label><input type="text" name="landmark_note_en" maxlength="200" value="{{ $event->landmark_note_en }}" placeholder="Opposite the main market" class="w-full border rounded-lg px-3 py-2"></div>
-        <div><label class="text-xs font-semibold">Alama ya karibu — Kiswahili</label><input type="text" name="landmark_note_sw" maxlength="200" value="{{ $event->landmark_note_sw }}" placeholder="Mkabala na soko kuu" class="w-full border rounded-lg px-3 py-2"></div>
+        <div><label class="text-xs font-semibold">Landmark</label><input type="text" name="landmark_note_en" maxlength="200" value="{{ $event->landmark_note_en }}" placeholder="Opposite the main market" class="w-full border rounded-lg px-3 py-2"></div>
         <div>
             <div class="flex gap-2 mb-2 flex-wrap">
                 <input type="text" id="geoQ" placeholder="Search a place…" class="flex-1 min-w-[140px] border rounded-lg px-3 py-2 text-sm">

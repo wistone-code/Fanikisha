@@ -167,7 +167,6 @@ class CardDesignController extends Controller
             'venue_lat' => ['nullable', 'numeric', 'between:-90,90'],
             'venue_lng' => ['nullable', 'numeric', 'between:-180,180'],
             'landmark_note_en' => ['nullable', 'string', 'max:200'],
-            'landmark_note_sw' => ['nullable', 'string', 'max:200'],
         ]);
 
         // A pin needs both numbers.
