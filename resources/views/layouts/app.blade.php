@@ -26,6 +26,23 @@
     .badge{display:inline-flex;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:600;}
     .badge-admin{background:#e7edf1;color:var(--primary);}
     .badge-viewer{background:#f0e7e5;color:#5c6b73;}
+    /* Classic dropdown menus (admin navigation and account menu) */
+    .cm-trigger{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid rgba(255,255,255,.28);border-radius:8px;}
+    .cm-trigger:hover{background:rgba(255,255,255,.12);}
+    .cm-menu{position:absolute;top:100%;margin-top:10px;min-width:14.5rem;background:#fff;color:#1B2429;border:1px solid #d9dfe3;border-radius:10px;box-shadow:0 14px 34px rgba(19,40,54,.18);padding:6px 0;z-index:40;}
+    .cm-menu.hidden{display:none;}
+    .cm-menu::before{content:"";position:absolute;top:-6px;width:10px;height:10px;background:#fff;border-left:1px solid #d9dfe3;border-top:1px solid #d9dfe3;transform:rotate(45deg);}
+    .cm-left{left:0;} .cm-left::before{left:22px;}
+    .cm-right{right:0;} .cm-right::before{right:22px;}
+    .cm-label{font:600 10.5px/1 'Inter',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a979e;padding:10px 16px 6px;}
+    .cm-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:9px 16px;font-size:14px;color:#1B2429;border-left:3px solid transparent;background:transparent;cursor:pointer;}
+    .cm-item i{width:16px;text-align:center;color:#8a979e;font-size:13px;}
+    .cm-item:hover{background:#f6f8f9;border-left-color:var(--primary);}
+    .cm-item:hover i{color:var(--primary);}
+    .cm-item .badge{margin-left:auto;}
+    .cm-sep{height:1px;background:#e9edef;margin:6px 0;}
+    .cm-danger,.cm-danger i{color:#b42318;}
+    .cm-danger:hover{background:#fdf1f0;border-left-color:#b42318;} .cm-danger:hover i{color:#b42318;}
     /* iOS Safari auto-zooms the whole page when focusing any input under 16px —
        Tailwind's text-sm (14px) triggers this on every form field otherwise. */
     input.text-sm, select.text-sm, textarea.text-sm { font-size: 16px; }
@@ -96,19 +113,24 @@
             @auth
                 @if (!request()->routeIs('event.create') && auth()->user()->is_super_user)
                 <div class="relative">
-                    <button onclick="document.getElementById('navMenu').classList.toggle('hidden')" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10">
-                        <span class="font-semibold">{{ config('app.name') }}</span>
+                    <button onclick="document.getElementById('navMenu').classList.toggle('hidden')" class="cm-trigger" aria-haspopup="true">
+                        <span class="font-semibold display">{{ config('app.name') }}</span>
                         <i class="fa-solid fa-chevron-down text-xs"></i>
                     </button>
-                    <div id="navMenu" class="hidden absolute left-0 mt-1 w-56 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40">
-                        <a href="{{ route('admin.users.index') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">User Management</a>
-                        <a href="{{ route('admin.logs.index') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Logs</a>
+                    <div id="navMenu" class="cm-menu cm-left hidden" role="menu">
+                        <div class="cm-label">Manage</div>
+                        <a href="{{ route('admin.users.index') }}" class="cm-item" role="menuitem"><i class="fa-solid fa-gauge-high"></i> Dashboard &amp; accounts</a>
+                        @if (Route::has('admin.sms-usage'))<a href="{{ route('admin.sms-usage') }}" class="cm-item" role="menuitem"><i class="fa-solid fa-comment-sms"></i> SMS usage</a>@endif
+                        <a href="{{ route('admin.logs.index') }}" class="cm-item" role="menuitem"><i class="fa-solid fa-clock-rotate-left"></i> Activity logs</a>
+                        <div class="cm-sep"></div>
+                        <div class="cm-label">Compliance</div>
                         @php($openRequests = \App\Models\DataRequest::whereIn('status', ['new', 'acknowledged'])->count())
-                        <a href="{{ route('admin.compliance') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Privacy &amp; opt-outs @if ($openRequests)<span class="badge" style="background:#fde8e8;color:#b42318;">{{ $openRequests }}</span>@endif</a>
-                        <a href="{{ route('admin.account') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Account Settings</a>
-                        <div class="border-t my-1"></div>
+                        <a href="{{ route('admin.compliance') }}" class="cm-item" role="menuitem"><i class="fa-solid fa-shield-halved"></i> Privacy &amp; opt-outs @if ($openRequests)<span class="badge" style="background:#fde8e8;color:#b42318;">{{ $openRequests }}</span>@endif</a>
+                        <div class="cm-sep"></div>
+                        <div class="cm-label">Your account</div>
+                        <a href="{{ route('admin.account') }}" class="cm-item" role="menuitem"><i class="fa-solid fa-gear"></i> Account settings</a>
                         <form method="POST" action="{{ route('logout') }}">@csrf
-                            <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">Logout</button>
+                            <button class="cm-item cm-danger" role="menuitem"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>
                         </form>
                     </div>
                 </div>
@@ -142,20 +164,21 @@
             </div>
             @else
             <div class="relative">
-                <button onclick="document.getElementById('accountMenu').classList.toggle('hidden')" class="flex items-center gap-2 text-right px-2 py-1 rounded-lg hover:bg-white/10">
+                <button onclick="document.getElementById('accountMenu').classList.toggle('hidden')" class="flex items-center gap-2 text-right px-2 py-1 rounded-lg hover:bg-white/10" aria-haspopup="true">
                     <div>
                         <div class="text-sm font-semibold">{{ auth()->user()->name }}</div>
                         <div class="text-xs opacity-75">{{ ucfirst($rightEvent ? auth()->user()->roleOn($rightEvent) : '') }}</div>
                     </div>
                     <i class="fa-solid fa-chevron-down text-xs"></i>
                 </button>
-                <div id="accountMenu" class="hidden absolute right-0 mt-1 w-48 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40">
+                <div id="accountMenu" class="cm-menu cm-right hidden" role="menu" style="min-width:13rem">
+                    <div class="cm-label">Your account</div>
                     @if ($isEventAdmin)
-                    <button onclick="document.getElementById('accountSettingsModal').classList.remove('hidden'); document.getElementById('accountMenu').classList.add('hidden')" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50">Account settings</button>
-                    <div class="border-t my-1"></div>
+                    <button onclick="document.getElementById('accountSettingsModal').classList.remove('hidden'); document.getElementById('accountMenu').classList.add('hidden')" class="cm-item" role="menuitem"><i class="fa-solid fa-gear"></i> Account settings</button>
+                    <div class="cm-sep"></div>
                     @endif
                     <form method="POST" action="{{ route('logout') }}">@csrf
-                        <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">Logout</button>
+                        <button class="cm-item cm-danger" role="menuitem"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>
                     </form>
                 </div>
             </div>
