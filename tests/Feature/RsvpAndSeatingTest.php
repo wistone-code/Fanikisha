@@ -245,4 +245,76 @@ class RsvpAndSeatingTest extends TestCase
         $this->actingAs($admin)->get(route('seating.index'))->assertOk();
         $this->actingAs($admin)->get(route('delivery.index'))->assertOk();
     }
+
+    public function test_resetting_an_rsvp_on_a_contribution_account_returns_the_guest_to_not_generated(): void
+    {
+        $event = \App\Models\Event::factory()->create(['event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);
+        $admin = $this->memberOf($event, 'admin');
+        $old = \Illuminate\Support\Str::random(32);
+        $a = \App\Models\Pledge::factory()->create(['event_id' => $event->id, 'amount' => 0, 'guest_only' => true, 'invite_token' => $old,
+            'rsvp_status' => 'attending', 'rsvp_at' => now(), 'plus_ones' => 1, 'meal_choice' => 'Chicken', 'host_message' => 'Hi', 'seat_number' => 4,
+            'invite_sent_at' => now(), 'invite_channel' => 'sms', 'first_opened_at' => now(), 'open_count' => 3]);
+        $b = \App\Models\Pledge::factory()->create(['event_id' => $event->id, 'amount' => 0, 'guest_only' => true, 'invite_token' => \Illuminate\Support\Str::random(32), 'rsvp_status' => 'not_attending', 'rsvp_at' => now()]);
+
+        $this->actingAs($admin)->get(route('guests.index', ['tab' => 'rsvp']))->assertOk()->assertSee('Reset all');
+        $this->actingAs($admin)->post(route('rsvp.reset', $a))->assertRedirect();
+
+        $a = $a->fresh();
+        $this->assertNull($a->rsvp_status);
+        $this->assertNull($a->rsvp_at);
+        $this->assertSame(0, (int) $a->plus_ones);
+        $this->assertNull($a->meal_choice);
+        $this->assertNull($a->host_message);
+        $this->assertSame(4, (int) $a->seat_number, 'seating must not change');
+        $this->assertNull($a->invite_token, 'back to "Not generated yet"');
+        $this->assertNull($a->invite_revoked_at, 'so no Deactivated badge');
+        $this->assertNull($a->invite_sent_at);
+        $this->assertNull($a->first_opened_at);
+        $this->assertSame(0, (int) $a->open_count);
+        $this->assertSame('not_attending', $b->fresh()->rsvp_status);
+
+        $this->get(route('guest.rsvp', $old))->assertStatus(410);
+
+        $html = $this->actingAs($admin)->get(route('guests.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('Not generated yet', $html);
+        $this->assertStringContainsString('Send invite', $html);
+        $this->assertStringNotContainsString(route('delivery.revoke', $a), $html, 'no Deactivate button once reset');
+
+        $this->actingAs($admin)->post(route('rsvp.reset-all'))->assertRedirect();
+        $this->assertNull($b->fresh()->rsvp_status);
+        $this->assertNull($b->fresh()->invite_token);
+    }
+
+    public function test_on_ecard_accounts_reset_clears_the_answer_and_gives_a_fresh_working_link(): void
+    {
+        [$event, $admin] = $this->ecardEvent();
+        $g = $this->guestCard($event, ['rsvp_status' => 'attending', 'rsvp_at' => now(), 'invite_sent_at' => now(), 'seat_number' => 2]);
+        $old = $g->invite_token;
+
+        $this->actingAs($admin)->post(route('rsvp.reset', $g))->assertRedirect();
+        $g = $g->fresh();
+
+        $this->assertNull($g->rsvp_status);
+        $this->assertNotNull($g->invite_token);
+        $this->assertNotSame($old, $g->invite_token);
+        $this->assertNull($g->invite_sent_at);
+        $this->assertSame(2, (int) $g->seat_number);
+        $this->get(route('guest.rsvp', $old))->assertStatus(410);
+        $this->get(route('guest.rsvp', $g->invite_token))->assertOk();
+        $this->respond($g, ['response' => 'attending'])->assertRedirect();
+        $this->assertSame('attending', $g->fresh()->rsvp_status);
+    }
+
+    public function test_rsvp_reset_is_admin_only_and_limited_to_the_current_event(): void
+    {
+        [$event, $admin] = $this->ecardEvent();
+        [$other] = $this->ecardEvent();
+        $foreign = $this->guestCard($other, ['rsvp_status' => 'attending']);
+
+        $this->actingAs($admin)->post(route('rsvp.reset', $foreign))->assertNotFound();
+        $this->assertSame('attending', $foreign->fresh()->rsvp_status);
+
+        $member = $this->memberOf($event, 'scanner');
+        $this->actingAs($member)->post(route('rsvp.reset-all'))->assertForbidden();
+    }
 }

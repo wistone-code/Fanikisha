@@ -143,6 +143,51 @@ class DeliveryController extends Controller
 
     // ---- Card security (revoke / reissue) ------------------------------------------------
 
+    private const RSVP_BLANK = ['rsvp_status' => null, 'rsvp_at' => null, 'plus_ones' => 0, 'meal_choice' => null, 'dietary_note' => null, 'host_message' => null];
+
+    /** Everything that makes a guest's invitation "live": the link, when it was sent, opened and scanned. */
+    private const LINK_BLANK = ['invite_token' => null, 'invite_revoked_at' => null, 'invite_sent_at' => null, 'invite_channel' => null,
+        'first_opened_at' => null, 'last_opened_at' => null, 'open_count' => 0, 'scan_attempts' => 0];
+
+    /**
+     * Start a guest's invitation over: the RSVP answer is cleared AND the old link is cancelled.
+     *  - Contribution accounts: back to "Not generated yet", so the list shows "Send invite" again.
+     *  - E-card accounts (cards are live from the moment a guest is added): a fresh link is created at once.
+     * Seating and check-in are untouched.
+     */
+    public function resetRsvp(Pledge $pledge): RedirectResponse
+    {
+        $this->assertPledgeInCurrentEvent($pledge);
+        $this->resetInvitation($pledge);
+
+        return back()->with('status', $pledge->event->isEcard()
+            ? "{$pledge->name} was reset: the RSVP is cleared and the old link is cancelled. A new link is ready to send."
+            : "{$pledge->name} was reset: the RSVP is cleared and the old link is cancelled. Use Send invite to create a new one.");
+    }
+
+    /** The same reset for every guest who has answered. */
+    public function resetAllRsvp(): RedirectResponse
+    {
+        $guests = app('currentEvent')->pledges()->whereNotNull('rsvp_status')->get();
+        $guests->each(fn (Pledge $p) => $this->resetInvitation($p));
+
+        $n = $guests->count();
+
+        return back()->with('status', $n.' guest'.($n === 1 ? ' was' : 's were').' reset. '.(app('currentEvent')->isEcard() ? 'New links are ready to send.' : 'Use Send invite to create new links.'));
+    }
+
+    private function resetInvitation(Pledge $pledge): void
+    {
+        if ($pledge->invite_token) {
+            $this->retireToken($pledge);
+        }
+
+        $fresh = $pledge->event->isEcard() ? ['invite_token' => Str::random(32)] : [];
+
+        $pledge->update($fresh + self::RSVP_BLANK + self::LINK_BLANK);
+        DB::table('card_views')->where('pledge_id', $pledge->id)->delete();
+    }
+
     public function revoke(Pledge $pledge): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);

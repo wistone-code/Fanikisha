@@ -265,6 +265,8 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
                 Route::get('/delivery/{pledge}/remind-wa', [DeliveryController::class, 'remindWhatsApp'])->name('delivery.remind-wa');
 
                 // RSVP extras (plus-ones, meals…) and the seating plan.
+                Route::post('/rsvp/reset-all', [DeliveryController::class, 'resetAllRsvp'])->name('rsvp.reset-all');
+                Route::post('/rsvp/{pledge}/reset', [DeliveryController::class, 'resetRsvp'])->name('rsvp.reset');
                 Route::patch('/rsvp/settings', [GuestController::class, 'updateRsvpSettings'])->name('rsvp.settings');
                 Route::get('/seating', [SeatingController::class, 'index'])->name('seating.index');
                 Route::patch('/seating/mode', [SeatingController::class, 'updateMode'])->name('seating.mode');

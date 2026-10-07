@@ -14,7 +14,12 @@
 @include('event.guests._tabs', ['active' => 'rsvp'])
 
 <div class="flex justify-between items-start flex-wrap gap-2"><div class="mb-3"><h2 class="text-xl font-semibold">RSVP status</h2><p class="text-sm text-gray-500">{{ $event->isEcard() ? 'Responses from guests who opened their e-card.' : 'Only guests whose invitation has been activated can RSVP.' }}</p></div>
-@if ($isAdmin)<a href="{{ route('guests.export') }}" class="btn btn-ghost"><i class="fa-solid fa-file-csv"></i> Export CSV</a>@endif</div>
+@if ($isAdmin)<div class="flex gap-2 flex-wrap">
+    @if ($attending + $notAttending > 0)
+    <form method="POST" action="{{ route('rsvp.reset-all') }}" onsubmit="return confirm('Reset ALL guests who have answered? Their answers are cleared and their old links stop working; you will need to send new invites. Seating and check-in are not changed.');">@csrf<button class="btn btn-ghost"><i class="fa-solid fa-rotate-left"></i> Reset all</button></form>
+    @endif
+    <a href="{{ route('guests.export') }}" class="btn btn-ghost"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+</div>@endif</div>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
     <div class="card p-5"><div class="text-xs uppercase text-gray-400 font-semibold"><i class="fa-solid fa-circle-check"></i> Attending</div><div class="text-xl font-semibold mt-1">{{ $attending }}</div></div>
@@ -57,6 +62,7 @@
                 <th class="px-4 py-3" data-sort="text">People</th>
                 <th class="px-4 py-3" data-sort="text">Details</th>
                 <th class="px-4 py-3" data-sort="text">Responded</th>
+                @if ($isAdmin)<th class="px-4 py-3"></th>@endif
             </tr>
         </thead>
         <tbody>
@@ -75,9 +81,16 @@
                 <td class="px-4 py-3">@if ($p->rsvp_status === 'attending'){{ $p->headcount() }}@if ($p->headcount() > 1)<div class="text-[11px] text-gray-400">guest{{ $p->card_type === 'double' ? ' + partner' : '' }}{{ (int) $p->plus_ones ? ' + '.(int) $p->plus_ones.' extra' : '' }}</div>@endif @else — @endif</td>
                 <td class="px-4 py-3 text-xs text-gray-500">{{ collect([$p->meal_choice, $p->dietary_note ? 'Diet: '.$p->dietary_note : null, $p->host_message ? '“'.\Illuminate\Support\Str::limit($p->host_message, 80).'”' : null])->filter()->implode(' · ') ?: '—' }}</td>
                 <td class="px-4 py-3 text-gray-500 rsvp-timestamp" data-utc="{{ $p->rsvp_at?->clone()->timezone('UTC')->toIso8601String() }}">{{ $p->rsvp_at?->timezone('Africa/Dar_es_Salaam')->format('M j, g:i A') ?? '—' }}</td>
+                @if ($isAdmin)
+                <td class="px-4 py-3 text-right">
+                    @if ($p->rsvp_status)
+                    <form method="POST" action="{{ route('rsvp.reset', $p) }}" onsubmit="return confirm('Reset {{ e(addslashes($p->name)) }}\'s RSVP and cancel the old link? You will need to send a new invite.');">@csrf<button class="text-xs font-semibold" style="color:var(--primary);" title="Clear the answer and cancel the old link"><i class="fa-solid fa-rotate-left"></i> Reset</button></form>
+                    @endif
+                </td>
+                @endif
             </tr>
             @empty
-            <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">No invitations activated yet.</td></tr>
+            <tr><td colspan="{{ $isAdmin ? 6 : 5 }}" class="px-4 py-10 text-center text-gray-400">No invitations activated yet.</td></tr>
             @endforelse
         </tbody>
     </table>
