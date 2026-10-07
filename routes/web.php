@@ -108,6 +108,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
         Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
         Route::patch('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
         Route::post('/users/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset-password');
+        Route::patch('/users/{user}/package', [UserManagementController::class, 'updatePackage'])->name('users.package');
         Route::patch('/users/{user}/sms-quota', [UserManagementController::class, 'updateSmsQuota'])->name('users.sms-quota');
         Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
         Route::post('/users/{user}/toggle-suspend', [UserManagementController::class, 'toggleSuspend'])->name('users.toggle-suspend');
@@ -166,10 +167,10 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
         });
 
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
-        Route::get('/delivery', [DeliveryController::class, 'index'])->name('delivery.index');
+        Route::get('/delivery', [DeliveryController::class, 'index'])->middleware('feature:cards')->name('delivery.index');
 
         // Check-in: event admins and door staff ("scanner" role).
-        Route::middleware('can_checkin')->group(function () {
+        Route::middleware(['can_checkin', 'feature:cards'])->group(function () {
             Route::get('/checkin', [CheckinController::class, 'index'])->name('checkin.index');
             Route::post('/checkin/verify', [CheckinController::class, 'verify'])->middleware('throttle:120,1')->name('checkin.verify');
             // Offline check-in: download the guest list, then upload queued scans in one batch.
@@ -197,13 +198,13 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
             Route::get('/settings', [EventController::class, 'editSettings'])->name('event.settings');
             Route::patch('/settings', [EventController::class, 'updateSettings'])->name('event.settings.update');
             Route::patch('/settings/auto-reminder', [EventController::class, 'updateAutoReminder'])->name('event.settings.auto-reminder');
-            Route::post('/settings/card-photo', [EventController::class, 'uploadCardPhoto'])->name('event.settings.card-photo.upload');
-            Route::delete('/settings/card-photo', [EventController::class, 'removeCardPhoto'])->name('event.settings.card-photo.remove');
-            Route::get('/settings/card-photo', [EventController::class, 'viewCardPhoto'])->name('event.settings.card-photo.view');
+            Route::post('/settings/card-photo', [EventController::class, 'uploadCardPhoto'])->middleware('feature:cards')->name('event.settings.card-photo.upload');
+            Route::delete('/settings/card-photo', [EventController::class, 'removeCardPhoto'])->middleware('feature:cards')->name('event.settings.card-photo.remove');
+            Route::get('/settings/card-photo', [EventController::class, 'viewCardPhoto'])->middleware('feature:cards')->name('event.settings.card-photo.view');
 
-            Route::get('/checkin/door-list', [CheckinController::class, 'doorList'])->name('checkin.door-list');
-            Route::delete('/checkin/{pledge}', [CheckinController::class, 'undoCheckin'])->name('checkin.undo');
-            Route::patch('/settings/checkin-confirm', [EventController::class, 'updateCheckinConfirm'])->name('event.settings.checkin-confirm');
+            Route::get('/checkin/door-list', [CheckinController::class, 'doorList'])->middleware('feature:cards')->name('checkin.door-list');
+            Route::delete('/checkin/{pledge}', [CheckinController::class, 'undoCheckin'])->middleware('feature:cards')->name('checkin.undo');
+            Route::patch('/settings/checkin-confirm', [EventController::class, 'updateCheckinConfirm'])->middleware('feature:cards')->name('event.settings.checkin-confirm');
             Route::patch('/settings/payout', [EventController::class, 'updatePayout'])->name('event.settings.payout');
             Route::patch('/settings/couple-threshold', [EventController::class, 'updateCoupleThreshold'])->name('event.settings.couple-threshold');
             Route::patch('/settings/theme-color', [EventController::class, 'updateThemeColor'])->name('event.settings.theme-color');
@@ -253,57 +254,59 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
             // Contribution accounts: pledgers are on the invitation list automatically; guests are added by hand.
             Route::post('/invitations/guest', [GuestController::class, 'inviteNewGuest'])->name('guests.invite.new');
 
-            Route::get('/guests-export', [DeliveryController::class, 'export'])->name('guests.export');
-            Route::post('/delivery/send-all', [DeliveryController::class, 'sendAll'])->name('delivery.send-all');
-            Route::post('/delivery/remind-unopened', [DeliveryController::class, 'remindUnopened'])->name('delivery.remind-unopened');
-            Route::patch('/delivery/auto', [DeliveryController::class, 'updateAuto'])->name('delivery.auto');
-            Route::post('/delivery/{pledge}/mark-sent', [DeliveryController::class, 'markSent'])->name('delivery.mark-sent');
-            Route::post('/delivery/{pledge}/revoke', [DeliveryController::class, 'revoke'])->name('delivery.revoke');
-            Route::post('/delivery/{pledge}/reissue', [DeliveryController::class, 'reissue'])->name('delivery.reissue');
-            Route::get('/delivery/{pledge}/remind-wa', [DeliveryController::class, 'remindWhatsApp'])->name('delivery.remind-wa');
+            Route::middleware('feature:cards')->group(function () {
+                Route::get('/guests-export', [DeliveryController::class, 'export'])->name('guests.export');
+                Route::post('/delivery/send-all', [DeliveryController::class, 'sendAll'])->name('delivery.send-all');
+                Route::post('/delivery/remind-unopened', [DeliveryController::class, 'remindUnopened'])->name('delivery.remind-unopened');
+                Route::patch('/delivery/auto', [DeliveryController::class, 'updateAuto'])->name('delivery.auto');
+                Route::post('/delivery/{pledge}/mark-sent', [DeliveryController::class, 'markSent'])->name('delivery.mark-sent');
+                Route::post('/delivery/{pledge}/revoke', [DeliveryController::class, 'revoke'])->name('delivery.revoke');
+                Route::post('/delivery/{pledge}/reissue', [DeliveryController::class, 'reissue'])->name('delivery.reissue');
+                Route::get('/delivery/{pledge}/remind-wa', [DeliveryController::class, 'remindWhatsApp'])->name('delivery.remind-wa');
 
-            // RSVP extras (plus-ones, meals…) and the seating plan.
-            Route::patch('/rsvp/settings', [GuestController::class, 'updateRsvpSettings'])->name('rsvp.settings');
-            Route::get('/seating', [SeatingController::class, 'index'])->name('seating.index');
-            Route::patch('/seating/mode', [SeatingController::class, 'updateMode'])->name('seating.mode');
-            Route::patch('/seating/publish', [SeatingController::class, 'publish'])->name('seating.publish');
-            Route::post('/seating/areas', [SeatingController::class, 'storeArea'])->name('seating.areas.store');
-            Route::delete('/seating/areas/{area}', [SeatingController::class, 'destroyArea'])->name('seating.areas.destroy');
-            Route::post('/seating/tables', [SeatingController::class, 'storeTable'])->name('seating.tables.store');
-            Route::patch('/seating/tables/{table}', [SeatingController::class, 'updateTable'])->name('seating.tables.update');
-            Route::delete('/seating/tables/{table}', [SeatingController::class, 'destroyTable'])->name('seating.tables.destroy');
-            Route::patch('/seating/assign/{pledge}', [SeatingController::class, 'assign'])->name('seating.assign');
-            Route::post('/seating/auto-fill', [SeatingController::class, 'autoFill'])->name('seating.auto-fill');
+                // RSVP extras (plus-ones, meals…) and the seating plan.
+                Route::patch('/rsvp/settings', [GuestController::class, 'updateRsvpSettings'])->name('rsvp.settings');
+                Route::get('/seating', [SeatingController::class, 'index'])->name('seating.index');
+                Route::patch('/seating/mode', [SeatingController::class, 'updateMode'])->name('seating.mode');
+                Route::patch('/seating/publish', [SeatingController::class, 'publish'])->name('seating.publish');
+                Route::post('/seating/areas', [SeatingController::class, 'storeArea'])->name('seating.areas.store');
+                Route::delete('/seating/areas/{area}', [SeatingController::class, 'destroyArea'])->name('seating.areas.destroy');
+                Route::post('/seating/tables', [SeatingController::class, 'storeTable'])->name('seating.tables.store');
+                Route::patch('/seating/tables/{table}', [SeatingController::class, 'updateTable'])->name('seating.tables.update');
+                Route::delete('/seating/tables/{table}', [SeatingController::class, 'destroyTable'])->name('seating.tables.destroy');
+                Route::patch('/seating/assign/{pledge}', [SeatingController::class, 'assign'])->name('seating.assign');
+                Route::post('/seating/auto-fill', [SeatingController::class, 'autoFill'])->name('seating.auto-fill');
 
-            // Shared photo wall (admin side).
-            Route::get('/photos', [PhotoWallController::class, 'index'])->name('photos.index');
-            Route::patch('/photos/settings', [PhotoWallController::class, 'update'])->name('photos.update');
-            Route::post('/photos/new-link', [PhotoWallController::class, 'newLink'])->name('photos.new-link');
-            Route::post('/photos/{photo}/toggle-hidden', [PhotoWallController::class, 'toggleHidden'])->name('photos.toggle-hidden');
-            Route::delete('/photos/{photo}', [PhotoWallController::class, 'destroy'])->name('photos.destroy');
-            Route::get('/photos/{photo}/thumb', [PhotoWallController::class, 'thumb'])->name('photos.thumb');
-            Route::get('/photos/download', [PhotoWallController::class, 'download'])->name('photos.download');
+                // Shared photo wall (admin side).
+                Route::get('/photos', [PhotoWallController::class, 'index'])->name('photos.index');
+                Route::patch('/photos/settings', [PhotoWallController::class, 'update'])->name('photos.update');
+                Route::post('/photos/new-link', [PhotoWallController::class, 'newLink'])->name('photos.new-link');
+                Route::post('/photos/{photo}/toggle-hidden', [PhotoWallController::class, 'toggleHidden'])->name('photos.toggle-hidden');
+                Route::delete('/photos/{photo}', [PhotoWallController::class, 'destroy'])->name('photos.destroy');
+                Route::get('/photos/{photo}/thumb', [PhotoWallController::class, 'thumb'])->name('photos.thumb');
+                Route::get('/photos/download', [PhotoWallController::class, 'download'])->name('photos.download');
 
-            // Card design, venue and event-day reminder.
-            Route::get('/design', [CardDesignController::class, 'index'])->name('design.index');
-            Route::patch('/design/card', [CardDesignController::class, 'updateCard'])->name('design.card');
-            Route::post('/design/music', [CardDesignController::class, 'uploadMusic'])->name('design.music.upload');
-            Route::delete('/design/music', [CardDesignController::class, 'removeMusic'])->name('design.music.remove');
-            Route::post('/design/custom', [CardDesignController::class, 'uploadDesign'])->name('design.custom.upload');
-            Route::patch('/design/custom', [CardDesignController::class, 'updateLayout'])->name('design.custom.layout');
-            Route::delete('/design/custom', [CardDesignController::class, 'removeDesign'])->name('design.custom.remove');
-            Route::get('/design/custom-image', [CardDesignController::class, 'designImage'])->name('design.custom.image');
-            Route::patch('/design/venue', [CardDesignController::class, 'updateVenue'])->name('design.venue');
-            Route::patch('/design/day-reminder', [CardDesignController::class, 'updateDayReminder'])->name('design.day-reminder');
-            Route::post('/design/day-reminder/send-now', [CardDesignController::class, 'sendDayReminderNow'])->name('design.day-reminder.send');
+                // Card design, venue and event-day reminder.
+                Route::get('/design', [CardDesignController::class, 'index'])->name('design.index');
+                Route::patch('/design/card', [CardDesignController::class, 'updateCard'])->name('design.card');
+                Route::post('/design/music', [CardDesignController::class, 'uploadMusic'])->name('design.music.upload');
+                Route::delete('/design/music', [CardDesignController::class, 'removeMusic'])->name('design.music.remove');
+                Route::post('/design/custom', [CardDesignController::class, 'uploadDesign'])->name('design.custom.upload');
+                Route::patch('/design/custom', [CardDesignController::class, 'updateLayout'])->name('design.custom.layout');
+                Route::delete('/design/custom', [CardDesignController::class, 'removeDesign'])->name('design.custom.remove');
+                Route::get('/design/custom-image', [CardDesignController::class, 'designImage'])->name('design.custom.image');
+                Route::patch('/design/venue', [CardDesignController::class, 'updateVenue'])->name('design.venue');
+                Route::patch('/design/day-reminder', [CardDesignController::class, 'updateDayReminder'])->name('design.day-reminder');
+                Route::post('/design/day-reminder/send-now', [CardDesignController::class, 'sendDayReminderNow'])->name('design.day-reminder.send');
 
-            // After the event: thank-you messages and the recap.
-            Route::get('/after', [AfterEventController::class, 'index'])->name('after.index');
-            Route::patch('/after/settings', [AfterEventController::class, 'update'])->name('after.update');
-            Route::post('/after/send-now', [AfterEventController::class, 'sendNow'])->name('after.send');
-            Route::get('/after/recap', [AfterEventController::class, 'recap'])->name('after.recap');
+                // After the event: thank-you messages and the recap.
+                Route::get('/after', [AfterEventController::class, 'index'])->name('after.index');
+                Route::patch('/after/settings', [AfterEventController::class, 'update'])->name('after.update');
+                Route::post('/after/send-now', [AfterEventController::class, 'sendNow'])->name('after.send');
+                Route::get('/after/recap', [AfterEventController::class, 'recap'])->name('after.recap');
+            });
 
-            Route::post('/guests/{pledge}/send-invite', [GuestController::class, 'sendInvite'])->name('guests.send-invite');
+            Route::post('/guests/{pledge}/send-invite', [GuestController::class, 'sendInvite'])->middleware('feature:cards')->name('guests.send-invite');
             Route::post('/guests/{pledge}/sms', [GuestController::class, 'inviteSms'])->name('guests.sms');
             Route::get('/guests/{pledge}/whatsapp', [GuestController::class, 'inviteWhatsApp'])->name('guests.whatsapp');
             Route::patch('/guests/message/invitation', [GuestController::class, 'updateInvitationMessage'])->name('guests.message.invitation');

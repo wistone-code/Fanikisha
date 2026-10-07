@@ -20,12 +20,19 @@ class GuestCardController extends Controller
 {
     private function find(string $token): ?Pledge
     {
-        return Pledge::with(['event', 'seatingTable', 'seatingArea'])->where('invite_token', $token)->first();
+        $pledge = Pledge::with(['event', 'seatingTable', 'seatingArea'])->where('invite_token', $token)->first();
+
+        // Cards are not part of every package (or the account was moved to one without them).
+        return $pledge && $pledge->event->hasFeature('cards') ? $pledge : null;
     }
 
     /** A revoked card says so plainly; a link that never existed is a normal 404. */
     private function missing(string $token): Response
     {
+        if (Pledge::where('invite_token', $token)->exists()) {
+            return response()->view('guest.unavailable', [], 410);
+        }
+
         $revoked = DB::table('card_revocations')->where('token_hash', hash('sha256', $token))->exists();
 
         abort_unless($revoked, 404);

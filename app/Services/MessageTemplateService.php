@@ -39,13 +39,13 @@ class MessageTemplateService
      */
     public function forInvitation(Event $event, Pledge $pledge): string
     {
-        return strtr($event->messageOrDefault('invitation'), [
+        return trim(strtr($event->messageOrDefault('invitation'), [
             '{name}' => $pledge->name,
             '{place}' => $event->place ?? '',
-            '{link}' => $pledge->inviteLink() ?? '',
+            '{link}' => $event->hasFeature('cards') ? ($pledge->inviteLink() ?? '') : '',
             '{event}' => $event->name,
             '{date}' => $event->event_date->format('d.m.Y'),
-        ]);
+        ]));
     }
 
     /**

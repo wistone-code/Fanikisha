@@ -63,7 +63,7 @@
                     @if ($account->is_suspended)<span class="badge bg-red-100 text-red-700 ml-1">Suspended</span>@endif
                 </td>
                 <td class="px-4 py-3">{{ $account->email }}</td>
-                <td class="px-4 py-3"><span class="badge {{ $account->role_label === 'Admin' ? 'badge-admin' : 'badge-viewer' }}">{{ $account->role_label }}</span></td>
+                <td class="px-4 py-3"><span class="badge {{ $account->role_label === 'Admin' ? 'badge-admin' : 'badge-viewer' }}">{{ $account->role_label }}</span><div class="text-[11px] text-gray-400 mt-1">{{ config('packages.packages.'.($account->package ?: 'full').'.label') }}</div></td>
                 <td class="px-4 py-3">
                     @if ($account->event_name)
                     <div class="font-medium">{{ $account->event_name }}</div>
@@ -90,6 +90,7 @@
                         <button onclick="toggleRowMenu('rowMenu{{ $account->id }}')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-ellipsis"></i></button>
                         <div id="rowMenu{{ $account->id }}" class="row-menu hidden absolute right-0 mt-1 w-52 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40 text-left">
                             <a href="{{ route('admin.logs.index', ['user' => $account->id]) }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-clock-rotate-left w-4"></i> Logs</a>
+                            <button type="button" onclick="document.getElementById('changePackage{{ $account->id }}').classList.remove('hidden'); document.getElementById('rowMenu{{ $account->id }}').classList.add('hidden')" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-box w-4"></i> Change package</button>
                             @if ($account->event_id)
                             <button type="button" onclick="document.getElementById('reassignEvent{{ $account->id }}').classList.remove('hidden'); document.getElementById('rowMenu{{ $account->id }}').classList.add('hidden')" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-right-left w-4"></i> Reassign event</button>
                             @endif
@@ -110,6 +111,26 @@
                     </div>
                 </td>
             </tr>
+
+            <div id="changePackage{{ $account->id }}" onclick="if(event.target===this) this.classList.add('hidden')" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+                    <h3 class="font-semibold mb-1">Change package</h3>
+                    <p class="text-sm text-gray-500 mb-4">For <strong>{{ $account->name }}</strong>. Nothing is deleted — features are hidden or shown again.</p>
+                    <form method="POST" action="{{ route('admin.users.package', $account) }}" class="space-y-2">
+                        @csrf @method('PATCH')
+                        @foreach (config('packages.packages') as $key => $pkg)
+                        <label class="flex items-start gap-2 border rounded-lg px-3 py-2 text-sm cursor-pointer">
+                            <input type="radio" name="package" value="{{ $key }}" class="mt-1" @checked(($account->package ?: 'full') === $key)>
+                            <span><span class="font-semibold">{{ $pkg['label'] }}</span><br><span class="text-xs text-gray-500">{{ $pkg['description'] }}</span></span>
+                        </label>
+                        @endforeach
+                        <div class="flex gap-2 pt-2">
+                            <button type="button" onclick="document.getElementById('changePackage{{ $account->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                            <button class="btn btn-primary flex-1 justify-center">Save package</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
             <div id="editAccount{{ $account->id }}" onclick="if(event.target===this) this.classList.add('hidden')" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-6">
@@ -240,6 +261,17 @@
             <div><label class="text-xs font-semibold">Username</label><input type="text" name="username" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Email</label><input type="email" name="email" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Phone (for password recovery)</label><input type="tel" name="phone" placeholder="e.g. +255700000000" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div>
+                <label class="text-xs font-semibold">Package</label>
+                <div class="space-y-1 mt-1">
+                    @foreach (config('packages.packages') as $key => $pkg)
+                    <label class="flex items-start gap-2 border rounded-lg px-3 py-2 text-sm cursor-pointer">
+                        <input type="radio" name="package" value="{{ $key }}" class="mt-1" @checked(old('package', config('packages.default')) === $key)>
+                        <span><span class="font-semibold">{{ $pkg['label'] }}</span><br><span class="text-xs text-gray-500">{{ $pkg['description'] }}</span></span>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
             <p class="text-xs text-gray-400"><i class="fa-solid fa-wand-magic-sparkles"></i> A temporary password will be generated automatically.</p>
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('newAccountModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>

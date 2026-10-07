@@ -22,7 +22,10 @@ class PublicPhotoWallController extends Controller
 
     private function wall(string $wallToken): Event
     {
-        return Event::where('photo_wall_enabled', true)->where('photo_wall_token', $wallToken)->firstOrFail();
+        $event = Event::where('photo_wall_enabled', true)->where('photo_wall_token', $wallToken)->firstOrFail();
+        abort_unless($event->hasFeature('cards'), 404);
+
+        return $event;
     }
 
     private function guestFrom(Request $request, Event $event): ?Pledge

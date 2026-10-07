@@ -12,7 +12,7 @@ class Event extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'event_type', 'mode', 'theme_color', 'place', 'event_date', 'pledge_deadline', 'created_by',
+        'name', 'event_type', 'mode', 'package', 'theme_color', 'place', 'event_date', 'pledge_deadline', 'created_by',
         'provider_message', 'reminder_message', 'broadcast_message',
         'invitation_message', 'meeting_message', 'announcement_message', 'committee_message',
         'schedule_message',
@@ -138,6 +138,19 @@ class Event extends Model
         return $this->mode === self::MODE_ECARD;
     }
 
+    /** Feature groups this event's package includes (config/packages.php); e-card mode never has money features. */
+    public function features(): array
+    {
+        $features = config('packages.packages.'.($this->package ?: config('packages.default')).'.features', ['money', 'cards']);
+
+        return $this->isEcard() ? array_values(array_diff($features, ['money'])) : $features;
+    }
+
+    public function hasFeature(string $feature): bool
+    {
+        return in_array($feature, $this->features(), true);
+    }
+
     public function isFuneral(): bool
     {
         return $this->event_type === 'Funeral';
@@ -217,8 +230,8 @@ class Event extends Model
                 ? 'Habari {name}, kikumbusho cha mchango wako wa {event}: uliahidi {pledged}, umeshalipa {paid}, umebakiza {remain}. Lipa hapa: {pay_link}. Asante!'
                 : 'Dear {name}, friendly reminder on {event} contribution: pledged {pledged}, paid {paid} so far, {remain} remaining. Pay here: {pay_link}. Thank you!',
             'invitation' => $sw
-                ? 'Habari {name}, umealikwa kwenye {event}! Tujiunge tarehe {date}'.($this->place ? ' katika {place}' : '').'. Bofya kiungo chako kuthibitisha: {link}'
-                : "Dear {name}, you're invited to {event}! Join us on {date}".($this->place ? ' at {place}' : '').'. Tap your link to RSVP: {link}',
+                ? 'Habari {name}, umealikwa kwenye {event}! Tujiunge tarehe {date}'.($this->place ? ' katika {place}' : '').($this->hasFeature('cards') ? '. Bofya kiungo chako kuthibitisha: {link}' : '. Karibu sana!')
+                : "Dear {name}, you're invited to {event}! Join us on {date}".($this->place ? ' at {place}' : '').($this->hasFeature('cards') ? '. Tap your link to RSVP: {link}' : '. We look forward to seeing you!'),
             'announcement' => $sw
                 ? 'Habari {name}, hii ni taarifa kuhusu {event}'.($this->place ? ' katika {place}' : '').' tarehe {date}. Uwepo na msaada wako una maana kubwa kwa familia. Asante.'
                 : 'Dear {name}, this is to inform you about {event}'.($this->place ? ' at {place}' : '').' on {date}. Your presence and support mean a lot to the family. Thank you.',

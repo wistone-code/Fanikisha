@@ -9,6 +9,7 @@
 
     <form method="POST" action="{{ route('event.store') }}" class="text-left space-y-3">
         @csrf
+        @if ($package === 'full')
         <div>
             <label class="text-xs font-semibold">What do you need?</label>
             <div class="space-y-2 mt-1">
@@ -22,6 +23,10 @@
                 </label>
             </div>
         </div>
+        @else
+        <input type="hidden" name="mode" value="{{ $package === 'ecard' ? 'ecard' : 'contributions' }}">
+        <p class="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2"><i class="fa-solid fa-box"></i> {{ config('packages.packages.'.$package.'.label') }} — {{ config('packages.packages.'.$package.'.description') }}</p>
+        @endif
         <div><label class="text-xs font-semibold">Event name</label><input type="text" name="name" value="{{ old('name') }}" required class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="e.g. Juju Gala"></div>
         <div>
             <label class="text-xs font-semibold">Event type</label>
@@ -46,12 +51,13 @@
 // E-card-only events have no pledges, so hide the deadline (and Funeral, which uses announcements instead of cards).
 (function () {
     const radios = document.querySelectorAll('input[name="mode"]');
+    const modeValue = function () { const c = document.querySelector('input[name="mode"]:checked'); return c ? c.value : document.querySelector('input[name="mode"]').value; };
     const deadline = document.getElementById('deadlineField');
     const deadlineInput = deadline.querySelector('input');
     const typeSelect = document.querySelector('select[name="event_type"]');
 
     function apply() {
-        const ecard = document.querySelector('input[name="mode"]:checked').value === 'ecard';
+        const ecard = modeValue() === 'ecard';
         deadline.classList.toggle('hidden', ecard);
         deadlineInput.required = !ecard;
         Array.from(typeSelect.options).forEach(function (opt) {

@@ -39,6 +39,7 @@ class GuestController extends Controller
         }
 
         if ($tab === 'rsvp') {
+            abort_unless($event->hasFeature('cards'), 403, 'RSVP is not part of your package.');
             $invited = $event->pledges()->whereNotNull('invite_token')->get();
 
             return view('event.guests.rsvp-status', [
@@ -54,10 +55,10 @@ class GuestController extends Controller
         return view('event.guests.event-invitation', compact('event', 'pledges', 'isAdmin'));
     }
 
-    /** A card can be sent as soon as its link exists — payment never gates an invitation. */
+    /** A card can be sent as soon as its link exists — payment never gates an invitation. The SMS package sends plain text, so no link is needed. */
     private function canSendInvite(Pledge $pledge): bool
     {
-        return (bool) $pledge->invite_token;
+        return ! $pledge->event->hasFeature('cards') || (bool) $pledge->invite_token;
     }
 
     // ---- E-card-only accounts ---------------------------------------------------------

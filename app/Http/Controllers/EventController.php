@@ -25,13 +25,22 @@ class EventController extends Controller
             return redirect()->route('dashboard');
         }
 
-        return view('event.create', ['types' => Event::TYPES, 'ecardTypes' => Event::ecardTypes()]);
+        return view('event.create', ['types' => Event::TYPES, 'ecardTypes' => Event::ecardTypes(), 'package' => $request->user()->package ?: config('packages.default')]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         abort_if($request->user()->is_super_user, 403, "You don't have permission to do that.");
         abort_if($request->user()->currentEvent(), 403, 'Your account is limited to one event.');
+
+        // The account's package decides what kind of event it can create; only Full may choose.
+        $package = $request->user()->package ?: config('packages.default');
+
+        if ($package === 'ecard') {
+            $request->merge(['mode' => Event::MODE_ECARD]);
+        } elseif ($package === 'sms') {
+            $request->merge(['mode' => Event::MODE_CONTRIBUTIONS]);
+        }
 
         $isEcard = $request->input('mode') === Event::MODE_ECARD;
 
@@ -49,7 +58,8 @@ class EventController extends Controller
         // The column is NOT NULL, so e-card events just reuse the event date.
         $data['pledge_deadline'] = $data['pledge_deadline'] ?? $data['event_date'];
 
-        $event = Event::create($data + ['created_by' => $request->user()->id]);
+        // A Full account that picks "e-cards only" runs as the E-card package for that event.
+        $event = Event::create($data + ['created_by' => $request->user()->id, 'package' => $isEcard ? 'ecard' : $package]);
 
         // Creating an event automatically makes you its admin.
         EventMember::create([

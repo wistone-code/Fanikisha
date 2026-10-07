@@ -108,12 +108,14 @@ class UserManagementController extends Controller
             'username' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'package' => ['nullable', 'in:'.implode(',', array_keys(config('packages.packages')))],
         ]);
 
         if ($warnings = $unique->conflicts($data['username'], $data['email'], $data['phone'] ?? null)) {
             return back()->withInput()->with('warning', $warnings);
         }
 
+        $data['package'] = $data['package'] ?? config('packages.default');
         $plainPassword = $passwords->generate();
 
         $user = User::create([
@@ -121,13 +123,14 @@ class UserManagementController extends Controller
             'username' => $data['username'],
             'email' => $data['email'],
             'phone' => $phones->normalize($data['phone'] ?? null),
+            'package' => $data['package'],
             'password' => Hash::make($plainPassword),
             'is_super_user' => false,
             'must_change_password' => true,
             'created_by' => $request->user()->id,
         ]);
 
-        ActivityLogger::log('account.created', "Created account for {$user->name} ({$user->username})", $user);
+        ActivityLogger::log('account.created', "Created account for {$user->name} ({$user->username}) — ".config("packages.packages.{$data['package']}.label"), $user);
 
         $emailed = $mailer->sendWelcome($user, $plainPassword);
 
@@ -293,6 +296,30 @@ class UserManagementController extends Controller
             'status' => "Event reassigned to {$target->name}".($emailed === true ? ' — login details emailed' : ($emailed === false ? ' — email could not be sent, share the details manually' : '')),
             'reveal_credentials' => $revealCredentials,
         ]));
+    }
+
+    /** Moves an account between packages. Nothing is deleted — features are hidden or shown again. */
+    public function updatePackage(Request $request, User $user): RedirectResponse
+    {
+        abort_if($user->is_super_user, 404);
+
+        $data = $request->validate(['package' => ['required', 'in:'.implode(',', array_keys(config('packages.packages')))]]);
+        $old = $user->package ?: config('packages.default');
+
+        $user->update(['package' => $data['package']]);
+
+        // Their own event follows the package. E-card is a different kind of event (no money side), so mode follows too.
+        $event = $user->currentEvent();
+        if ($event) {
+            $event->update([
+                'package' => $data['package'],
+                'mode' => $data['package'] === 'ecard' ? Event::MODE_ECARD : Event::MODE_CONTRIBUTIONS,
+            ]);
+        }
+
+        ActivityLogger::log('account.package_changed', "Changed {$user->name}'s package from ".config("packages.packages.{$old}.label").' to '.config("packages.packages.{$data['package']}.label"), $user, $event);
+
+        return back()->with('status', "{$user->name} is now on the ".config("packages.packages.{$data['package']}.label"));
     }
 
     /** Sets (or clears) the SMS send cap for this account's event. Null = unlimited. */

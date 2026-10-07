@@ -3,6 +3,7 @@
 
 @section('content')
 @php($optOuts = app(\App\Services\OptOutService::class))
+@php($cards = $event->hasFeature('cards'))
 @php($optSet = $optOuts->suppressedAmong($pledges->pluck('phone')->all()))
 @include('event.guests._tabs', ['active' => 'event'])
 
@@ -48,14 +49,16 @@
             <table class="w-full text-sm">
                 <thead><tr class="text-left text-xs uppercase text-gray-400 border-b">
                     <th class="px-4 py-3">Name</th>
-                    <th class="px-4 py-3">Invitation link</th><th class="px-4 py-3"></th>
+                    @if ($cards)<th class="px-4 py-3">Invitation link</th>@else<th class="px-4 py-3">Phone</th>@endif<th class="px-4 py-3"></th>
                 </tr></thead>
                 <tbody>
                 @forelse ($pledges as $p)
                     <tr class="border-b last:border-0">
                         <td class="px-4 py-3 font-semibold">{{ $p->name }}@if ($optOuts->inSet($optSet, $p->phone))<div class="mt-1"><span class="badge" style="background:#fde8e8;color:#b42318;" title="This person asked not to receive messages. Fanikisha will not send to this number."><i class="fa-solid fa-ban text-[9px]"></i> Opted out</span></div>@endif</td>
                         <td class="px-4 py-3">
-                            @if (!$p->invite_token)
+                            @if (!$cards)
+                                <span class="text-xs text-gray-500">{{ $p->phone ?: 'No phone number' }}</span>
+                            @elseif (!$p->invite_token)
                                 <span class="text-gray-400 text-xs">Not generated yet</span>
                             @else
                                 <span class="badge badge-admin"><i class="fa-solid fa-circle-check text-[9px]"></i> Active</span>
@@ -63,19 +66,19 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                            @if (!$p->invite_token && $isAdmin)
+                            @if ($cards && !$p->invite_token && $isAdmin)
                                 <form method="POST" action="{{ route('guests.send-invite', $p) }}" class="inline">@csrf
                                     <button class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-solid fa-paper-plane"></i> Send invite</button>
                                 </form>
-                            @elseif ($p->invite_token && $optOuts->inSet($optSet, $p->phone))
+                            @elseif (($p->invite_token || !$cards) && $optOuts->inSet($optSet, $p->phone))
                                 <span class="text-xs text-gray-400">Will not be messaged</span>
-                            @elseif ($p->invite_token && $p->phone)
+                            @elseif (($p->invite_token || !$cards) && $p->phone)
                                 <form method="POST" action="{{ route('guests.sms', $p) }}" class="inline">
                                     @csrf
                                     <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
                                 </form>
                                 <a href="{{ route('guests.whatsapp', $p) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
-                            @elseif ($p->invite_token)
+                            @elseif ($p->invite_token && $cards)
                                 <span class="text-xs text-gray-400">No phone number</span>
                             @endif
                             @if ($isAdmin && $p->guest_only)

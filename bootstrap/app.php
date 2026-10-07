@@ -46,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'can_checkin' => \App\Http\Middleware\EnsureCanCheckin::class,
             'no_funeral_team' => BlockTeamManagementForFuneral::class,
             'resolve_event' => ResolveCurrentEvent::class,
+            'feature' => \App\Http\Middleware\EnsureFeature::class,
             'password_changed' => EnsurePasswordChanged::class,
             'not_suspended' => EnsureNotSuspended::class,
         ]);
