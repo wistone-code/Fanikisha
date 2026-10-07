@@ -15,8 +15,8 @@
     <form method="POST" action="{{ route('after.update') }}" class="space-y-3 text-sm">
         @csrf @method('PATCH')
         <div><label class="text-xs font-semibold">Signed by <span class="text-gray-400 font-normal">(use {hosts} in the message)</span></label><input type="text" name="host_names" maxlength="160" value="{{ $event->host_names }}" placeholder="Asha &amp; Juma" class="w-full border rounded-lg px-3 py-2"></div>
-        <div><label class="text-xs font-semibold">For guests who came</label><textarea name="thank_you_attended_message" rows="3" class="w-full border rounded-lg px-3 py-2">{{ $event->messageOrDefault('thank_you_attended') }}</textarea></div>
-        <div><label class="text-xs font-semibold">For guests who could not come</label><textarea name="thank_you_absent_message" rows="3" class="w-full border rounded-lg px-3 py-2">{{ $event->messageOrDefault('thank_you_absent') }}</textarea></div>
+        <div><label class="text-xs font-semibold">For guests who came</label><textarea name="thank_you_attended_message" rows="3" class="w-full border rounded-lg px-3 py-2">{{ $event->messageOrDefault('thank_you_attended', false) }}</textarea></div>
+        <div><label class="text-xs font-semibold">For guests who could not come</label><textarea name="thank_you_absent_message" rows="3" class="w-full border rounded-lg px-3 py-2">{{ $event->messageOrDefault('thank_you_absent', false) }}</textarea></div>
         @unless ($event->isEcard())
         <label class="flex items-center gap-2"><input type="checkbox" name="thank_you_acknowledge_paid" value="1" @checked($event->thank_you_acknowledge_paid)> Also thank guests for the amount they contributed</label>
         @endunless

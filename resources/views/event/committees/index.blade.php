@@ -19,7 +19,7 @@
     <div class="text-xs font-semibold mb-2">Notification message <span class="text-gray-400 font-normal">— use {name}, {role}, {committee}</span></div>
     <form method="POST" action="{{ route('committees.message') }}">
         @csrf @method('PATCH')
-        <textarea name="committee_message" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('committee') }}</textarea>
+        <textarea name="committee_message" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('committee', false) }}</textarea>
         <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save message</button>
     </form>
 </div>

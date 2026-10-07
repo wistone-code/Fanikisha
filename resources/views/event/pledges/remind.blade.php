@@ -53,7 +53,7 @@
     <div class="text-xs font-semibold mb-2">Broadcast message <span class="text-gray-400 font-normal">— sent by "SMS all". Write your own — there's no starter text.</span></div>
     <form method="POST" action="{{ route('pledges.message.broadcast') }}">
         @csrf @method('PATCH')
-        <textarea name="broadcast_message" rows="7" placeholder="Write the message that will be sent to everyone with an outstanding balance…" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('broadcast') }}</textarea>
+        <textarea name="broadcast_message" rows="7" placeholder="Write the message that will be sent to everyone with an outstanding balance…" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('broadcast', false) }}</textarea>
         @error('broadcast_message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
         <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save broadcast message</button>
     </form>
@@ -63,7 +63,7 @@
     <div class="text-xs font-semibold mb-2">Individual message <span class="text-gray-400 font-normal">— use {name}, {event}, {pledged}, {paid}, {remain}, {pay_link}</span></div>
     <form method="POST" action="{{ route('pledges.message.reminder') }}">
         @csrf @method('PATCH')
-        <textarea name="reminder_message" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('reminder') }}</textarea>
+        <textarea name="reminder_message" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('reminder', false) }}</textarea>
         <button class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-check"></i> Save individual message</button>
     </form>
 </div>

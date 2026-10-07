@@ -13,7 +13,7 @@
     <div class="text-xs font-semibold mb-2">Meeting message <span class="text-gray-400 font-normal">— use {event}, {place}, {date}</span></div>
     <form method="POST" action="{{ route('guests.message.meeting') }}" class="mb-5">
         @csrf @method('PATCH')
-        <textarea name="meeting_message" rows="6" placeholder="Write the meeting invitation message…" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('meeting') }}</textarea>
+        <textarea name="meeting_message" rows="6" placeholder="Write the meeting invitation message…" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('meeting', false) }}</textarea>
         @error('meeting_message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
         <button class="btn btn-primary mt-3"><i class="fa-solid fa-check"></i> Save message</button>
     </form>

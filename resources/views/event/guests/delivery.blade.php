@@ -48,7 +48,7 @@
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="auto_remind_unopened" value="1" @checked($event->auto_remind_unopened)> Remind guests who have not opened their card</label>
             <div class="flex items-center gap-2 text-sm">Send it <input type="number" name="auto_remind_unopened_days" min="1" max="30" value="{{ $event->auto_remind_unopened_days }}" class="w-16 border rounded-lg px-2 py-1 text-sm"> day(s) before the event, once per guest.</div>
             <div><label class="text-xs font-semibold">Reminder message <span class="text-gray-400 font-normal">({name} {event} {date} {link})</span></label>
-                <textarea name="unopened_reminder_message" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('unopened_reminder') }}</textarea></div>
+                <textarea name="unopened_reminder_message" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('unopened_reminder', false) }}</textarea></div>
             <button class="btn btn-primary">Save</button>
         </form>
     </details>

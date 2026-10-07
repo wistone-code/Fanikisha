@@ -82,6 +82,7 @@
                                 <span class="text-xs text-gray-400">No phone number</span>
                             @endif
                             @if ($isAdmin && $p->guest_only)
+                                <button type="button" onclick="document.getElementById('editGuest{{ $p->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1.5 !px-2.5" title="Edit"><i class="fa-solid fa-pen"></i></button>
                                 <form method="POST" action="{{ route('guests.destroy', $p) }}" class="inline" data-confirm="Remove {{ $p->name }} from the invitation list?">@csrf @method('DELETE')
                                     <button class="btn btn-ghost !py-1.5 !px-2.5" title="Remove"><i class="fa-solid fa-trash"></i></button>
                                 </form>
@@ -102,11 +103,33 @@
         <div class="card p-5">
             <form method="POST" action="{{ route('guests.message.invitation') }}">
                 @csrf @method('PATCH')
-                <textarea name="invitation_message" rows="6" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('invitation') }}</textarea>
+                <textarea name="invitation_message" rows="6" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('invitation', false) }}</textarea>
+                <p class="text-[11px] text-gray-400 mt-1">You can use {name} {event_name} {event_type} {date} {place} {link}</p>
                 <button class="btn btn-primary mt-3"><i class="fa-solid fa-check"></i> Save message</button>
             </form>
         </div>
     </div>
     @endif
 </div>
+{{-- Edit an invited guest (pledgers are edited on the pledges page) --}}
+@if ($isAdmin)
+@foreach ($pledges->where('guest_only', true) as $p)
+<div id="editGuest{{ $p->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
+        <h3 class="font-semibold mb-4">Edit guest</h3>
+        <form method="POST" action="{{ route('guests.update', $p) }}" class="space-y-3">
+            @csrf @method('PATCH')
+            <input type="hidden" name="card_type" value="{{ $p->card_type ?: 'single' }}">
+            <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ $p->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Phone</label><input type="tel" name="phone" value="{{ $p->phone }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('editGuest{{ $p->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                <button class="btn btn-primary flex-1 justify-center">Save changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endforeach
+@endif
+
 @endsection

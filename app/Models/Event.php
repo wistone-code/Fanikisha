@@ -217,12 +217,12 @@ class Event extends Model
      * sms_language — English or Swahili. A saved custom message is sent exactly
      * as written either way, since the admin already chose its wording/language.
      */
-    public function messageOrDefault(string $surface): string
+    public function messageOrDefault(string $surface, bool $fill = true): string
     {
         $column = "{$surface}_message";
         $sw = $this->sms_language === 'sw';
 
-        return $this->{$column} ?: match ($surface) {
+        $text = $this->{$column} ?: match ($surface) {
             'provider' => $sw
                 ? 'Habari {name}, tunathibitisha uteuzi wako kama mtoa huduma wa {service} kwa ajili ya {event}. Bajeti: {budget}. Wasiliana nasi endapo utakuwa na maswali.'
                 : 'Dear {name}, confirming your booking as our {service} provider for {event}. Budget: {budget}. Please reach out if you have any questions.',
@@ -252,7 +252,31 @@ class Event extends Model
                 : 'Dear {name}, today is {event}! {date}{time}{place}. Your card and entry QR: {link}',
             default => '',
         };
+
+        // Editors pass $fill = false so the host sees (and keeps) the {event_name} / {event_type} placeholders.
+        return $fill ? $this->fillEventFields($text) : $text;
     }
+
+    /** Swahili names for the event types, used by {event_type} when the event's messages are in Swahili. */
+    private const TYPES_SW = [
+        'Wedding' => 'Harusi', 'Engagement' => 'Uchumba', 'Send-off' => 'Send-off', 'Kitchen Party' => 'Kitchen Party',
+        'Baby Shower' => 'Baby Shower', 'Birthday' => 'Sherehe ya Kuzaliwa', 'Graduation' => 'Mahafali', 'Baptism' => 'Ubatizo',
+        'Confirmation' => 'Kipaimara', 'Communion' => 'Komunyo', 'Funeral' => 'Msiba', 'Corporate' => 'Hafla',
+    ];
+
+    /**
+     * Fills {event_name} and {event_type} in any message. Also accepts how people naturally type them —
+     * {event name}, {event type}, {event name } — so a pasted template just works.
+     */
+    public function fillEventFields(string $text): string
+    {
+        $type = $this->sms_language === 'sw' ? (self::TYPES_SW[$this->event_type] ?? $this->event_type) : $this->event_type;
+
+        $text = preg_replace_callback('/\{\s*event[\s_]*name\s*\}/i', fn () => (string) $this->name, $text) ?? $text;
+
+        return preg_replace_callback('/\{\s*event[\s_]*type\s*\}/i', fn () => (string) $type, $text) ?? $text;
+    }
+
 
     /** Venue shown on the card and in reminders, in the language asked for ('en' or 'sw'). */
     public function venueLine(): string

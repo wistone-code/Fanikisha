@@ -10,7 +10,7 @@
     <div class="card p-5 max-w-xl">
         <form method="POST" action="{{ route('guests.message.announcement') }}" class="mb-5">
             @csrf @method('PATCH')
-            <textarea name="announcement_message" rows="6" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('announcement') }}</textarea>
+            <textarea name="announcement_message" rows="6" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('announcement', false) }}</textarea>
             <button class="btn btn-primary mt-3"><i class="fa-solid fa-check"></i> Save message</button>
         </form>
 

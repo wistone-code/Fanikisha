@@ -210,6 +210,11 @@ class DeliveryController extends Controller
     {
         $text = (string) ($value ?? '');
 
+        // A plain phone number such as +255712345678 is safe, and must stay clean so it can be used as a number.
+        if (preg_match('/^\+\d[\d ]*$/', $text)) {
+            return $text;
+        }
+
         return $text !== '' && in_array($text[0], ['=', '+', '-', '@', "\t", "\r"], true) ? "'".$text : $text;
     }
 

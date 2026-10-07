@@ -225,8 +225,9 @@ class GuestController extends Controller
 
     public function updateGuest(Request $request, Pledge $pledge, PhoneNumberService $phones): RedirectResponse
     {
-        $this->abortUnlessEcard();
         $this->assertPledgeInCurrentEvent($pledge);
+        // E-card accounts edit any guest; contribution accounts edit only invited guests (a pledger is edited on the pledges page).
+        abort_unless(app('currentEvent')->isEcard() || $pledge->guest_only, 404);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -322,7 +323,8 @@ class GuestController extends Controller
             return back()->withErrors(['meeting_message' => 'Write a meeting message first, then save it before broadcasting.']);
         }
 
-        $pledgers = $event->pledges()->whereNotNull('phone')->get();
+        // A meeting is for the people who contribute, not for guests invited to the event.
+        $pledgers = $event->pledges()->contributors()->whereNotNull('phone')->get();
 
         if ($pledgers->isEmpty()) {
             return back()->withErrors(['meeting_message' => 'No contacts with a phone number to message.']);
