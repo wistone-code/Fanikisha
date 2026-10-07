@@ -7,6 +7,7 @@
 @php($yesCards = $invited->where('rsvp_status', 'attending'))
 @php($totalPeople = $yesCards->sum(fn ($p) => $p->headcount()))
 @php($plusTotal = (int) $yesCards->sum('plus_ones'))
+@php($partnerTotal = $yesCards->where('card_type', 'double')->count())
 @php($mealCounts = $yesCards->whereNotNull('meal_choice')->groupBy('meal_choice')->map->count())
 
 @section('content')
@@ -22,7 +23,7 @@
 </div>
 
 <div class="card p-4 mb-4 text-sm">
-    <strong>{{ $totalPeople }}</strong> people expected ({{ $attending }} invitations{{ $plusTotal ? ", incl. {$plusTotal} extra guest(s)" : '' }}).
+    <strong>{{ $totalPeople }}</strong> people expected ({{ $attending }} invitations{{ $partnerTotal ? ", incl. {$partnerTotal} partner(s) on double cards" : '' }}{{ $plusTotal ? ($partnerTotal ? ' and' : ', incl.')." {$plusTotal} extra guest(s)" : '' }}).
     @if ($mealCounts->count())<div class="text-xs text-gray-500 mt-1">Meals: @foreach ($mealCounts as $meal => $n){{ $meal }} × {{ $n }}{{ ! $loop->last ? ' · ' : '' }}@endforeach</div>@endif
     @if ($event->rsvp_cutoff_date)<div class="text-xs text-gray-500 mt-1">Replies close {{ $event->rsvp_cutoff_date->format('M j, Y') }}.</div>@endif
 </div>
@@ -71,7 +72,7 @@
                     <span class="text-xs text-gray-400">Awaiting response</span>
                     @endif
                 </td>
-                <td class="px-4 py-3">{{ $p->rsvp_status === 'attending' ? $p->headcount() : '—' }}</td>
+                <td class="px-4 py-3">@if ($p->rsvp_status === 'attending'){{ $p->headcount() }}@if ($p->headcount() > 1)<div class="text-[11px] text-gray-400">guest{{ $p->card_type === 'double' ? ' + partner' : '' }}{{ (int) $p->plus_ones ? ' + '.(int) $p->plus_ones.' extra' : '' }}</div>@endif @else — @endif</td>
                 <td class="px-4 py-3 text-xs text-gray-500">{{ collect([$p->meal_choice, $p->dietary_note ? 'Diet: '.$p->dietary_note : null, $p->host_message ? '“'.\Illuminate\Support\Str::limit($p->host_message, 80).'”' : null])->filter()->implode(' · ') ?: '—' }}</td>
                 <td class="px-4 py-3 text-gray-500 rsvp-timestamp" data-utc="{{ $p->rsvp_at?->clone()->timezone('UTC')->toIso8601String() }}">{{ $p->rsvp_at?->timezone('Africa/Dar_es_Salaam')->format('M j, g:i A') ?? '—' }}</td>
             </tr>

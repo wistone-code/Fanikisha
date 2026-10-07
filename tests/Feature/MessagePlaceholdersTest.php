@@ -56,4 +56,19 @@ class MessagePlaceholdersTest extends TestCase
             ->assertSee('You are invited to {event_type} {event_name}', false)
             ->assertSee('{event_name} {event_type}', false);
     }
+
+    public function test_rsvp_status_explains_why_one_name_counts_as_two_people(): void
+    {
+        $event = $this->event(['mode' => 'ecard']);
+        $admin = $this->memberOf($event, 'admin');
+        $this->guestCard($event, ['name' => 'Couple Winfred', 'card_type' => 'double', 'rsvp_status' => 'attending']);
+        $this->guestCard($event, ['name' => 'Plus Belinda', 'card_type' => 'single', 'rsvp_status' => 'attending', 'plus_ones' => 1]);
+        $this->guestCard($event, ['name' => 'Solo Sam', 'card_type' => 'single', 'rsvp_status' => 'attending']);
+
+        $this->actingAs($admin)->get(route('guests.index', ['tab' => 'rsvp']))->assertOk()
+            ->assertSee('5</strong> people expected', false)
+            ->assertSee('incl. 1 partner(s) on double cards and 1 extra guest(s)', false)
+            ->assertSee('guest + partner', false)
+            ->assertSee('guest + 1 extra', false);
+    }
 }
