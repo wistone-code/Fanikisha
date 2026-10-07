@@ -10,7 +10,7 @@
                 Showing activity for <strong>{{ $filteredUser->name }}</strong> ({{ $filteredUser->username }}).
                 <a href="{{ route('admin.logs.index') }}" class="underline">Clear filter</a>
             @else
-                Every account creation, edit, password reset, and event creation across all accounts.
+                Sign-ins and sign-outs, account and team changes, password resets and event creation across all accounts.
             @endif
         </p>
     </div>
@@ -55,6 +55,8 @@
                     @if ($log->actor)
                         {{ $log->actor->name }}
                         @if ($log->actor->is_super_user)<span class="badge badge-admin ml-1">System</span>@endif
+                    @elseif ($log->targetUser && str_starts_with($log->action, 'account.login'))
+                        {{ $log->targetUser->name }} <span class="text-gray-400 text-xs">(not signed in)</span>
                     @else
                         <span class="text-gray-400">System</span>
                     @endif

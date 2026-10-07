@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EventMember;
 use App\Models\User;
 use App\Services\AccountMailer;
+use App\Services\ActivityLogger;
 use App\Services\AccountUniquenessService;
 use App\Services\PhoneNumberService;
 use App\Services\PasswordGeneratorService;
@@ -59,6 +60,8 @@ class TeamController extends Controller
 
         EventMember::create(['event_id' => $event->id, 'user_id' => $user->id, 'role' => $data['role']]);
 
+        ActivityLogger::log('team.member_added', "{$request->user()->name} added {$user->name} ({$user->username}) to \"{$event->name}\" as {$data['role']}", $user, $event);
+
         $emailed = $mailer->sendWelcome($user, $plainPassword);
 
         return back()->with([
@@ -76,7 +79,10 @@ class TeamController extends Controller
             abort(403, "The event owner can't be removed.");
         }
 
+        $removed = $member->user;
         $member->delete();
+
+        ActivityLogger::log('team.member_removed', ($removed?->name ?? 'A member')." ({$removed?->username}) was removed from \"{$event->name}\"", $removed, $event);
 
         return back()->with('status', 'Member removed');
     }
@@ -92,6 +98,9 @@ class TeamController extends Controller
 
         $member->update(['disabled_at' => $member->disabled_at ? null : now()]);
 
+        $event = app('currentEvent');
+        ActivityLogger::log($member->disabled_at ? 'team.member_disabled' : 'team.member_enabled', "{$member->user->name} ({$member->user->username}) was ".($member->disabled_at ? 'disabled' : 'enabled again')." on \"{$event->name}\"", $member->user, $event);
+
         return back()->with('status', $member->disabled_at ? "{$member->user->name} disabled — they can no longer sign in" : "{$member->user->name} enabled again");
     }
 
@@ -106,6 +115,8 @@ class TeamController extends Controller
             'password' => Hash::make($plainPassword),
             'must_change_password' => true,
         ])->save();
+
+        ActivityLogger::log('team.password_reset', "Reset password for team member {$member->user->name} ({$member->user->username}) on \"{$event->name}\"", $member->user, $event);
 
         return back()->with([
             'status' => 'Password reset',

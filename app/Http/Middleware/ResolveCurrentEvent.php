@@ -44,6 +44,7 @@ class ResolveCurrentEvent
             $membership = $user->eventMemberships()->where('event_id', $event->id)->first();
 
             if ($membership?->disabled_at) {
+                \App\Services\ActivityLogger::log('account.logout', "{$user->name} ({$user->username}) was signed out: disabled by the event organiser", $user, $event, actor: $user);
                 \Illuminate\Support\Facades\Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();

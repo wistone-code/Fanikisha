@@ -98,6 +98,8 @@ class EventController extends Controller
 
         $event->update($data);
 
+        ActivityLogger::log('event.updated', "{$request->user()->name} updated the settings of \"{$event->name}\"", $request->user(), $event);
+
         return back()->with('status', 'Event settings saved');
     }
 

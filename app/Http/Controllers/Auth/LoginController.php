@@ -59,12 +59,16 @@ class LoginController extends Controller
         }
 
         if (! $passwordMatches) {
+            ActivityLogger::log('account.login_failed', "Failed sign-in for {$user->name} ({$user->username}): wrong password", $user, actor: null);
+
             throw ValidationException::withMessages([
                 'username' => 'Incorrect password.',
             ]);
         }
 
         if ($user->is_suspended) {
+            ActivityLogger::log('account.login_failed', "Blocked sign-in for {$user->name} ({$user->username}): account is suspended", $user, actor: null);
+
             throw ValidationException::withMessages([
                 'username' => 'This account has been suspended. Contact Fanikisha for help.',
             ]);

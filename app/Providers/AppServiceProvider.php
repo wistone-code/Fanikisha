@@ -35,6 +35,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Phones that stay signed in ("remember me") never pass through the login form, so without this
+        // those accounts would never show in the activity log after their first sign-in. The login form logs
+        // its own entry, so that request is skipped to avoid a duplicate.
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($event) {
+            if ($event->remember && ! request()->routeIs('login.attempt')) {
+                \App\Services\ActivityLogger::log('account.login', "{$event->user->name} ({$event->user->username}) signed back in (remembered device)", $event->user, actor: $event->user);
+            }
+        });
+
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
             // Belt-and-braces on top of SESSION_SECURE_COOKIE in .env: even if that

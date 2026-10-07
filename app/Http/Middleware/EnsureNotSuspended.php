@@ -20,6 +20,7 @@ class EnsureNotSuspended
         $user = $request->user();
 
         if ($user && $user->is_suspended && ! $request->routeIs('logout')) {
+            \App\Services\ActivityLogger::log('account.logout', "{$user->name} ({$user->username}) was signed out: account is suspended", $user, actor: $user);
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

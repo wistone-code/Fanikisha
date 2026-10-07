@@ -35,7 +35,8 @@ class ActivityLogController extends Controller
 
         $logs = ActivityLog::query()
             ->with(['actor', 'targetUser', 'event'])
-            ->when($userId, fn ($q) => $q->where('target_user_id', $userId))
+            // Everything an account did OR that was done to it (e.g. the events it created, the team members it added).
+            ->when($userId, fn ($q) => $q->where(fn ($w) => $w->where('target_user_id', $userId)->orWhere('actor_id', $userId)))
             ->when($search, function ($q) use ($search) {
                 $q->where('description', 'like', "%{$search}%");
             })
