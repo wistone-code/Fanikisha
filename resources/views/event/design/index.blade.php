@@ -4,14 +4,30 @@
 @section('content')
 @include('event.guests._tabs', ['active' => 'design'])
 
-<div class="mb-4"><h2 class="text-xl font-semibold">Card design &amp; venue</h2><p class="text-sm text-gray-500">How guests' cards look, where the event is, and the reminder on the day.</p></div>
+<style>
+    .dz-title { font-family: Georgia, 'Times New Roman', serif; }
+    .dz-num { width: 1.75rem; height: 1.75rem; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; font: 600 .8rem Georgia, serif; color: #fff; background: var(--primary); flex: none; }
+    .dz-head { display: flex; align-items: center; gap: .75rem; padding: .75rem 1.25rem; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+    .dz-sub { font: 600 .7rem/1 inherit; letter-spacing: .08em; text-transform: uppercase; color: #6b7280; padding-top: .25rem; border-top: 1px solid #eef0f2; margin-top: .25rem; }
+    .dz-sub:first-child { border-top: 0; }
+    .dz-lbl { display: block; font-size: .75rem; font-weight: 600; margin-bottom: .25rem; }
+    .dz-in { width: 100%; border: 1px solid #d1d5db; border-radius: .5rem; padding: .5rem .75rem; background: #fff; }
+</style>
 
-<div class="grid lg:grid-cols-2 gap-5 items-start">
+<div class="text-center mb-6">
+    <h2 class="dz-title text-2xl font-semibold">Card design &amp; venue</h2>
+    <p class="text-sm text-gray-500 mt-1">How guests' cards look, where the event is, and the reminder on the day.</p>
+</div>
 
-<div class="card p-5 space-y-3">
-    <div class="text-sm font-semibold">Card style</div>
-    <form method="POST" action="{{ route('design.card') }}" class="space-y-3 text-sm">
+<div class="max-w-2xl mx-auto space-y-6">
+
+{{-- 1. Card style --}}
+<section class="card overflow-hidden">
+    <div class="dz-head"><span class="dz-num">1</span><h3 class="dz-title font-semibold">Card style &amp; message</h3></div>
+    <div class="p-5 space-y-4">
+    <form method="POST" action="{{ route('design.card') }}" class="space-y-4 text-sm">
         @csrf @method('PATCH')
+        <div class="dz-sub">Look</div>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
             @foreach ($templates as $key)
             <label class="border rounded-lg p-2 text-center cursor-pointer text-xs {{ $event->card_template === $key ? 'ring-2' : '' }}" style="--tw-ring-color:var(--primary)">
@@ -22,18 +38,23 @@
             </label>
             @endforeach
         </div>
-        <div><label class="text-xs font-semibold">Card language (guests can switch)</label>
-            <select name="card_default_lang" class="w-full border rounded-lg px-3 py-2"><option value="en" @selected($event->card_default_lang === 'en')>English</option><option value="sw" @selected($event->card_default_lang === 'sw')>Kiswahili</option></select></div>
-        <div><label class="text-xs font-semibold">Your message — English</label><textarea name="card_text_en" rows="2" maxlength="500" class="w-full border rounded-lg px-3 py-2">{{ $event->card_text_en }}</textarea></div>
-        <div><label class="text-xs font-semibold">Ujumbe wako — Kiswahili</label><textarea name="card_text_sw" rows="2" maxlength="500" class="w-full border rounded-lg px-3 py-2">{{ $event->card_text_sw }}</textarea></div>
-        <div><label class="text-xs font-semibold">Video link <span class="text-gray-400 font-normal">(YouTube plays on the card; other links open in a new tab)</span></label><input type="url" name="card_video_url" value="{{ $event->card_video_url }}" class="w-full border rounded-lg px-3 py-2"></div>
-        <div><label class="text-xs font-semibold">Music link <span class="text-gray-400 font-normal">(direct .mp3 link — or upload a file below)</span></label><input type="url" name="card_music_url" value="{{ $event->card_music_url }}" class="w-full border rounded-lg px-3 py-2"></div>
+        <div><label class="dz-lbl">Card language (guests can switch)</label>
+            <select name="card_default_lang" class="dz-in"><option value="en" @selected($event->card_default_lang === 'en')>English</option><option value="sw" @selected($event->card_default_lang === 'sw')>Kiswahili</option></select></div>
+
+        <div class="dz-sub">Message</div>
+        <div><label class="dz-lbl">Your message — English</label><textarea name="card_text_en" rows="2" maxlength="500" class="dz-in">{{ $event->card_text_en }}</textarea></div>
+        <div><label class="dz-lbl">Ujumbe wako — Kiswahili</label><textarea name="card_text_sw" rows="2" maxlength="500" class="dz-in">{{ $event->card_text_sw }}</textarea></div>
+
+        <div class="dz-sub">Video &amp; music links</div>
+        <div><label class="dz-lbl">Video link <span class="text-gray-400 font-normal">(YouTube plays on the card; other links open in a new tab)</span></label><input type="url" name="card_video_url" value="{{ $event->card_video_url }}" class="dz-in"></div>
+        <div><label class="dz-lbl">Music link <span class="text-gray-400 font-normal">(direct .mp3 link — or upload a file below)</span></label><input type="url" name="card_music_url" value="{{ $event->card_music_url }}" class="dz-in"></div>
         @if ($errors->hasAny(['card_video_url', 'card_music_url', 'card_template']))<p class="text-xs text-red-600">{{ $errors->first() }}</p>@endif
         <button class="btn btn-primary">Save style</button>
     </form>
 
-    <div class="border-t pt-3 text-sm">
-        <div class="font-semibold mb-1">Music file</div>
+    <div class="border-t pt-4 text-sm">
+        <div class="dz-sub" style="border-top:0;margin-top:0;padding-top:0">Music file</div>
+        <div class="mt-2">
         @if ($event->card_has_music)
         <p class="text-xs mb-2" style="color:var(--primary)"><i class="fa-solid fa-circle-check"></i> Music saved{{ $musicSize ? ' ('.number_format($musicSize / 1048576, 1).' MB)' : '' }}. Guests see a “Play music” button under their card. It plays instead of the music link above.</p>
         <audio controls preload="none" src="{{ route('design.music.preview') }}" class="w-full mb-2"></audio>
@@ -43,11 +64,62 @@
         <form method="POST" action="{{ route('design.music.upload') }}" enctype="multipart/form-data" class="flex gap-2 flex-wrap items-center">@csrf
             <input type="file" name="music" accept="audio/*" required class="text-xs max-w-full"><button class="btn btn-primary !py-1 !px-3 text-xs">Save music (max 10 MB)</button></form>
         @error('music')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
     </div>
-</div>
+    </div>
+</section>
 
-<div class="card p-5">
-    <div class="text-sm font-semibold mb-2">Your own card design</div>
+{{-- 2. Venue & map --}}
+<section class="card overflow-hidden">
+    <div class="dz-head"><span class="dz-num">2</span><h3 class="dz-title font-semibold">Venue &amp; map</h3></div>
+    <div class="p-5">
+    <p class="text-xs text-gray-500 mb-4">Shown on every card and in the reminder text. The map pin gives guests a Directions button.</p>
+    <form method="POST" action="{{ route('design.venue') }}" class="space-y-4 text-sm">
+        @csrf @method('PATCH')
+        <div class="grid grid-cols-3 gap-3">
+            <div><label class="dz-lbl">Start time</label><input type="time" name="event_time" value="{{ $event->event_time }}" class="dz-in"></div>
+            <div class="col-span-2"><label class="dz-lbl">Venue name</label><input type="text" name="venue_name" maxlength="160" value="{{ $event->venue_name }}" class="dz-in"></div>
+        </div>
+        <div><label class="dz-lbl">Address / area</label><input type="text" name="venue_address" maxlength="255" value="{{ $event->venue_address }}" class="dz-in"></div>
+        <div><label class="dz-lbl">Landmark</label><input type="text" name="landmark_note_en" maxlength="200" value="{{ $event->landmark_note_en }}" placeholder="Opposite the main market" class="dz-in"></div>
+        <div>
+            <div class="flex gap-2 mb-2 flex-wrap">
+                <input type="text" id="geoQ" placeholder="Search a place…" class="flex-1 min-w-[140px] border rounded-lg px-3 py-2 text-sm">
+                <button type="button" id="geoBtn" class="btn btn-ghost !py-1 !px-2 text-xs">Find</button>
+                <button type="button" id="gpsBtn" class="btn btn-ghost !py-1 !px-2 text-xs"><i class="fa-solid fa-location-crosshairs"></i> I'm here</button>
+            </div>
+            <div id="map" style="height:240px" class="rounded-lg border"></div>
+            <p class="text-[11px] text-gray-400 mt-1">Tap the map to drop the pin guests will get directions to. Map data © OpenStreetMap.</p>
+            <input type="hidden" name="venue_lat" id="latIn" value="{{ $event->venue_lat }}"><input type="hidden" name="venue_lng" id="lngIn" value="{{ $event->venue_lng }}">
+        </div>
+        <button class="btn btn-primary">Save venue</button>
+    </form>
+    </div>
+</section>
+
+{{-- 3. Event-day reminder --}}
+<section class="card overflow-hidden">
+    <div class="dz-head"><span class="dz-num">3</span><h3 class="dz-title font-semibold">Event-day reminder (SMS)</h3></div>
+    <div class="p-5">
+    <p class="text-xs text-gray-500 mb-4">On the morning of the event, each guest who has not declined gets a text with the time, venue and their own card link. Each guest gets it once.</p>
+    <form method="POST" action="{{ route('design.day-reminder') }}" class="space-y-4 text-sm">
+        @csrf @method('PATCH')
+        <label class="flex items-center gap-2"><input type="checkbox" name="event_day_reminder_enabled" value="1" @checked($event->event_day_reminder_enabled)> Send it automatically</label>
+        <div class="flex items-center gap-2">At <input type="time" name="event_day_reminder_time" value="{{ $event->event_day_reminder_time }}" class="border rounded-lg px-2 py-1"></div>
+        <div><label class="dz-lbl">Message <span class="text-gray-400 font-normal">({name} {event} {date} {time} {place} {link})</span></label>
+            <textarea name="event_day_reminder_message" rows="3" class="dz-in">{{ $event->messageOrDefault('event_day_reminder') }}</textarea></div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <button class="btn btn-primary">Save</button>
+        </div>
+    </form>
+    <form method="POST" action="{{ route('design.day-reminder.send') }}" class="mt-3" data-confirm="Send the reminder now to every guest who has not had it? Each message uses SMS quota." data-confirm-title="Send now?" data-confirm-button="Send">@csrf <button class="btn btn-ghost !py-1 !px-2 text-xs">Send now</button></form>
+    </div>
+</section>
+
+{{-- 4. Your own design (optional) --}}
+<section class="card overflow-hidden">
+    <div class="dz-head"><span class="dz-num">4</span><h3 class="dz-title font-semibold">Your own card design <span class="text-xs font-normal text-gray-400">(optional)</span></h3></div>
+    <div class="p-5">
     <p class="text-xs text-gray-500 mb-3">Made a card in Canva or by a designer? Upload it, then place the guest's name and QR code on it.</p>
     @if (! $event->card_has_custom_design)
     <form method="POST" action="{{ route('design.custom.upload') }}" enctype="multipart/form-data" class="flex gap-2 flex-wrap">@csrf
@@ -67,45 +139,8 @@
     </form>
     <form method="POST" action="{{ route('design.custom.remove') }}" class="mt-2" data-confirm="Remove your design and go back to the standard card?" data-confirm-title="Remove design?">@csrf @method('DELETE') <button class="btn btn-ghost !py-1 !px-2 text-xs text-red-600">Remove design</button></form>
     @endif
-</div>
-
-<div class="card p-5">
-    <div class="text-sm font-semibold mb-2">Venue &amp; map</div>
-    <form method="POST" action="{{ route('design.venue') }}" class="space-y-3 text-sm">
-        @csrf @method('PATCH')
-        <div class="grid grid-cols-3 gap-2">
-            <div><label class="text-xs font-semibold">Start time</label><input type="time" name="event_time" value="{{ $event->event_time }}" class="w-full border rounded-lg px-2 py-2"></div>
-            <div class="col-span-2"><label class="text-xs font-semibold">Venue name</label><input type="text" name="venue_name" maxlength="160" value="{{ $event->venue_name }}" class="w-full border rounded-lg px-3 py-2"></div>
-        </div>
-        <div><label class="text-xs font-semibold">Address / area</label><input type="text" name="venue_address" maxlength="255" value="{{ $event->venue_address }}" class="w-full border rounded-lg px-3 py-2"></div>
-        <div><label class="text-xs font-semibold">Landmark</label><input type="text" name="landmark_note_en" maxlength="200" value="{{ $event->landmark_note_en }}" placeholder="Opposite the main market" class="w-full border rounded-lg px-3 py-2"></div>
-        <div>
-            <div class="flex gap-2 mb-2 flex-wrap">
-                <input type="text" id="geoQ" placeholder="Search a place…" class="flex-1 min-w-[140px] border rounded-lg px-3 py-2 text-sm">
-                <button type="button" id="geoBtn" class="btn btn-ghost !py-1 !px-2 text-xs">Find</button>
-                <button type="button" id="gpsBtn" class="btn btn-ghost !py-1 !px-2 text-xs"><i class="fa-solid fa-location-crosshairs"></i> I'm here</button>
-            </div>
-            <div id="map" style="height:240px" class="rounded-lg border"></div>
-            <p class="text-[11px] text-gray-400 mt-1">Tap the map to drop the pin guests will get directions to. Map data © OpenStreetMap.</p>
-            <input type="hidden" name="venue_lat" id="latIn" value="{{ $event->venue_lat }}"><input type="hidden" name="venue_lng" id="lngIn" value="{{ $event->venue_lng }}">
-        </div>
-        <button class="btn btn-primary">Save venue</button>
-    </form>
-</div>
-
-<div class="card p-5">
-    <div class="text-sm font-semibold mb-2">Event-day reminder (SMS)</div>
-    <p class="text-xs text-gray-500 mb-3">On the morning of the event, each guest who has not declined gets a text with the time, venue and their own card link. Each guest gets it once.</p>
-    <form method="POST" action="{{ route('design.day-reminder') }}" class="space-y-3 text-sm">
-        @csrf @method('PATCH')
-        <label class="flex items-center gap-2"><input type="checkbox" name="event_day_reminder_enabled" value="1" @checked($event->event_day_reminder_enabled)> Send it automatically</label>
-        <div class="flex items-center gap-2">At <input type="time" name="event_day_reminder_time" value="{{ $event->event_day_reminder_time }}" class="border rounded-lg px-2 py-1"></div>
-        <div><label class="text-xs font-semibold">Message <span class="text-gray-400 font-normal">({name} {event} {date} {time} {place} {link})</span></label>
-            <textarea name="event_day_reminder_message" rows="3" class="w-full border rounded-lg px-3 py-2">{{ $event->messageOrDefault('event_day_reminder') }}</textarea></div>
-        <button class="btn btn-primary">Save</button>
-    </form>
-    <form method="POST" action="{{ route('design.day-reminder.send') }}" class="mt-2" data-confirm="Send the reminder now to every guest who has not had it? Each message uses SMS quota." data-confirm-title="Send now?" data-confirm-button="Send">@csrf <button class="btn btn-ghost !py-1 !px-2 text-xs">Send now</button></form>
-</div>
+    </div>
+</section>
 
 </div>
 
