@@ -357,9 +357,10 @@ class UserManagementController extends Controller
 
         $user->update(['package' => $data['package']]);
 
-        // Their own event follows the package. E-card is a different kind of event (no money side), so mode follows too.
-        // A team member's "current event" is the owner's, which this account does not control, so it is left alone.
-        $event = $this->ownEvent($user);
+        // The package belongs to the whole event: changing it on the owner or on any team admin updates the event,
+        // and every account on it (admins, viewers, door staff) shows and gets the same package.
+        // E-card is a different kind of event (no money side), so mode follows too.
+        $event = $user->currentEvent();
         if ($event) {
             // E-card guests are plain guests. Moving to a money package must not turn them into pledgers with a zero pledge.
             if ($event->mode === Event::MODE_ECARD && $data['package'] !== 'ecard') {
@@ -370,6 +371,10 @@ class UserManagementController extends Controller
                 'package' => $data['package'],
                 'mode' => $data['package'] === 'ecard' ? Event::MODE_ECARD : Event::MODE_CONTRIBUTIONS,
             ]);
+
+            User::where('is_super_user', false)
+                ->where(fn ($q) => $q->whereIn('id', EventMember::where('event_id', $event->id)->select('user_id'))->orWhere('id', $event->created_by))
+                ->update(['package' => $data['package']]);
         }
 
         ActivityLogger::log('account.package_changed', "Changed {$user->name}'s package from ".config("packages.packages.{$old}.label").' to '.config("packages.packages.{$data['package']}.label"), $user, $event);

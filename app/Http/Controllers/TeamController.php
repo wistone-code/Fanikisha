@@ -56,6 +56,7 @@ class TeamController extends Controller
             'is_super_user' => false,
             'must_change_password' => true,
             'created_by' => $request->user()->id,
+            'package' => $event->package ?: config('packages.default'),
         ]);
 
         EventMember::create(['event_id' => $event->id, 'user_id' => $user->id, 'role' => $data['role']]);

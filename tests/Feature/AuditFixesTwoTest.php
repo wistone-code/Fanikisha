@@ -130,20 +130,40 @@ class AuditFixesTwoTest extends TestCase
 
     // ---- super user: package and quota ---------------------------------------------------
 
-    public function test_package_changes_do_not_touch_the_owners_event_when_the_account_is_a_team_member(): void
+    public function test_package_change_on_a_team_admin_applies_to_the_event_and_every_account_on_it(): void
     {
         $event = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);
         $owner = $this->memberOf($event, 'admin');
+        $event->update(['created_by' => $owner->id]);
         $helper = $this->memberOf($event, 'admin');
+        $viewer = $this->memberOf($event, 'viewer');
         $helper->update(['created_by' => $owner->id]);
         $super = User::factory()->create(['is_super_user' => true]);
 
-        $this->actingAs($super)->patch(route('admin.users.package', $helper), ['package' => 'ecard'])->assertSessionHas('status');
-        $this->assertSame('contributions', $event->fresh()->mode);
-        $this->assertSame('full', $event->fresh()->package);
+        $this->actingAs($super)->patch(route('admin.users.package', $helper), ['package' => 'sms'])->assertSessionHas('status');
+
+        $this->assertSame('sms', $event->fresh()->package);
+        foreach ([$owner, $helper, $viewer] as $u) {
+            $this->assertSame('sms', $u->fresh()->package);
+        }
+        $this->actingAs($viewer)->get(route('delivery.index'))->assertForbidden();
+
+        $this->actingAs($super)->patch(route('admin.users.package', $owner), ['package' => 'full'])->assertSessionHas('status');
+        $this->assertSame('full', $viewer->fresh()->package);
+        $this->actingAs($viewer)->get(route('delivery.index'))->assertOk();
 
         $this->actingAs($super)->patch(route('admin.users.sms-quota', $helper), ['sms_quota' => 5])->assertNotFound();
         $this->assertNull($event->fresh()->sms_quota);
+    }
+
+    public function test_new_team_members_get_the_events_package(): void
+    {
+        $event = Event::factory()->create(['package' => 'sms', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);
+        $owner = $this->memberOf($event, 'admin');
+
+        $this->actingAs($owner)->post(route('team.store'), ['name' => 'Vi Ewer', 'username' => 'viewer.one', 'email' => 'vi@example.com', 'role' => 'viewer'])->assertSessionHas('status');
+
+        $this->assertSame('sms', User::where('username', 'viewer.one')->value('package'));
     }
 
     public function test_moving_from_ecard_to_a_money_package_turns_guests_into_invited_guests_not_zero_pledges(): void
