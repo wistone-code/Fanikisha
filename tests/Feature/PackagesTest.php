@@ -233,12 +233,12 @@ class PackagesTest extends TestCase
         $this->actingAs($admin)->get(route('dashboard'))->assertOk()->assertSee('User Manual')->assertSee(route('manual'), false);
         $this->actingAs($admin)->get(route('manual'))->assertOk()
             ->assertSee('Reminders and Pay now')->assertSee('Meeting invitation')
-            ->assertDontSee('Seating plan')->assertDontSee('Photo wall');
+            ->assertDontSee('Seating plan')->assertDontSee('Event Photos');
 
         $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);
         $fullAdmin = $this->memberOf($full, 'admin');
         $this->actingAs($fullAdmin)->get(route('manual'))->assertOk()
-            ->assertSee('Seating plan')->assertSee('Photo wall')->assertSee('Check-in at the entrance');
+            ->assertSee('Seating plan')->assertSee('Event Photos')->assertSee('Check-in at the entrance');
 
         $viewer = $this->memberOf($full, 'viewer');
         $this->actingAs($viewer)->get(route('manual'))->assertOk()->assertDontSee('Team management')->assertDontSee('Setting up your event');
@@ -265,5 +265,27 @@ class PackagesTest extends TestCase
         [$sms, $smsAdmin] = $this->smsEvent();
         $sp = $this->pledge($sms, ['phone' => '255712345678']);
         $this->assertStringNotContainsString('code', app(\App\Services\MessageTemplateService::class)->forInvitation($sms, $sp));
+    }
+
+    public function test_event_photos_has_its_own_menu_item_before_setting_and_messages_carry_both_links(): void
+    {
+        $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'sms_language' => 'en', 'event_date' => now()->addDays(20)->toDateString(), 'photo_wall_enabled' => true, 'photo_wall_token' => Str::random(24)]);
+        $admin = $this->memberOf($full, 'admin');
+        $p = $this->pledge($full, ['phone' => '255712345678', 'invite_token' => Str::random(32)]);
+
+        $html = $this->actingAs($admin)->get(route('dashboard'))->assertOk()->assertSee('Event Photos')->getContent();
+        $this->assertLessThan(strpos($html, 'Setting</div>'), strpos($html, 'Event Photos'));
+        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertDontSee('>Photos<', false)->assertDontSee('Multimedia');
+        $this->actingAs($admin)->get(route('photos.index'))->assertOk()->assertSee('Event Photos');
+
+        $text = app(\App\Services\MessageTemplateService::class)->forInvitation($full, $p->fresh());
+        $this->assertStringContainsString('/rsvp/', $text);
+        $this->assertStringContainsString('/wall/', $text);
+
+        $full->update(['photo_wall_enabled' => false]);
+        $this->assertStringNotContainsString('/wall/', app(\App\Services\MessageTemplateService::class)->forInvitation($full->fresh(), $p->fresh()));
+
+        $viewer = $this->memberOf($full, 'viewer');
+        $this->actingAs($viewer)->get(route('dashboard'))->assertOk()->assertDontSee('Event Photos');
     }
 }

@@ -19,6 +19,7 @@ class NavLabelService
         'schedule' => 'Schedule',
         'team' => 'Team Management',
         'invitations' => 'Guest Management',
+        'photos' => 'Event Photos',
         'settings' => 'Setting',
     ];
 
@@ -59,6 +60,7 @@ class NavLabelService
 
             if ($isAdmin) {
                 $items[] = ['id' => 'team', 'label' => $labels['team'], 'icon' => 'user-group', 'group' => 'People'];
+                $items[] = ['id' => 'photos', 'label' => $labels['photos'], 'icon' => 'images', 'group' => 'Event'];
                 $items[] = ['id' => 'settings', 'label' => $labels['settings'], 'icon' => 'gear', 'group' => 'Event'];
             }
 
@@ -84,6 +86,11 @@ class NavLabelService
 
         // EVENT — the event's own logistics and configuration.
         $items[] = ['id' => 'schedule', 'label' => $labels['schedule'], 'icon' => 'calendar-days', 'group' => 'Event'];
+
+        // Event Photos (the shared photo wall) is part of the card packages.
+        if ($isAdmin && $event?->hasFeature('cards')) {
+            $items[] = ['id' => 'photos', 'label' => $labels['photos'], 'icon' => 'images', 'group' => 'Event'];
+        }
 
         if ($isAdmin) {
             $items[] = ['id' => 'settings', 'label' => $labels['settings'], 'icon' => 'gear', 'group' => 'Event'];

@@ -45,14 +45,20 @@ class MessageTemplateService
      */
     public function forInvitation(Event $event, Pledge $pledge): string
     {
-        return trim(strtr($event->messageOrDefault('invitation'), [
+        $text = trim(strtr($event->messageOrDefault('invitation'), [
             '{name}' => $pledge->name,
             '{place}' => $event->place ?? '',
             '{link}' => $event->hasFeature('cards') ? ($pledge->inviteLink() ?? '') : '',
             '{code}' => $event->hasFeature('cards') ? (string) $pledge->card_code : '',
+            '{wall_link}' => $event->hasFeature('cards') ? $this->wallLink($event, $pledge) : '',
             '{event}' => $event->name,
             '{date}' => $event->event_date->format('d.m.Y'),
         ]));
+
+        // The default invitation carries the photo wall link too when the wall is on (your own wording is left as written).
+        $wall = $event->hasFeature('cards') && ! $event->invitation_message ? $this->wallLink($event, $pledge) : '';
+
+        return $wall === '' ? $text : $text.($event->sms_language === 'sw' ? ' Tuma picha zako: ' : ' Share your photos: ').$wall;
     }
 
     /**
@@ -201,7 +207,25 @@ class MessageTemplateService
 
     public function forEventDayReminder(Event $event, Pledge $pledge): string
     {
-        return strtr($event->messageOrDefault('event_day_reminder'), $this->common($event, $pledge));
+        $text = strtr($event->messageOrDefault('event_day_reminder'), $this->common($event, $pledge));
+
+        // The default reminder also points to the photo wall when it is on (your own wording is left as written).
+        $wall = $this->wallLink($event, $pledge);
+        if ($wall !== '' && ! $event->event_day_reminder_message) {
+            $text .= ($event->sms_language === 'sw' ? ' Tuma picha zako: ' : ' Share your photos: ').$wall;
+        }
+
+        return $text;
+    }
+
+    /** Link to the shared photo wall for this guest, or '' when the wall is off or closed to uploads. */
+    private function wallLink(Event $event, Pledge $pledge): string
+    {
+        if (! $event->photo_wall_enabled || ! $event->photo_wall_token || $event->photo_wall_uploads_blocked) {
+            return '';
+        }
+
+        return route('wall.show', array_filter(['wallToken' => $event->photo_wall_token, 'c' => $pledge->invite_token]));
     }
 
     /** Placeholders shared by the guest-facing messages above. */
@@ -215,6 +239,7 @@ class MessageTemplateService
             '{time}' => $event->event_time ? ($event->sms_language === 'sw' ? ' saa ' : ' at ').$event->event_time : '',
             '{link}' => $pledge->inviteLink() ?? '',
             '{code}' => (string) $pledge->card_code,
+            '{wall_link}' => $this->wallLink($event, $pledge),
             '{hosts}' => $event->host_names ?: $event->name,
         ];
     }

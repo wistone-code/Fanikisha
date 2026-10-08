@@ -241,7 +241,7 @@ class RsvpAndSeatingTest extends TestCase
         $event = \App\Models\Event::factory()->create(['mode' => 'contributions', 'event_type' => 'Wedding']);
         $admin = $this->memberOf($event, 'admin');
 
-        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('Delivery')->assertSee('Seating')->assertSee('Photos');
+        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('Delivery')->assertSee('Seating')->assertDontSee('>Photos<', false);
         $this->actingAs($admin)->get(route('seating.index'))->assertOk();
         $this->actingAs($admin)->get(route('delivery.index'))->assertOk();
     }

@@ -43,8 +43,8 @@
     if ($cards) $s['checkin'] = ['Check-in at the entrance', '
         <p>Scan the guest QR code or search by name, card code or phone. Turn on <b>Confirm name before checking in</b> if staff should confirm each guest. The arrival log refreshes every 20 seconds and lets you undo a mistake.</p>
         <p>No network? Press <b>Prepare for offline</b> before the event, then <b>Sync now</b> when back online. Guests already checked in on another phone show as <b>Already checked in elsewhere</b>. On iPhone, install the app first.</p>'];
-    if ($cards && $isAdmin) $s['photos'] = ['Photo wall', '
-        <p>Turn the wall on, choose link or guests-only access, an optional PIN, when uploads open, a per-guest and total limit, and when it closes. <b>Pause uploads</b> stops new photos; <b>Make a new link</b> replaces a shared link; hide photos or review reports; <b>Download all</b> saves a ZIP.</p>'];
+    if ($cards && $isAdmin) $s['photos'] = ['Event Photos', '
+        <p>Open <b>Event Photos</b> from the menu or the Home screen (just before Setting). Turn the wall on, choose link or guests-only access, an optional PIN, when uploads open, a per-guest and total limit, and when it closes. <b>Pause uploads</b> stops new photos; <b>Make a new link</b> replaces a shared link; hide photos or review reports; <b>Download all</b> saves a ZIP.</p>'];
     if ($cards && $isAdmin) $s['after'] = ['After the event', '
         <p>Write a thank-you for guests who came and another for those who could not (sign with <code>{hosts}</code>). It goes out automatically the next morning, or press <b>Send thank-yous now</b>. The printable <b>Recap</b> shows cards sent and opened, replies, arrivals, no-shows, walk-ins and meals'.($money ? ', and contributions' : '').'.</p>'];
     if ($isAdmin && !($funeral && !$cards)) $s['team'] = ['Team management', '

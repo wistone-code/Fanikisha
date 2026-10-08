@@ -34,12 +34,12 @@ class EcardModeTest extends TestCase
         $this->assertCount(count(Event::TYPES) - 1, $types);
     }
 
-    public function test_ecard_menu_is_limited_to_guest_cards_team_and_settings(): void
+    public function test_ecard_menu_is_limited_to_guest_cards_team_photos_and_settings(): void
     {
         $event = Event::factory()->create(['mode' => Event::MODE_ECARD]);
         $ids = array_column(app(NavLabelService::class)->itemsFor($event, true), 'id');
 
-        $this->assertSame(['home', 'invitations', 'team', 'settings'], $ids);
+        $this->assertSame(['home', 'invitations', 'team', 'photos', 'settings'], $ids);
     }
 
     public function test_viewers_of_an_ecard_event_do_not_see_settings(): void

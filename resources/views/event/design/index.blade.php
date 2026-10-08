@@ -106,7 +106,7 @@
         @csrf @method('PATCH')
         <label class="flex items-center gap-2"><input type="checkbox" name="event_day_reminder_enabled" value="1" @checked($event->event_day_reminder_enabled)> Send it automatically</label>
         <div class="flex items-center gap-2">At <input type="time" name="event_day_reminder_time" value="{{ $event->event_day_reminder_time }}" class="border rounded-lg px-2 py-1"></div>
-        <div><label class="dz-lbl">Message <span class="text-gray-400 font-normal">({name} {event} {date} {time} {place} {link} {code})</span></label>
+        <div><label class="dz-lbl">Message <span class="text-gray-400 font-normal">({name} {event} {date} {time} {place} {link} {code} {wall_link})</span></label>
             <textarea name="event_day_reminder_message" rows="3" class="dz-in">{{ $event->messageOrDefault('event_day_reminder', false) }}</textarea></div>
         <div class="flex items-center gap-2 flex-wrap">
             <button class="btn btn-primary">Save</button>

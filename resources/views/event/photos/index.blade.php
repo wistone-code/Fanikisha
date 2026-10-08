@@ -1,11 +1,9 @@
 @extends('layouts.app')
-@section('title', 'Photo wall — '.config('app.name'))
+@section('title', 'Event Photos — '.config('app.name'))
 
 @section('content')
-@include('event.guests._tabs', ['active' => 'photos'])
-
 <div class="flex justify-between items-start mb-4 flex-wrap gap-3">
-    <div><h2 class="text-xl font-semibold">Shared photo wall</h2><p class="text-sm text-gray-500">Guests add their photos from their phones; you can hide anything you don't want shown.</p></div>
+    <div><h1 class="text-2xl font-semibold">Event Photos</h1><p class="text-sm text-gray-500">A shared photo wall: guests add their photos from their phones; you can hide anything you don't want shown.</p></div>
     @if ($photos->count())<a href="{{ route('photos.download') }}" class="btn btn-ghost"><i class="fa-solid fa-download"></i> Download all (ZIP)</a>@endif
 </div>
 

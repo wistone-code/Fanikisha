@@ -14,7 +14,6 @@
         if ($tabAdmin) {
             $tabs[] = ['seating', 'Seating', route('seating.index')];
             $tabs[] = ['checkin', 'Check-in', route('checkin.index')];
-            $tabs[] = ['photos', 'Photos', route('photos.index')];
             $tabs[] = ['design', 'Card design', route('design.index')];
             $tabs[] = ['after', 'After event', route('after.index')];
         }

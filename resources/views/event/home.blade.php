@@ -20,7 +20,7 @@
     </div>
 </div>
 
-@php($routeNames = ['financial' => 'financial.index', 'pledges' => 'pledges.index', 'providers' => 'providers.index', 'committees' => 'committees.index', 'schedule' => 'schedule.index', 'team' => 'team.index', 'invitations' => 'guests.index', 'settings' => 'event.settings'])
+@php($routeNames = ['financial' => 'financial.index', 'pledges' => 'pledges.index', 'providers' => 'providers.index', 'committees' => 'committees.index', 'schedule' => 'schedule.index', 'team' => 'team.index', 'invitations' => 'guests.index', 'photos' => 'photos.index', 'settings' => 'event.settings'])
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     @foreach ($items as $item)
         @continue($item['id'] === 'home')
