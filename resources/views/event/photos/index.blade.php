@@ -3,7 +3,7 @@
 
 @section('content')
 <div class="flex justify-between items-start mb-4 flex-wrap gap-3">
-    <div><h1 class="text-2xl font-semibold">Event Photos</h1><p class="text-sm text-gray-500">A shared photo wall: guests add their photos from their phones; you can hide anything you don't want shown.</p></div>
+    <div><h1 class="text-2xl font-semibold">Event Photos</h1><p class="text-sm text-gray-500">A shared photo wall: guests add their photos from their phones; tap a photo to view it, download it, or delete anything you don't want shown.</p></div>
     @if ($photos->count())<a href="{{ route('photos.download') }}" class="btn btn-ghost"><i class="fa-solid fa-download"></i> Download all (ZIP)</a>@endif
 </div>
 
@@ -40,13 +40,11 @@
         <div class="grid grid-cols-3 md:grid-cols-4 gap-2">
         @forelse ($photos as $p)
             <div class="card overflow-hidden {{ $p->hidden ? 'opacity-50' : '' }}">
-                <img src="{{ route('photos.thumb', $p) }}" loading="lazy" class="w-full aspect-square object-cover" alt="">
+                <button type="button" class="photo-open block w-full" data-full="{{ route('photos.view', $p) }}" data-dl="{{ route('photos.download-one', $p) }}" title="Tap to view"><img src="{{ route('photos.thumb', $p) }}" loading="lazy" class="w-full aspect-square object-cover" alt=""></button>
                 <div class="p-2 text-[11px]">
                     <div class="truncate text-gray-600">{{ $p->uploader_name ?? 'Guest' }}@if ($p->reports) · <span class="text-red-600">{{ $p->reports }} report(s)</span>@endif</div>
                     <div class="flex gap-1 mt-1 flex-wrap">
-                        <a href="{{ route('photos.view', $p) }}" target="_blank" rel="noopener" class="btn btn-ghost !py-0.5 !px-1.5 text-[11px]" title="View full photo"><i class="fa-solid fa-eye"></i> View</a>
                         <a href="{{ route('photos.download-one', $p) }}" class="btn btn-ghost !py-0.5 !px-1.5 text-[11px]" title="Download this photo"><i class="fa-solid fa-download"></i></a>
-                        <form method="POST" action="{{ route('photos.toggle-hidden', $p) }}">@csrf <button class="btn btn-ghost !py-0.5 !px-1.5 text-[11px]">{{ $p->hidden ? 'Show' : 'Hide' }}</button></form>
                         <form method="POST" action="{{ route('photos.destroy', $p) }}" data-confirm="Delete this photo for good?" data-confirm-title="Delete photo?">@csrf @method('DELETE') <button class="btn btn-danger !py-0.5 !px-1.5 text-[11px]"><i class="fa-solid fa-trash"></i></button></form>
                     </div>
                 </div>
@@ -57,4 +55,22 @@
         </div>
     </div>
 </div>
+<div id="photoLb" class="hidden fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center gap-3 p-3" onclick="if(event.target===this) closePhotoLb()">
+    <img id="photoLbImg" alt="" class="max-w-full max-h-[80vh] object-contain">
+    <div class="flex gap-2">
+        <a id="photoLbDl" href="#" class="btn btn-primary"><i class="fa-solid fa-download"></i> Download</a>
+        <button type="button" class="btn btn-ghost" onclick="closePhotoLb()">Close</button>
+    </div>
+</div>
+<script>
+function closePhotoLb() { document.getElementById('photoLb').classList.add('hidden'); document.getElementById('photoLbImg').src = ''; }
+document.querySelectorAll('.photo-open').forEach(function (b) {
+    b.addEventListener('click', function () {
+        document.getElementById('photoLbImg').src = b.dataset.full;
+        document.getElementById('photoLbDl').href = b.dataset.dl;
+        document.getElementById('photoLb').classList.remove('hidden');
+    });
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePhotoLb(); });
+</script>
 @endsection
