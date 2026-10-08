@@ -260,4 +260,27 @@ class PackagesTest extends TestCase
         $sp = $this->pledge($sms, ['phone' => '255712345678']);
         $this->actingAs($smsAdmin)->get(route('guests.phone-sms', $sp))->assertNotFound();
     }
+
+    public function test_invitation_sms_carries_the_entry_code_and_host_can_record_an_rsvp(): void
+    {
+        $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'sms_language' => 'en', 'event_date' => now()->addDays(20)->toDateString()]);
+        $admin = $this->memberOf($full, 'admin');
+        $p = $this->pledge($full, ['phone' => '255712345678', 'invite_token' => Str::random(32)]);
+
+        $text = app(\App\Services\MessageTemplateService::class)->forInvitation($full, $p->fresh());
+        $this->assertStringContainsString('Your entry code: '.$p->fresh()->card_code, $text);
+
+        $this->actingAs($admin)->get(route('guests.index', ['tab' => 'rsvp']))->assertOk()->assertSee('Mark yes');
+        $this->actingAs($admin)->post(route('rsvp.mark', $p), ['response' => 'attending', 'plus_ones' => 1])->assertRedirect();
+        $this->assertSame('attending', $p->fresh()->rsvp_status);
+        $this->assertSame(1, (int) $p->fresh()->plus_ones);
+
+        $viewer = $this->memberOf($full, 'viewer');
+        $this->actingAs($viewer)->post(route('rsvp.mark', $p), ['response' => 'not_attending'])->assertForbidden();
+        $this->assertSame('attending', $p->fresh()->rsvp_status);
+
+        [$sms, $smsAdmin] = $this->smsEvent();
+        $sp = $this->pledge($sms, ['phone' => '255712345678']);
+        $this->assertStringNotContainsString('code', app(\App\Services\MessageTemplateService::class)->forInvitation($sms, $sp));
+    }
 }

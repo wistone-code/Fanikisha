@@ -49,6 +49,7 @@ class MessageTemplateService
             '{name}' => $pledge->name,
             '{place}' => $event->place ?? '',
             '{link}' => $event->hasFeature('cards') ? ($pledge->inviteLink() ?? '') : '',
+            '{code}' => $event->hasFeature('cards') ? (string) $pledge->card_code : '',
             '{event}' => $event->name,
             '{date}' => $event->event_date->format('d.m.Y'),
         ]));
@@ -213,6 +214,7 @@ class MessageTemplateService
             '{place}' => $event->place ? ', '.$event->venueLine() : '',
             '{time}' => $event->event_time ? ($event->sms_language === 'sw' ? ' saa ' : ' at ').$event->event_time : '',
             '{link}' => $pledge->inviteLink() ?? '',
+            '{code}' => (string) $pledge->card_code,
             '{hosts}' => $event->host_names ?: $event->name,
         ];
     }

@@ -269,6 +269,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
                 // RSVP extras (plus-ones, meals…) and the seating plan.
                 Route::post('/rsvp/reset-all', [DeliveryController::class, 'resetAllRsvp'])->name('rsvp.reset-all');
                 Route::post('/rsvp/{pledge}/reset', [DeliveryController::class, 'resetRsvp'])->name('rsvp.reset');
+                Route::post('/rsvp/{pledge}/mark', [DeliveryController::class, 'markRsvp'])->name('rsvp.mark');
                 Route::patch('/rsvp/settings', [GuestController::class, 'updateRsvpSettings'])->name('rsvp.settings');
                 Route::get('/seating', [SeatingController::class, 'index'])->name('seating.index');
                 Route::patch('/seating/mode', [SeatingController::class, 'updateMode'])->name('seating.mode');

@@ -83,6 +83,10 @@
                 <td class="px-4 py-3 text-gray-500 rsvp-timestamp" data-utc="{{ $p->rsvp_at?->clone()->timezone('UTC')->toIso8601String() }}">{{ $p->rsvp_at?->timezone('Africa/Dar_es_Salaam')->format('M j, g:i A') ?? '—' }}</td>
                 @if ($isAdmin)
                 <td class="px-4 py-3 text-right">
+                    @unless ($p->rsvp_status)
+                    <form method="POST" action="{{ route('rsvp.mark', $p) }}" class="inline">@csrf<input type="hidden" name="response" value="attending"><button class="text-xs font-semibold" style="color:var(--primary);" title="Guest said yes by phone, SMS or in person">Mark yes</button></form>
+                    <form method="POST" action="{{ route('rsvp.mark', $p) }}" class="inline ml-2">@csrf<input type="hidden" name="response" value="not_attending"><button class="text-xs font-semibold text-gray-500">Mark no</button></form>
+                    @endunless
                     @if ($p->rsvp_status)
                     <form method="POST" action="{{ route('rsvp.reset', $p) }}" onsubmit="return confirm('Reset {{ e(addslashes($p->name)) }}\'s RSVP and cancel the old link? You will need to send a new invite.');">@csrf<button class="text-xs font-semibold" style="color:var(--primary);" title="Clear the answer and cancel the old link"><i class="fa-solid fa-rotate-left"></i> Reset</button></form>
                     @endif

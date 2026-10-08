@@ -250,8 +250,8 @@ class Event extends Model
                 ? 'Habari {name}, kikumbusho cha mchango wako wa {event}: uliahidi {pledged}, umeshalipa {paid}, umebakiza {remain}. Lipa hapa: {pay_link}. Asante!'
                 : 'Dear {name}, friendly reminder on {event} contribution: pledged {pledged}, paid {paid} so far, {remain} remaining. Pay here: {pay_link}. Thank you!',
             'invitation' => $sw
-                ? 'Habari {name}, umealikwa kwenye {event}! Tujiunge tarehe {date}'.($this->place ? ' katika {place}' : '').($this->hasFeature('cards') ? '. Bofya kiungo chako kuthibitisha: {link}' : '. Karibu sana!')
-                : "Dear {name}, you're invited to {event}! Join us on {date}".($this->place ? ' at {place}' : '').($this->hasFeature('cards') ? '. Tap your link to RSVP: {link}' : '. We look forward to seeing you!'),
+                ? 'Habari {name}, umealikwa kwenye {event}! Tujiunge tarehe {date}'.($this->place ? ' katika {place}' : '').($this->hasFeature('cards') ? '. Bofya kiungo chako kuthibitisha: {link} Namba yako ya kuingia: {code}' : '. Karibu sana!')
+                : "Dear {name}, you're invited to {event}! Join us on {date}".($this->place ? ' at {place}' : '').($this->hasFeature('cards') ? '. Tap your link to RSVP: {link} Your entry code: {code}' : '. We look forward to seeing you!'),
             'announcement' => $sw
                 ? 'Habari {name}, hii ni taarifa kuhusu {event}'.($this->place ? ' katika {place}' : '').' tarehe {date}. Uwepo na msaada wako una maana kubwa kwa familia. Asante.'
                 : 'Dear {name}, this is to inform you about {event}'.($this->place ? ' at {place}' : '').' on {date}. Your presence and support mean a lot to the family. Thank you.',
@@ -268,8 +268,8 @@ class Event extends Model
                 ? 'Habari {name}, tulikukumbuka kwenye {event}. Asante kwa mawazo na dua zako. — {hosts}'
                 : 'Dear {name}, we missed you at {event}. Thank you for your thoughts and good wishes. — {hosts}',
             'event_day_reminder' => $sw
-                ? 'Habari {name}, leo ni {event}! Tarehe {date}{time}{place}. Kadi yako (QR ya kuingia): {link}'
-                : 'Dear {name}, today is {event}! {date}{time}{place}. Your card and entry QR: {link}',
+                ? 'Habari {name}, leo ni {event}! Tarehe {date}{time}{place}. Kadi yako (QR ya kuingia): {link} Namba: {code}'
+                : 'Dear {name}, today is {event}! {date}{time}{place}. Your card and entry QR: {link} Entry code: {code}',
             default => '',
         };
 

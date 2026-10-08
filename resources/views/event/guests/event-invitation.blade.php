@@ -123,7 +123,7 @@
             <form method="POST" action="{{ route('guests.message.invitation') }}">
                 @csrf @method('PATCH')
                 <textarea name="invitation_message" rows="6" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('invitation', false) }}</textarea>
-                <p class="text-[11px] text-gray-400 mt-1">You can use {name} {event_name} {event_type} {date} {place} {link}</p>
+                <p class="text-[11px] text-gray-400 mt-1">You can use {name} {event_name} {event_type} {date} {place} {link} {code}</p>
                 <button class="btn btn-primary mt-3"><i class="fa-solid fa-check"></i> Save message</button>
             </form>
         </div>

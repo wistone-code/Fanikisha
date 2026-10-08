@@ -167,6 +167,31 @@ class DeliveryController extends Controller
             : "{$pledge->name} was reset: the RSVP is cleared and the old link is cancelled. Use Send invite to create a new one.");
     }
 
+    /**
+     * The host records an answer for a guest who replied by phone call, SMS or in person
+     * (guests on basic phones cannot open the card link). Counts like an online RSVP.
+     */
+    public function markRsvp(\Illuminate\Http\Request $request, Pledge $pledge): RedirectResponse
+    {
+        $this->assertPledgeInCurrentEvent($pledge);
+        abort_unless($pledge->invite_token, 403, 'Activate the invitation link first.');
+
+        $data = $request->validate([
+            'response' => ['required', 'in:attending,not_attending'],
+            'plus_ones' => ['nullable', 'integer', 'min:0', 'max:20'],
+        ]);
+
+        $pledge->update([
+            'rsvp_status' => $data['response'],
+            'rsvp_at' => now(),
+            'plus_ones' => $data['response'] === 'attending' ? (int) ($data['plus_ones'] ?? $pledge->plus_ones ?? 0) : 0,
+        ]);
+
+        \App\Services\ActivityLogger::log('rsvp.marked', auth()->user()->name." recorded {$pledge->name} as ".str_replace('_', ' ', $data['response']), auth()->user(), app('currentEvent'));
+
+        return back()->with('status', "{$pledge->name} recorded as ".str_replace('_', ' ', $data['response']).'.');
+    }
+
     /** The same reset for every guest who has answered. */
     public function resetAllRsvp(): RedirectResponse
     {
