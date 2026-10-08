@@ -290,6 +290,8 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
                 Route::post('/photos/{photo}/toggle-hidden', [PhotoWallController::class, 'toggleHidden'])->name('photos.toggle-hidden');
                 Route::delete('/photos/{photo}', [PhotoWallController::class, 'destroy'])->name('photos.destroy');
                 Route::get('/photos/{photo}/thumb', [PhotoWallController::class, 'thumb'])->name('photos.thumb');
+                Route::get('/photos/{photo}/view', [PhotoWallController::class, 'view'])->name('photos.view');
+                Route::get('/photos/{photo}/download', [PhotoWallController::class, 'downloadOne'])->name('photos.download-one');
                 Route::get('/photos/download', [PhotoWallController::class, 'download'])->name('photos.download');
 
                 // Card design, venue and event-day reminder.

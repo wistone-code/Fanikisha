@@ -93,6 +93,20 @@ class PhotoWallAndAfterEventTest extends TestCase
         $this->assertSame(2, $event->photos()->count());
     }
 
+    public function test_admin_can_view_and_download_a_single_photo_only_from_their_own_event(): void
+    {
+        [$event, $admin] = $this->wallEvent();
+        $photo = EventPhoto::create(['event_id' => $event->id, 'uploader_key' => 'k', 'thumb' => 'x', 'image' => "\xFF\xD8jpegdata"]);
+
+        $this->actingAs($admin)->get(route('photos.index'))->assertOk()->assertSee(route('photos.view', $photo), false)->assertSee(route('photos.download-one', $photo), false);
+        $this->actingAs($admin)->get(route('photos.view', $photo))->assertOk()->assertHeader('Content-Type', 'image/jpeg');
+        $this->actingAs($admin)->get(route('photos.download-one', $photo))->assertOk()->assertHeader('Content-Disposition');
+
+        [$other, $otherAdmin] = $this->ecardEvent();
+        $this->actingAs($otherAdmin)->get(route('photos.view', $photo))->assertNotFound();
+        $this->actingAs($otherAdmin)->get(route('photos.download-one', $photo))->assertNotFound();
+    }
+
     public function test_per_guest_limit_is_enforced_across_uploads(): void
     {
         [$event] = $this->wallEvent();

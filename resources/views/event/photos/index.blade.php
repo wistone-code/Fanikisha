@@ -43,7 +43,9 @@
                 <img src="{{ route('photos.thumb', $p) }}" loading="lazy" class="w-full aspect-square object-cover" alt="">
                 <div class="p-2 text-[11px]">
                     <div class="truncate text-gray-600">{{ $p->uploader_name ?? 'Guest' }}@if ($p->reports) · <span class="text-red-600">{{ $p->reports }} report(s)</span>@endif</div>
-                    <div class="flex gap-1 mt-1">
+                    <div class="flex gap-1 mt-1 flex-wrap">
+                        <a href="{{ route('photos.view', $p) }}" target="_blank" rel="noopener" class="btn btn-ghost !py-0.5 !px-1.5 text-[11px]" title="View full photo"><i class="fa-solid fa-eye"></i> View</a>
+                        <a href="{{ route('photos.download-one', $p) }}" class="btn btn-ghost !py-0.5 !px-1.5 text-[11px]" title="Download this photo"><i class="fa-solid fa-download"></i></a>
                         <form method="POST" action="{{ route('photos.toggle-hidden', $p) }}">@csrf <button class="btn btn-ghost !py-0.5 !px-1.5 text-[11px]">{{ $p->hidden ? 'Show' : 'Hide' }}</button></form>
                         <form method="POST" action="{{ route('photos.destroy', $p) }}" data-confirm="Delete this photo for good?" data-confirm-title="Delete photo?">@csrf @method('DELETE') <button class="btn btn-danger !py-0.5 !px-1.5 text-[11px]"><i class="fa-solid fa-trash"></i></button></form>
                     </div>

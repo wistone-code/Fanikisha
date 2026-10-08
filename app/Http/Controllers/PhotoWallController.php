@@ -84,6 +84,22 @@ class PhotoWallController extends Controller
         return response($photo->thumb)->header('Content-Type', 'image/jpeg');
     }
 
+    /** The full-size picture, opened in the browser. */
+    public function view(EventPhoto $photo): Response
+    {
+        abort_unless($photo->event_id === app('currentEvent')->id, 404);
+
+        return response($photo->image)->header('Content-Type', 'image/jpeg')->header('Content-Disposition', 'inline; filename="photo-'.$photo->id.'.jpg"');
+    }
+
+    /** One full-size picture saved to the phone or computer. */
+    public function downloadOne(EventPhoto $photo): Response
+    {
+        abort_unless($photo->event_id === app('currentEvent')->id, 404);
+
+        return response($photo->image)->header('Content-Type', 'image/jpeg')->header('Content-Disposition', 'attachment; filename="'.Str::slug(app('currentEvent')->name).'-photo-'.$photo->id.'.jpg"');
+    }
+
     /** Every visible photo in one ZIP, for the family album. */
     public function download(): BinaryFileResponse|RedirectResponse
     {
