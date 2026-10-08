@@ -352,6 +352,10 @@ class UserManagementController extends Controller
     {
         abort_if($user->is_super_user, 404);
 
+        // The package is set on the event's admin account; viewers and door staff simply follow it.
+        $membership = $user->eventMemberships()->first();
+        abort_if($membership && $membership->role !== 'admin', 403, 'Change the package on the event admin account — viewers and door staff follow it.');
+
         $data = $request->validate(['package' => ['required', 'in:'.implode(',', array_keys(config('packages.packages')))]]);
         $old = $user->package ?: config('packages.default');
 

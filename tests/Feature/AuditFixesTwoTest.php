@@ -156,6 +156,24 @@ class AuditFixesTwoTest extends TestCase
         $this->assertNull($event->fresh()->sms_quota);
     }
 
+    public function test_viewers_and_door_staff_have_no_change_package_option_and_cannot_be_changed_directly(): void
+    {
+        $event = Event::factory()->create(['package' => 'sms', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);
+        $owner = $this->memberOf($event, 'admin');
+        $viewer = $this->memberOf($event, 'viewer');
+        $scanner = $this->memberOf($event, 'scanner');
+        $super = User::factory()->create(['is_super_user' => true]);
+
+        $html = $this->actingAs($super)->get(route('admin.users.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('id="changePackage'.$owner->id.'"', $html);
+        $this->assertStringNotContainsString('id="changePackage'.$viewer->id.'"', $html);
+        $this->assertStringNotContainsString('id="changePackage'.$scanner->id.'"', $html);
+
+        $this->actingAs($super)->patch(route('admin.users.package', $viewer), ['package' => 'full'])->assertForbidden();
+        $this->actingAs($super)->patch(route('admin.users.package', $scanner), ['package' => 'full'])->assertForbidden();
+        $this->assertSame('sms', $event->fresh()->package);
+    }
+
     public function test_new_team_members_get_the_events_package(): void
     {
         $event = Event::factory()->create(['package' => 'sms', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);

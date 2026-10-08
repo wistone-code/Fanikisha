@@ -177,7 +177,9 @@
                         <button onclick="toggleRowMenu('rowMenu{{ $account->id }}')" class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-ellipsis"></i></button>
                         <div id="rowMenu{{ $account->id }}" class="row-menu hidden absolute right-0 mt-1 w-52 bg-white text-[#1B2429] rounded-xl shadow-xl p-1 z-40 text-left">
                             <a href="{{ route('admin.logs.index', ['user' => $account->id]) }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-clock-rotate-left w-4"></i> Logs</a>
+                            @if ($account->role_label !== 'Viewer')
                             <button type="button" onclick="document.getElementById('changePackage{{ $account->id }}').classList.remove('hidden'); document.getElementById('rowMenu{{ $account->id }}').classList.add('hidden')" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-box w-4"></i> Change package</button>
+                            @endif
                             @if ($account->event_id)
                             <button type="button" onclick="document.getElementById('reassignEvent{{ $account->id }}').classList.remove('hidden'); document.getElementById('rowMenu{{ $account->id }}').classList.add('hidden')" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-right-left w-4"></i> Reassign event</button>
                             @endif
@@ -199,6 +201,7 @@
                 </td>
             </tr>
 
+            @if ($account->role_label !== 'Viewer')
             <div id="changePackage{{ $account->id }}" onclick="if(event.target===this) this.classList.add('hidden')" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
                     <h3 class="font-semibold mb-1">Change package</h3>
@@ -218,6 +221,7 @@
                     </form>
                 </div>
             </div>
+            @endif
 
             <div id="editAccount{{ $account->id }}" onclick="if(event.target===this) this.classList.add('hidden')" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
