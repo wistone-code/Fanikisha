@@ -68,6 +68,31 @@ class PhotoWallAndAfterEventTest extends TestCase
         $this->assertStringStartsWith("\xFF\xD8", $p->image); // JPEG
     }
 
+    public function test_guest_can_delete_their_own_photo_but_not_someone_elses(): void
+    {
+        [$event] = $this->wallEvent();
+        $amina = $this->guestCard($event, ['name' => 'Amina']);
+        $hawa = $this->guestCard($event, ['name' => 'Hawa']);
+
+        $this->postJson(route('wall.upload', 'WALLTOKEN123'), ['photos' => $this->photo(2), 'c' => $amina->invite_token])->assertOk();
+        $this->postJson(route('wall.upload', 'WALLTOKEN123'), ['photos' => $this->photo(1), 'c' => $hawa->invite_token])->assertOk();
+        $mine = $event->photos()->orderBy('id')->get();
+        $this->assertCount(3, $mine);
+
+        $this->get(route('wall.show', ['wallToken' => 'WALLTOKEN123', 'c' => $amina->invite_token]))->assertOk()->assertSee('data-mine="1"', false)->assertSee('lbDelete', false);
+
+        // Hawa cannot delete Amina's photo.
+        $this->flushSession();
+        $this->postJson(route('wall.delete', ['WALLTOKEN123', $mine[0]->id]), ['c' => $hawa->invite_token])->assertForbidden();
+        $this->assertSame(3, $event->photos()->count());
+
+        // Amina can, and it frees a place in her limit.
+        $this->flushSession();
+        $this->get(route('wall.show', ['wallToken' => 'WALLTOKEN123', 'c' => $amina->invite_token]));
+        $this->postJson(route('wall.delete', ['WALLTOKEN123', $mine[0]->id]))->assertOk();
+        $this->assertSame(2, $event->photos()->count());
+    }
+
     public function test_per_guest_limit_is_enforced_across_uploads(): void
     {
         [$event] = $this->wallEvent();

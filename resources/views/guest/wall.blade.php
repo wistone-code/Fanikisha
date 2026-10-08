@@ -53,14 +53,14 @@
 
     <div class="grid" id="grid">
     @foreach ($photos as $p)
-        <button type="button" data-id="{{ $p->id }}"><img loading="lazy" src="{{ route('wall.thumb', [$event->photo_wall_token, $p->id]) }}" alt=""></button>
+        <button type="button" data-id="{{ $p->id }}" data-mine="{{ in_array($p->id, $mineIds, true) ? 1 : 0 }}"><img loading="lazy" src="{{ route('wall.thumb', [$event->photo_wall_token, $p->id]) }}" alt=""></button>
     @endforeach
     </div>
     @if ($photos->isEmpty())<p style="text-align:center;opacity:.6;font-size:14px;margin-top:30px">No photos yet — be the first!</p>@endif
 @endif
 </main>
 
-<div id="lb"><img id="lbImg" alt=""><div><button id="lbReport" type="button">Report</button> <button id="lbClose" type="button">Close</button></div></div>
+<div id="lb"><img id="lbImg" alt=""><div><button id="lbReport" type="button">Report</button> <button id="lbDelete" type="button" style="display:none;background:#b91c1c">Delete</button> <button id="lbClose" type="button">Close</button></div></div>
 
 <script>
 const base = {{ Js::from(route('wall.show', $event->photo_wall_token)) }};
@@ -112,10 +112,17 @@ let current = null;
 document.getElementById('grid')?.addEventListener('click', function (e) {
     const b = e.target.closest('button'); if (!b) return;
     current = b.dataset.id;
+    document.getElementById('lbDelete').style.display = b.dataset.mine === '1' ? '' : 'none';
+    document.getElementById('lbReport').style.display = b.dataset.mine === '1' ? 'none' : '';
     document.getElementById('lbImg').src = base + '/photos/' + current;
     document.getElementById('lb').style.display = 'flex';
 });
 document.getElementById('lbClose').addEventListener('click', function () { document.getElementById('lb').style.display = 'none'; document.getElementById('lbImg').src = ''; });
+document.getElementById('lbDelete').addEventListener('click', function () {
+    if (!current || !confirm('Delete this photo? It cannot be undone.')) return;
+    fetch(base + '/photos/' + current + '/delete', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } })
+        .then(function (r) { if (r.ok) { location.reload(); } else { alert('Could not delete this photo.'); } });
+});
 document.getElementById('lbReport').addEventListener('click', function () {
     if (!current) return;
     fetch(base + '/photos/' + current + '/report', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } })

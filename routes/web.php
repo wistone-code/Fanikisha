@@ -68,6 +68,7 @@ Route::get('/rsvp/{token}/calendar.ics', [GuestCardController::class, 'calendar'
 Route::get('/wall/{wallToken}', [PublicPhotoWallController::class, 'show'])->name('wall.show');
 Route::post('/wall/{wallToken}/pin', [PublicPhotoWallController::class, 'pin'])->middleware('throttle:10,1')->name('wall.pin');
 Route::post('/wall/{wallToken}/upload', [PublicPhotoWallController::class, 'upload'])->middleware('throttle:30,1')->name('wall.upload');
+Route::post('/wall/{wallToken}/photos/{photo}/delete', [PublicPhotoWallController::class, 'destroy'])->middleware('throttle:30,1')->name('wall.delete');
 Route::post('/wall/{wallToken}/photos/{photo}/report', [PublicPhotoWallController::class, 'report'])->middleware('throttle:20,1')->name('wall.report');
 Route::get('/wall/{wallToken}/photos/{photo}/thumb', [PublicPhotoWallController::class, 'thumb'])->name('wall.thumb');
 Route::get('/wall/{wallToken}/photos/{photo}', [PublicPhotoWallController::class, 'full'])->name('wall.full');

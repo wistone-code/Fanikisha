@@ -76,7 +76,8 @@ class PublicPhotoWallController extends Controller
             'theme' => app(EventThemeService::class)->forEvent($event),
             'needsPin' => $needsPin,
             'needsCard' => $needsCard,
-            'photos' => ($needsPin || $needsCard) ? collect() : $event->photos()->where('hidden', false)->orderByDesc('id')->get(['id']),
+            'photos' => $photos = ($needsPin || $needsCard) ? collect() : $event->photos()->where('hidden', false)->orderByDesc('id')->get(['id', 'uploader_key']),
+            'mineIds' => ($mine = $this->existingKey($request, $event, $guest)) ? $photos->where('uploader_key', $mine)->pluck('id')->all() : [],
             'closedReason' => $this->uploadsClosedReason($event),
             'guest' => $guest,
             'perGuest' => $event->photo_wall_max_per_guest,
@@ -154,6 +155,31 @@ class PublicPhotoWallController extends Controller
             : "{$saved} photo(s) added — thank you!";
 
         return $this->reply($request, ['ok' => $saved > 0, 'message' => $message, 'saved' => $saved], $saved > 0 ? 200 : 422);
+    }
+
+    /** The uploader key of this visitor if they already have one (their card, or the browser id set on first upload). */
+    private function existingKey(Request $request, Event $event, ?Pledge $guest): ?string
+    {
+        $deviceId = $request->cookie('fk_u');
+        $source = $guest?->invite_token ?? (is_string($deviceId) && strlen($deviceId) >= 16 ? $deviceId : null);
+
+        return $source ? hash('sha256', $source.'|'.$event->id) : null;
+    }
+
+    /** A guest can remove a photo they added themselves. */
+    public function destroy(Request $request, string $wallToken, EventPhoto $photo): JsonResponse
+    {
+        $event = $this->wall($wallToken);
+        abort_unless($photo->event_id === $event->id, 404);
+        abort_if(filled($event->photo_wall_pin) && ! $request->session()->get("wall_pin_{$event->id}"), 403);
+
+        $guest = $this->guestFrom($request, $event);
+        $key = $this->existingKey($request, $event, $guest);
+        abort_unless($key && hash_equals((string) $photo->uploader_key, $key), 403, 'You can only delete your own photos.');
+
+        $photo->delete();
+
+        return response()->json(['ok' => true]);
     }
 
     public function report(Request $request, string $wallToken, EventPhoto $photo): JsonResponse
