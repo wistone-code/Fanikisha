@@ -366,4 +366,12 @@ class AuditFixesTwoTest extends TestCase
             $this->assertStringNotContainsString('?key=', $src);
         }
     }
+
+    public function test_event_home_banner_shows_the_event_type(): void
+    {
+        $event = Event::factory()->create(['package' => 'sms', 'mode' => 'contributions', 'event_type' => 'Send-off', 'event_date' => now()->addDays(20)->toDateString()]);
+        $admin = $this->memberOf($event, 'admin');
+
+        $this->actingAs($admin)->get(route('dashboard'))->assertOk()->assertSee('Send-off');
+    }
 }
