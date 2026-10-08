@@ -144,6 +144,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
     Route::middleware('resolve_event')->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/manual', [\App\Http\Controllers\ManualController::class, 'show'])->name('manual');
 
         Route::get('/financial', [FinancialController::class, 'index'])->name('financial.index');
 

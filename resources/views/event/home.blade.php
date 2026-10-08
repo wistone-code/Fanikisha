@@ -34,5 +34,9 @@
             <div class="font-medium">{{ $item['label'] }}</div>
         </a>
     @endforeach
+    <a href="{{ route('manual') }}" class="card p-4 flex items-center gap-3 hover:shadow-md transition">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:#E7EDF1;color:var(--primary);"><i class="fa-solid fa-book-open"></i></div>
+        <div class="font-medium">User Manual</div>
+    </a>
 </div>
 @endsection

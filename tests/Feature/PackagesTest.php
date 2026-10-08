@@ -226,4 +226,21 @@ class PackagesTest extends TestCase
         $this->actingAs($organiser)->patch(route('admin.users.package', $other), ['package' => 'full'])->assertForbidden();
         $this->actingAs($this->superUser())->patch(route('admin.users.package', $other), ['package' => 'gold'])->assertSessionHasErrors('package');
     }
+
+    public function test_in_app_manual_shows_only_what_the_package_includes(): void
+    {
+        [$event, $admin] = $this->smsEvent();
+        $this->actingAs($admin)->get(route('dashboard'))->assertOk()->assertSee('User Manual')->assertSee(route('manual'), false);
+        $this->actingAs($admin)->get(route('manual'))->assertOk()
+            ->assertSee('Reminders and Pay now')->assertSee('Meeting invitation')
+            ->assertDontSee('Seating plan')->assertDontSee('Photo wall');
+
+        $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);
+        $fullAdmin = $this->memberOf($full, 'admin');
+        $this->actingAs($fullAdmin)->get(route('manual'))->assertOk()
+            ->assertSee('Seating plan')->assertSee('Photo wall')->assertSee('Check-in at the entrance');
+
+        $viewer = $this->memberOf($full, 'viewer');
+        $this->actingAs($viewer)->get(route('manual'))->assertOk()->assertDontSee('Team management')->assertDontSee('Setting up your event');
+    }
 }
