@@ -244,23 +244,6 @@ class PackagesTest extends TestCase
         $this->actingAs($viewer)->get(route('manual'))->assertOk()->assertDontSee('Team management')->assertDontSee('Setting up your event');
     }
 
-    public function test_phone_sms_button_opens_the_phones_messages_app_on_card_packages_only(): void
-    {
-        $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);
-        $admin = $this->memberOf($full, 'admin');
-        $p = $this->pledge($full, ['phone' => '255712345678', 'invite_token' => Str::random(32)]);
-
-        $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('guests/'.$p->id.'/phone-sms', false);
-        $this->actingAs($admin)->get(route('guests.phone-sms', $p))->assertOk()
-            ->assertSee('sms:+255712345678?&amp;body=', false);
-        $this->assertSame('phone', $p->fresh()->invite_channel);
-        $this->assertNotNull($p->fresh()->invite_sent_at);
-
-        [$sms, $smsAdmin] = $this->smsEvent();
-        $sp = $this->pledge($sms, ['phone' => '255712345678']);
-        $this->actingAs($smsAdmin)->get(route('guests.phone-sms', $sp))->assertNotFound();
-    }
-
     public function test_invitation_sms_carries_the_entry_code_and_host_can_record_an_rsvp(): void
     {
         $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'sms_language' => 'en', 'event_date' => now()->addDays(20)->toDateString()]);

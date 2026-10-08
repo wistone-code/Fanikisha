@@ -314,28 +314,6 @@ class GuestController extends Controller
         return redirect()->away("https://wa.me/{$digits}?text={$text}");
     }
 
-    /**
-     * Opens the host's own Messages app with the invitation text ready to send, so a normal
-     * phone (no SMS quota, no gateway) can deliver the card. Counts as sent once opened.
-     */
-    public function invitePhoneSms(Pledge $pledge, MessageTemplateService $messages, PhoneNumberService $phones): \Illuminate\Contracts\View\View|RedirectResponse
-    {
-        abort_unless(app('currentEvent')->hasFeature('cards'), 404);
-        $this->assertPledgeInCurrentEvent($pledge);
-        if ($blocked = app(\App\Services\OptOutService::class)->blockedRedirect($pledge->phone)) {
-            return $blocked;
-        }
-        abort_unless($this->canSendInvite($pledge), 403, 'Activate the invitation link first.');
-
-        $event = app('currentEvent');
-        $number = '+'.$phones->digitsOnly($pledge->phone);
-        $body = rawurlencode($messages->forInvitation($event, $pledge));
-
-        $pledge->update(['invite_sent_at' => $pledge->invite_sent_at ?? now(), 'invite_channel' => $pledge->invite_channel ?? 'phone']);
-
-        return view('event.guests.phone-sms', ['pledge' => $pledge, 'smsUrl' => "sms:{$number}?&body={$body}"]);
-    }
-
     public function updateInvitationMessage(Request $request): RedirectResponse
     {
         $data = $request->validate(['invitation_message' => ['required', 'string', 'max:5000']]);

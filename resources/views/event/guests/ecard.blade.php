@@ -63,7 +63,6 @@
                                 <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
                             </form>
                             @endif
-                            <a href="{{ route('guests.phone-sms', $g) }}" class="btn btn-ghost !py-1.5 !px-2.5" title="Opens your phone's Messages app with the card ready to send"><i class="fa-solid fa-mobile-screen"></i> Phone SMS</a>
                             <a href="{{ route('guests.whatsapp', $g) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i></a>
                             @endif
                             <form method="POST" action="{{ route('rsvp.reset', $g) }}" class="inline" data-confirm="Reset {{ $g->name }}'s card link? The old link stops working and any RSVP answer is cleared. A new link is created straight away." data-confirm-title="Reset link?" data-confirm-button="Reset">@csrf
