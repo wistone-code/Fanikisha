@@ -89,6 +89,7 @@
                                     <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
                                 </form>
                                 @if ($cards)
+                                <a href="{{ route('guests.phone-sms', $p) }}" class="btn btn-ghost !py-1.5 !px-2.5" title="Opens your phone's Messages app with the card ready to send"><i class="fa-solid fa-mobile-screen"></i> Phone SMS</a>
                                 <a href="{{ route('guests.whatsapp', $p) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
                                 @endif
                             @elseif ($p->invite_token && $cards)

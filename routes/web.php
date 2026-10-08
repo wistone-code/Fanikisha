@@ -314,6 +314,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
             Route::post('/guests/{pledge}/send-invite', [GuestController::class, 'sendInvite'])->middleware('feature:cards')->name('guests.send-invite');
             Route::post('/guests/{pledge}/sms', [GuestController::class, 'inviteSms'])->name('guests.sms');
             Route::get('/guests/{pledge}/whatsapp', [GuestController::class, 'inviteWhatsApp'])->name('guests.whatsapp');
+            Route::get('/guests/{pledge}/phone-sms', [GuestController::class, 'invitePhoneSms'])->name('guests.phone-sms');
             Route::patch('/guests/message/invitation', [GuestController::class, 'updateInvitationMessage'])->name('guests.message.invitation');
             Route::post('/guests/meeting/broadcast-sms', [GuestController::class, 'meetingBroadcastSms'])->name('guests.meeting.broadcast-sms');
             Route::patch('/guests/message/meeting', [GuestController::class, 'updateMeetingMessage'])->name('guests.message.meeting');
