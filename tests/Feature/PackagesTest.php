@@ -130,6 +130,22 @@ class PackagesTest extends TestCase
         $this->assertNotNull($p->fresh()->invite_sent_at);
     }
 
+    public function test_sms_package_has_no_whatsapp_button_but_full_package_does(): void
+    {
+        [$event, $admin] = $this->smsEvent();
+        $p = $this->pledge($event, ['phone' => '255712345678']);
+
+        $html = $this->actingAs($admin)->get(route('guests.index'))->assertOk()->assertSee('SMS')->getContent();
+        $this->assertStringNotContainsString('/whatsapp', $html);
+        $this->assertStringNotContainsString('fa-whatsapp', $html);
+        $this->actingAs($admin)->get(route('guests.whatsapp', $p))->assertNotFound();
+
+        $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);
+        $fullAdmin = $this->memberOf($full, 'admin');
+        $fp = $this->pledge($full, ['phone' => '255712345678', 'invite_token' => Str::random(32)]);
+        $this->actingAs($fullAdmin)->get(route('guests.index'))->assertOk()->assertSee('guests/'.$fp->id.'/whatsapp', false);
+    }
+
     public function test_sms_package_cannot_activate_card_links(): void
     {
         [$event, $admin] = $this->smsEvent();

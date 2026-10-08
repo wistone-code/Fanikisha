@@ -297,6 +297,7 @@ class GuestController extends Controller
 
     public function inviteWhatsApp(Pledge $pledge, MessageTemplateService $messages, PhoneNumberService $phones): RedirectResponse
     {
+        abort_unless(app('currentEvent')->hasFeature('cards'), 404);
         $this->assertPledgeInCurrentEvent($pledge);
         if ($blocked = app(\App\Services\OptOutService::class)->blockedRedirect($pledge->phone)) {
             return $blocked;
