@@ -284,7 +284,7 @@ class GuestController extends Controller
         abort_unless($this->canSendInvite($pledge), 403, 'Activate the invitation link first.');
 
         $event = app('currentEvent');
-        $result = $sms->sendSingle($messages->forInvitation($event, $pledge), $pledge->phone);
+        $result = $sms->sendSingle($messages->forInvitationSms($event, $pledge), $pledge->phone);
 
         if ($result['successful']) {
             $pledge->update(['invite_sent_at' => now(), 'invite_channel' => 'sms']);

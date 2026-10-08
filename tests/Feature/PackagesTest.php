@@ -288,4 +288,22 @@ class PackagesTest extends TestCase
         $viewer = $this->memberOf($full, 'viewer');
         $this->actingAs($viewer)->get(route('dashboard'))->assertOk()->assertDontSee('Event Photos');
     }
+
+    public function test_sms_invitation_has_the_entry_code_and_no_link_while_whatsapp_keeps_the_link(): void
+    {
+        $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'sms_language' => 'en', 'place' => 'Hall', 'event_date' => now()->addDays(20)->toDateString(), 'invitation_message' => 'Hi {name}, tap to RSVP: {link}']);
+        $p = $this->pledge($full, ['phone' => '255712345678', 'invite_token' => Str::random(32)]);
+        $svc = app(\App\Services\MessageTemplateService::class);
+
+        $sms = $svc->forInvitationSms($full->fresh(), $p->fresh());
+        $this->assertStringNotContainsString('http', $sms);
+        $this->assertStringNotContainsString('tap to RSVP', $sms);
+        $this->assertStringContainsString($p->fresh()->card_code, $sms);
+        $this->assertStringContainsString('/rsvp/', $svc->forInvitation($full->fresh(), $p->fresh()));
+
+        $full->update(['invitation_message' => 'Karibu {name}, tukutane {place}']);
+        $sms = $svc->forInvitationSms($full->fresh(), $p->fresh());
+        $this->assertStringStartsWith('Karibu', $sms);
+        $this->assertStringContainsString($p->fresh()->card_code, $sms);
+    }
 }

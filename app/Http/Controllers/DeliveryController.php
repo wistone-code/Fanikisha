@@ -83,7 +83,7 @@ class DeliveryController extends Controller
         }
 
         $result = $sms->sendPersonalised($targets->map(fn (Pledge $p) => (object) [
-            'key' => $p->id, 'phone' => $p->phone, 'message' => $messages->forInvitation($event, $p),
+            'key' => $p->id, 'phone' => $p->phone, 'message' => $messages->forInvitationSms($event, $p),
         ]));
 
         $this->markSentIds($result['ok_keys'] ?? [], 'sms');

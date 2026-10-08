@@ -43,6 +43,41 @@ class MessageTemplateService
     /**
      * Placeholders: {name} {place} {link}
      */
+    /**
+     * The invitation sent by SMS carries the guest's entry code instead of a link, so it works on any phone.
+     * A message you wrote yourself is used as written when it has no {link}; otherwise the standard
+     * text is sent. The code is always included. Contributions accounts (no cards) are unaffected.
+     */
+    public function forInvitationSms(Event $event, Pledge $pledge): string
+    {
+        if (! $event->hasFeature('cards')) {
+            return $this->forInvitation($event, $pledge);
+        }
+
+        $sw = $event->sms_language === 'sw';
+        $custom = $event->invitation_message;
+        $template = $custom && ! str_contains($custom, '{link}')
+            ? $custom
+            : ($sw
+                ? 'Habari {name}, umealikwa kwenye {event}! Tujiunge tarehe {date}'.($event->place ? ' katika {place}' : '').'. Namba yako ya kuingia: {code}. Itaje mlangoni.'
+                : "Dear {name}, you're invited to {event}! Join us on {date}".($event->place ? ' at {place}' : '').'. Your entry code: {code}. Please give it at the door.');
+
+        $text = trim(strtr($template, [
+            '{name}' => $pledge->name,
+            '{place}' => $event->place ?? '',
+            '{code}' => (string) $pledge->card_code,
+            '{wall_link}' => $this->wallLink($event, $pledge),
+            '{event}' => $event->name,
+            '{date}' => $event->event_date->format('d.m.Y'),
+        ]));
+
+        if ($pledge->card_code && ! str_contains($text, (string) $pledge->card_code)) {
+            $text .= ($sw ? ' Namba yako ya kuingia: ' : ' Your entry code: ').$pledge->card_code;
+        }
+
+        return $text;
+    }
+
     public function forInvitation(Event $event, Pledge $pledge): string
     {
         $text = trim(strtr($event->messageOrDefault('invitation'), [
