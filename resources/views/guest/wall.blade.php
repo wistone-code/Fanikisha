@@ -26,6 +26,9 @@
 <body>
 <header><h1>{{ $event->name }}</h1><div class="sub">Shared photos · Picha za pamoja</div></header>
 <main>
+@if ($guest)
+    <a href="{{ route('guest.rsvp', $guest->invite_token) }}" style="display:inline-block;margin:0 0 12px;color:#fff;opacity:.9;font-size:14px;font-weight:600;text-decoration:none">&larr; Back to my card</a>
+@endif
 @if ($needsPin)
     <div class="box"><strong>Enter the PIN</strong><p style="font-size:13px;color:#555;margin:4px 0">Ask the hosts for the PIN to see the photos.</p>
         <form method="POST" action="{{ route('wall.pin', $event->photo_wall_token) }}">@csrf

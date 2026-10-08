@@ -306,4 +306,15 @@ class PackagesTest extends TestCase
         $this->assertStringStartsWith('Karibu', $sms);
         $this->assertStringContainsString($p->fresh()->card_code, $sms);
     }
+
+    public function test_photo_wall_has_a_back_to_card_link_for_guests(): void
+    {
+        $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString(), 'photo_wall_enabled' => true, 'photo_wall_token' => Str::random(24), 'photo_wall_open_mode' => 'always']);
+        $p = $this->pledge($full, ['phone' => '255712345678', 'invite_token' => Str::random(32)]);
+
+        $this->get(route('wall.show', ['wallToken' => $full->photo_wall_token, 'c' => $p->invite_token]))->assertOk()
+            ->assertSee('Back to my card')->assertSee(route('guest.rsvp', $p->invite_token), false);
+        $this->flushSession();
+        $this->get(route('wall.show', $full->photo_wall_token))->assertOk()->assertDontSee('Back to my card');
+    }
 }
