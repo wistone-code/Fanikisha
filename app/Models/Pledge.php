@@ -17,6 +17,7 @@ class Pledge extends Model
         'group_name', 'seating_table_id', 'seating_area_id', 'seat_number',
         'thank_you_sent_at', 'invite_revoked_at', 'scan_attempts', 'event_day_reminder_sent_at',
         'guest_only', 'on_invite_list',
+        'whatsapp_message_id', 'whatsapp_status', 'whatsapp_status_at', 'whatsapp_error',
     ];
 
     protected static function booted(): void
@@ -41,6 +42,7 @@ class Pledge extends Model
             'unopened_reminded_at' => 'datetime',
             'thank_you_sent_at' => 'datetime',
             'invite_revoked_at' => 'datetime',
+            'whatsapp_status_at' => 'datetime',
             'event_day_reminder_sent_at' => 'datetime',
             'guest_only' => 'boolean',
             'on_invite_list' => 'boolean',

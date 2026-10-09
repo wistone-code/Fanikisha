@@ -23,6 +23,9 @@ return [
         'token' => env('WHATSAPP_TOKEN'),
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
         'api_version' => env('WHATSAPP_API_VERSION', 'v25.0'),
+        // Webhook: the word you type into Meta's "Verify token" box, and the App secret (App settings > Basic) that signs each report.
+        'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+        'app_secret' => env('WHATSAPP_APP_SECRET'),
         'invite_template' => env('WHATSAPP_TEMPLATE_INVITE', 'event_invitation'),
         'invite_template_sw' => env('WHATSAPP_TEMPLATE_INVITE_SW', 'event_invitation_sw'),
         // Used instead when the event has its own card design or photo: same text, with an Image header.

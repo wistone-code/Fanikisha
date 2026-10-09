@@ -20,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append(SecurityHeaders::class);
+
+        // Meta's WhatsApp reports are server-to-server calls with no session; they are checked by signature instead.
+        $middleware->validateCsrfTokens(except: ['webhooks/whatsapp']);
         $middleware->web(append: [\App\Http\Middleware\NoteSignedInDevice::class]);
 
         // IMPORTANT if deployed behind a load balancer / reverse proxy (nginx,

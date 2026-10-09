@@ -57,6 +57,10 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->
 
 // ---- Public guest card (no login — the secret link is the key) -------------------------
 Route::get('/rsvp/{token}', [GuestCardController::class, 'show'])->name('guest.rsvp');
+// WhatsApp (Meta) delivery reports. Public: GET answers Meta's set-up check, POST is signature-checked.
+Route::get('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');
+Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'receive'])->middleware('throttle:600,1')->name('webhooks.whatsapp.receive');
+
 Route::post('/rsvp/{token}/stop', [GuestCardController::class, 'stopMessages'])->middleware('throttle:10,1')->name('guest.rsvp.stop');
 Route::post('/rsvp/{token}/respond', [GuestCardController::class, 'respond'])->middleware('throttle:30,1')->name('guest.rsvp.respond');
 Route::get('/rsvp/{token}/photo', [GuestCardController::class, 'photo'])->name('guest.rsvp.photo');

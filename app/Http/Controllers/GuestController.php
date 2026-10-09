@@ -346,7 +346,15 @@ class GuestController extends Controller
             return back()->with('error', 'WhatsApp send failed: '.($result['error'] ?? 'Unknown error'));
         }
 
-        $pledge->update(['invite_sent_at' => now(), 'invite_channel' => 'whatsapp']);
+        $pledge->update([
+            'invite_sent_at' => now(),
+            'invite_channel' => 'whatsapp',
+            // Meta's webhook reports delivered / read / failed against this id.
+            'whatsapp_message_id' => $result['message_id'] ?? null,
+            'whatsapp_status' => 'sent',
+            'whatsapp_status_at' => now(),
+            'whatsapp_error' => null,
+        ]);
 
         return back()->with('status', "Invitation sent to {$pledge->name} on WhatsApp.");
     }
