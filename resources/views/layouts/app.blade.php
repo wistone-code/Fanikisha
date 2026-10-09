@@ -505,12 +505,16 @@ document.querySelectorAll('table.sortable-table thead th[data-sort]').forEach(fu
                     if (match) visible++;
                 });
             } else {
+                // Rows a filter-chip row has hidden (data-hidden-by-filter) stay hidden whatever is typed.
+                const filtered = rows.some(function (r) { return r.hasAttribute('data-hidden-by-filter'); });
                 rows.forEach(function (r) {
-                    if (r.querySelector('td[colspan]')) { r.style.display = q ? 'none' : ''; return; }
-                    const match = !q || r.textContent.toLowerCase().includes(q);
+                    if (r.querySelector('td[colspan]')) { r.style.display = (q || filtered) ? 'none' : ''; return; }
+                    const match = !r.hasAttribute('data-hidden-by-filter') && (!q || r.textContent.toLowerCase().includes(q));
                     r.style.display = match ? '' : 'none';
                     if (match) visible++;
                 });
+                noMatch.classList.toggle('hidden', (!q && !filtered) || visible > 0);
+                return;
             }
 
             noMatch.classList.toggle('hidden', !q || visible > 0);

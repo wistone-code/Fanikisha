@@ -39,6 +39,20 @@
     </div>
 </div>
 
+@if (! $isFuneral && $pledges->count() > 1)
+@php($nPaid = $pledges->filter(fn ($p) => $p->isPaidInFull())->count())
+@php($nPart = $pledges->filter(fn ($p) => ! $p->isPaidInFull() && (float) $p->paid > 0)->count())
+@php($nNone = $pledges->filter(fn ($p) => (float) $p->paid <= 0)->count())
+@php($nNoPhone = $pledges->filter(fn ($p) => blank($p->phone))->count())
+<div id="pledgeFilters" class="flex flex-wrap gap-1.5 mb-3 text-xs font-semibold" role="group" aria-label="Filter pledges">
+    <button type="button" data-filter="all" class="px-3 py-1.5 rounded-full bg-[var(--primary)] text-white">All <span class="opacity-70">{{ $pledges->count() }}</span></button>
+    <button type="button" data-filter="paid" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-500">Paid in full <span class="opacity-70">{{ $nPaid }}</span></button>
+    <button type="button" data-filter="part" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-500">Part paid <span class="opacity-70">{{ $nPart }}</span></button>
+    <button type="button" data-filter="none" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-500">Not paid yet <span class="opacity-70">{{ $nNone }}</span></button>
+    <button type="button" data-filter="nophone" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-500">No phone <span class="opacity-70">{{ $nNoPhone }}</span></button>
+</div>
+@endif
+
 <div class="card overflow-x-auto">
     <table class="w-full text-sm sortable-table">
         <thead>
@@ -57,7 +71,7 @@
         </thead>
         <tbody>
             @forelse ($pledges as $p)
-            <tr class="border-b last:border-0">
+            <tr class="border-b last:border-0" data-pay="{{ $p->isPaidInFull() ? 'paid' : ((float) $p->paid > 0 ? 'part' : 'none') }}" data-phone="{{ blank($p->phone) ? 'no' : 'yes' }}">
                 <td class="px-4 py-3 font-semibold">{{ $p->name }}</td>
                 @if ($isFuneral)
                     <td class="px-4 py-3">{{ number_format($p->paid) }}</td>
@@ -277,5 +291,36 @@
     }
 </script>
 @endif{{-- gemini api key configured --}}
+@endif
+
+@if (! $isFuneral && $pledges->count() > 1)
+<script>
+(function () {
+    const bar = document.getElementById('pledgeFilters');
+    const table = document.querySelector('table.sortable-table');
+    if (!bar || !table) return;
+    bar.addEventListener('click', function (e) {
+        const btn = e.target.closest('button[data-filter]');
+        if (!btn) return;
+        const f = btn.dataset.filter;
+        bar.querySelectorAll('button').forEach(function (b) {
+            const on = b === btn;
+            b.classList.toggle('bg-[var(--primary)]', on);
+            b.classList.toggle('text-white', on);
+            b.classList.toggle('bg-gray-100', !on);
+            b.classList.toggle('text-gray-500', !on);
+        });
+        Array.from(table.tBodies[0].rows).forEach(function (r) {
+            if (!r.dataset.pay) return;
+            const show = f === 'all' || (f === 'nophone' ? r.dataset.phone === 'no' : r.dataset.pay === f);
+            r.toggleAttribute('data-hidden-by-filter', !show);
+        });
+        // Re-run the search box so a typed search and the chip work together.
+        const search = document.querySelector('main input[type="search"]');
+        if (search) { search.dispatchEvent(new Event('input')); }
+        else { Array.from(table.tBodies[0].rows).forEach(function (r) { r.style.display = r.hasAttribute('data-hidden-by-filter') ? 'none' : ''; }); }
+    });
+})();
+</script>
 @endif
 @endsection
