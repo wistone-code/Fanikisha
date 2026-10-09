@@ -89,7 +89,17 @@
                                     <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
                                 </form>
                                 @if ($cards)
+                                @if (app(\App\Services\WhatsAppCloudService::class)->isConfigured())
+                                @if ($event->hasWhatsappCapacity())
+                                <form method="POST" action="{{ route('guests.whatsapp-send', $p) }}" class="inline">@csrf
+                                    <button class="btn btn-primary !py-1.5 !px-2.5" title="Send the invitation on WhatsApp"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
+                                </form>
+                                @else
+                                <button type="button" disabled class="btn btn-primary !py-1.5 !px-2.5 opacity-40 cursor-not-allowed" title="WhatsApp invitation quota used up — send by SMS"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
+                                @endif
+                                @else
                                 <a href="{{ route('guests.whatsapp', $p) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+                                @endif
                                 @endif
                             @elseif ($p->invite_token && $cards)
                                 <span class="text-xs text-gray-400">No phone number</span>

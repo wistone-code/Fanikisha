@@ -63,7 +63,17 @@
                                 <button class="btn btn-ghost !py-1.5 !px-2.5"><i class="fa-solid fa-comment-sms"></i> SMS</button>
                             </form>
                             @endif
+                            @if ($g->phone && app(\App\Services\WhatsAppCloudService::class)->isConfigured())
+                            @if ($event->hasWhatsappCapacity())
+                            <form method="POST" action="{{ route('guests.whatsapp-send', $g) }}" class="inline">@csrf
+                                <button class="btn btn-primary !py-1.5 !px-2.5" title="Send the invitation on WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
+                            </form>
+                            @else
+                            <button type="button" disabled class="btn btn-primary !py-1.5 !px-2.5 opacity-40 cursor-not-allowed" title="WhatsApp invitation quota used up — send by SMS"><i class="fa-brands fa-whatsapp"></i></button>
+                            @endif
+                            @else
                             <a href="{{ route('guests.whatsapp', $g) }}" class="btn btn-primary !py-1.5 !px-2.5"><i class="fa-brands fa-whatsapp"></i></a>
+                            @endif
                             @endif
                             <form method="POST" action="{{ route('rsvp.reset', $g) }}" class="inline" data-confirm="Reset {{ $g->name }}'s card link? The old link stops working and any RSVP answer is cleared. A new link is created straight away." data-confirm-title="Reset link?" data-confirm-button="Reset">@csrf
                                 <button class="btn btn-ghost !py-1.5 !px-2.5" title="Reset link"><i class="fa-solid fa-rotate-left"></i></button>

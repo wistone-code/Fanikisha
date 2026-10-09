@@ -17,7 +17,7 @@ class Event extends Model
         'invitation_message', 'meeting_message', 'announcement_message', 'committee_message',
         'schedule_message',
         'reminder_auto_enabled', 'reminder_auto_frequency_days', 'reminder_auto_time', 'reminder_auto_last_sent_at',
-        'sms_quota', 'sms_sent_count', 'card_photo', 'card_photo_mime',
+        'sms_quota', 'sms_sent_count', 'whatsapp_quota', 'whatsapp_sent_count', 'card_photo', 'card_photo_mime',
         'payout_phone', 'payout_network', 'couple_threshold_amount', 'sms_language',
         'auto_remind_unopened', 'auto_remind_unopened_days', 'unopened_reminder_message',
         'rsvp_plus_ones_enabled', 'rsvp_max_plus_single', 'rsvp_max_plus_double', 'rsvp_meal_enabled', 'rsvp_meal_options',
@@ -165,6 +165,45 @@ class Event extends Model
     public function hasSmsCapacity(int $count = 1): bool
     {
         return $this->sms_quota === null || ($this->sms_sent_count + $count) <= $this->sms_quota;
+    }
+
+    /** WhatsApp invitations left. Unlike SMS there is no "unlimited": an event starts at 0 until the System Admin sets a number. */
+    public function whatsappRemaining(): int
+    {
+        return max(0, (int) $this->whatsapp_quota - (int) $this->whatsapp_sent_count);
+    }
+
+    public function hasWhatsappCapacity(): bool
+    {
+        return $this->whatsappRemaining() > 0;
+    }
+
+    /**
+     * Takes one WhatsApp invitation from the quota. A single conditional UPDATE, so two hosts clicking at the same
+     * moment cannot both take the last one. Give it back with releaseWhatsapp() if Meta refuses the message.
+     */
+    public function reserveWhatsapp(): bool
+    {
+        $taken = static::whereKey($this->getKey())
+            ->whereColumn('whatsapp_sent_count', '<', 'whatsapp_quota')
+            ->increment('whatsapp_sent_count');
+
+        if ($taken) {
+            $this->whatsapp_sent_count = (int) $this->whatsapp_sent_count + 1;
+            $this->syncOriginalAttribute('whatsapp_sent_count');
+        }
+
+        return (bool) $taken;
+    }
+
+    public function releaseWhatsapp(): void
+    {
+        $given = static::whereKey($this->getKey())->where('whatsapp_sent_count', '>', 0)->decrement('whatsapp_sent_count');
+
+        if ($given) {
+            $this->whatsapp_sent_count = max(0, (int) $this->whatsapp_sent_count - 1);
+            $this->syncOriginalAttribute('whatsapp_sent_count');
+        }
     }
 
     /** The photo is stored with its type; the type is only ever set when a photo exists, so it can be checked without loading the picture. */

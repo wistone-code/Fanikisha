@@ -314,6 +314,43 @@ class GuestController extends Controller
         return redirect()->away("https://wa.me/{$digits}?text={$text}");
     }
 
+    /** Sends the invitation straight from WhatsApp's Cloud API (approved template, with the card image when the event has one). */
+    public function inviteWhatsAppApi(Pledge $pledge, \App\Services\WhatsAppCloudService $whatsapp, PhoneNumberService $phones): RedirectResponse
+    {
+        abort_unless(app('currentEvent')->hasFeature('cards'), 404);
+        $this->assertPledgeInCurrentEvent($pledge);
+        if ($blocked = app(\App\Services\OptOutService::class)->blockedRedirect($pledge->phone)) {
+            return $blocked;
+        }
+        abort_unless($this->canSendInvite($pledge), 403, 'Activate the invitation link first.');
+
+        $digits = $phones->digitsOnly($pledge->phone);
+
+        if (! $digits) {
+            return back()->with('error', "{$pledge->name} has no phone number.");
+        }
+
+        $event = app('currentEvent');
+
+        // Meta bills every delivered message, so each event has a WhatsApp quota set by the System Admin.
+        // The invitation is reserved BEFORE sending and given back if Meta refuses it.
+        if (! $event->reserveWhatsapp()) {
+            return back()->with('error', 'WhatsApp invitation quota is used up. Send this one by SMS instead, or ask your system admin to raise the quota.');
+        }
+
+        $result = $whatsapp->sendInvitation($event, $pledge, $digits);
+
+        if (! $result['successful']) {
+            $event->releaseWhatsapp();
+
+            return back()->with('error', 'WhatsApp send failed: '.($result['error'] ?? 'Unknown error'));
+        }
+
+        $pledge->update(['invite_sent_at' => now(), 'invite_channel' => 'whatsapp']);
+
+        return back()->with('status', "Invitation sent to {$pledge->name} on WhatsApp.");
+    }
+
     public function updateInvitationMessage(Request $request): RedirectResponse
     {
         $data = $request->validate(['invitation_message' => ['required', 'string', 'max:5000']]);

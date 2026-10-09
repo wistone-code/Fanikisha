@@ -168,6 +168,9 @@
                     </span>
                     <button onclick="document.getElementById('editQuota{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1 !px-2 ml-1"><i class="fa-solid fa-pen text-xs"></i></button>
                     @if ($qpct !== null)<div class="ad-bar mt-1 w-24"><span style="width: {{ $qpct }}%; background: {{ $qpct >= 100 ? '#dc2626' : ($qpct >= 80 ? '#d97706' : 'var(--primary)') }}"></span></div>@endif
+                    @if ($account->has_cards)
+                    <div class="text-xs mt-1 {{ $account->whatsapp_sent_count >= $account->whatsapp_quota ? 'text-red-600' : 'text-gray-600' }}"><i class="fa-brands fa-whatsapp"></i> {{ $account->whatsapp_sent_count }} / {{ $account->whatsapp_quota }}</div>
+                    @endif
                     @endif
                 </td>
                 <td class="px-4 py-3 text-gray-500">{{ $account->created_by_label }}</td>
@@ -299,11 +302,17 @@
             @if ($account->event_id)
             <div id="editQuota{{ $account->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
-                    <h3 class="font-semibold mb-1">Edit SMS quota</h3>
-                    <p class="text-sm text-gray-500 mb-4">Cap for <strong>{{ $account->name }}</strong>. Currently used: {{ $account->sms_sent_count }}. Leave blank for unlimited.</p>
+                    <h3 class="font-semibold mb-1">Edit quotas</h3>
+                    <p class="text-sm text-gray-500 mb-4">Caps for <strong>{{ $account->name }}</strong>. SMS used: {{ $account->sms_sent_count }}. Leave SMS blank for unlimited.</p>
                     <form method="POST" action="{{ route('admin.users.sms-quota', $account) }}">
                         @csrf @method('PATCH')
+                        <label class="text-xs font-semibold">SMS quota</label>
                         <input type="number" name="sms_quota" value="{{ $account->sms_quota }}" min="0" placeholder="Unlimited" class="w-full border rounded-lg px-3 py-2 text-sm mb-4">
+                        @if ($account->has_cards)
+                        <label class="text-xs font-semibold"><i class="fa-brands fa-whatsapp"></i> WhatsApp invitations</label>
+                        <input type="number" name="whatsapp_quota" value="{{ $account->whatsapp_quota }}" min="0" placeholder="0" class="w-full border rounded-lg px-3 py-2 text-sm mb-1">
+                        <p class="text-xs text-gray-400 mb-4">Used: {{ $account->whatsapp_sent_count }}. Meta charges for each one, so this starts at 0. Invitations only.</p>
+                        @endif
                         <div class="flex gap-2">
                             <button type="button" onclick="document.getElementById('editQuota{{ $account->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
                             <button class="btn btn-primary flex-1 justify-center">Save quota</button>

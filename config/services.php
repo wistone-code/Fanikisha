@@ -18,6 +18,18 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    // WhatsApp Cloud API (Meta). The templates must exist and be Active in WhatsApp Manager.
+    'whatsapp' => [
+        'token' => env('WHATSAPP_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'api_version' => env('WHATSAPP_API_VERSION', 'v25.0'),
+        'invite_template' => env('WHATSAPP_TEMPLATE_INVITE', 'event_invitation'),
+        'invite_template_sw' => env('WHATSAPP_TEMPLATE_INVITE_SW', 'event_invitation_sw'),
+        // Used instead when the event has its own card design or photo: same text, with an Image header.
+        'invite_card_template' => env('WHATSAPP_TEMPLATE_INVITE_CARD', 'event_invitation_card'),
+        'invite_card_template_sw' => env('WHATSAPP_TEMPLATE_INVITE_CARD_SW', 'event_invitation_card_sw'),
+    ],
+
     'anthropic' => [
         'api_key' => env('ANTHROPIC_API_KEY'),
     ],

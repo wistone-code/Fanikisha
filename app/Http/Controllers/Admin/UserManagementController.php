@@ -91,6 +91,9 @@ class UserManagementController extends Controller
                 $u->event_date = $event?->event_date;
                 $u->sms_quota = $event?->sms_quota;
                 $u->sms_sent_count = $event?->sms_sent_count;
+                $u->has_cards = (bool) $event?->hasFeature('cards');
+                $u->whatsapp_quota = $event?->whatsapp_quota;
+                $u->whatsapp_sent_count = $event?->whatsapp_sent_count;
                 $u->at_quota = $event && $event->sms_quota !== null && $event->sms_sent_count >= $event->sms_quota;
 
                 return $u;
@@ -396,13 +399,21 @@ class UserManagementController extends Controller
 
         $data = $request->validate([
             'sms_quota' => ['nullable', 'integer', 'min:0'],
+            'whatsapp_quota' => ['nullable', 'integer', 'min:0', 'max:1000000'],
         ]);
 
         $event->update(['sms_quota' => $data['sms_quota'] ?? null]);
 
         ActivityLogger::log('account.sms_quota_updated', "Set SMS quota for {$user->name}'s event to ".($data['sms_quota'] ?? 'unlimited'), $user, $event);
 
-        return back()->with('status', 'SMS quota updated');
+        // WhatsApp invitations only exist for packages with e-cards; a blank field means 0 (no WhatsApp).
+        if ($request->has('whatsapp_quota') && $event->hasFeature('cards')) {
+            $event->update(['whatsapp_quota' => (int) ($data['whatsapp_quota'] ?? 0)]);
+
+            ActivityLogger::log('account.whatsapp_quota_updated', "Set WhatsApp invitation quota for {$user->name}'s event to ".(int) ($data['whatsapp_quota'] ?? 0), $user, $event);
+        }
+
+        return back()->with('status', 'Quota updated');
     }
 
     /** The System Admin's own account settings — separate from the accounts they manage. */
