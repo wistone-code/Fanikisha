@@ -128,4 +128,46 @@ class WhatsAppQuotaTest extends TestCase
 
         $this->assertSame(0, $event->fresh()->whatsapp_quota);
     }
+
+    public function test_settings_page_shows_the_whatsapp_quota_even_before_whatsapp_is_connected(): void
+    {
+        $this->withoutVite();
+        [$event, $admin] = $this->ecardEvent(['whatsapp_quota' => 100, 'whatsapp_sent_count' => 25]);
+
+        $this->actingAs($admin)->get(route('event.settings'))
+            ->assertOk()
+            ->assertSee('WhatsApp invitations', false)
+            ->assertSee('25 of 100 sent', false);
+    }
+
+    public function test_a_team_member_has_no_quota_of_their_own_to_set(): void
+    {
+        $super = User::factory()->superUser()->create();
+        [$event, $host] = $this->ecardEvent();
+        $event->update(['created_by' => $host->id]);
+        $member = User::factory()->create(['created_by' => $host->id]);
+        \App\Models\EventMember::create(['event_id' => $event->id, 'user_id' => $member->id, 'role' => 'viewer']);
+
+        $this->actingAs($super)->patch(route('admin.users.sms-quota', $member), ['sms_quota' => 10, 'whatsapp_quota' => 5])
+            ->assertRedirect()->assertSessionHas("error");
+
+        $this->assertSame(0, $event->fresh()->whatsapp_quota);
+    }
+
+    public function test_accounts_list_hides_the_quota_pencil_for_team_members_and_shows_it_for_owners(): void
+    {
+        $this->withoutVite();
+        $super = User::factory()->superUser()->create();
+        [$event, $host] = $this->ecardEvent();
+        $event->update(['created_by' => $host->id]);
+        $host->update(['created_by' => $super->id]);
+        $member = User::factory()->create(['created_by' => $host->id]);
+        \App\Models\EventMember::create(['event_id' => $event->id, 'user_id' => $member->id, 'role' => 'viewer']);
+
+        $html = $this->actingAs($super)->get(route('admin.users.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('id="editQuota'.$host->id.'"', $html);
+        $this->assertStringNotContainsString('id="editQuota'.$member->id.'"', $html);
+        $this->assertStringContainsString('team member', $html);
+    }
 }

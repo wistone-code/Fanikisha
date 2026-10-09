@@ -91,6 +91,7 @@ class UserManagementController extends Controller
                 $u->event_date = $event?->event_date;
                 $u->sms_quota = $event?->sms_quota;
                 $u->sms_sent_count = $event?->sms_sent_count;
+                $u->owns_event = (bool) ($event && $this->ownEvent($u));
                 $u->has_cards = (bool) $event?->hasFeature('cards');
                 $u->whatsapp_quota = $event?->whatsapp_quota;
                 $u->whatsapp_sent_count = $event?->whatsapp_sent_count;
@@ -392,10 +393,15 @@ class UserManagementController extends Controller
     /** Sets (or clears) the SMS send cap for this account's event. Null = unlimited. */
     public function updateSmsQuota(Request $request, User $user): RedirectResponse
     {
-        abort_if($user->is_super_user, 404);
+        if ($user->is_super_user) {
+            return back()->with('error', 'System admin accounts have no quota.');
+        }
 
         $event = $this->ownEvent($user);
-        abort_unless($event, 404, 'This account has no event of its own yet.');
+
+        if (! $event) {
+            return back()->with('error', "{$user->name} has no event of their own (a team member shares the host's event, or no event exists yet). Set the quota on the account that owns the event.");
+        }
 
         $data = $request->validate([
             'sms_quota' => ['nullable', 'integer', 'min:0'],

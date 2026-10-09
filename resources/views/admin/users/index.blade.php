@@ -166,7 +166,7 @@
                         {{ $account->sms_sent_count }} / {{ $account->sms_quota ?? '∞' }}
                         @if ($account->at_quota)<i class="fa-solid fa-triangle-exclamation ml-1"></i>@endif
                     </span>
-                    <button onclick="document.getElementById('editQuota{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1 !px-2 ml-1"><i class="fa-solid fa-pen text-xs"></i></button>
+                    @if ($account->owns_event)<button onclick="document.getElementById('editQuota{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1 !px-2 ml-1" title="Edit quotas"><i class="fa-solid fa-pen text-xs"></i></button>@else<span class="text-[11px] text-gray-400 ml-1" title="{{ $account->event_id ? "Shares the host's event. Set quotas on the account that owns it." : 'No event yet. Quotas can be set once the account creates its event.' }}">{{ $account->event_id ? 'team member' : 'no event yet' }}</span>@endif
                     @if ($qpct !== null)<div class="ad-bar mt-1 w-24"><span style="width: {{ $qpct }}%; background: {{ $qpct >= 100 ? '#dc2626' : ($qpct >= 80 ? '#d97706' : 'var(--primary)') }}"></span></div>@endif
                     @if ($account->has_cards)
                     <div class="text-xs mt-1 {{ $account->whatsapp_sent_count >= $account->whatsapp_quota ? 'text-red-600' : 'text-gray-600' }}"><i class="fa-brands fa-whatsapp"></i> {{ $account->whatsapp_sent_count }} / {{ $account->whatsapp_quota }}</div>
@@ -299,7 +299,7 @@
             @endif
 
 
-            @if ($account->event_id)
+            @if ($account->owns_event)
             <div id="editQuota{{ $account->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
                     <h3 class="font-semibold mb-1">Edit quotas</h3>

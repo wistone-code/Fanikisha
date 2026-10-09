@@ -152,7 +152,7 @@ class AuditFixesTwoTest extends TestCase
         $this->assertSame('full', $viewer->fresh()->package);
         $this->actingAs($viewer)->get(route('delivery.index'))->assertOk();
 
-        $this->actingAs($super)->patch(route('admin.users.sms-quota', $helper), ['sms_quota' => 5])->assertNotFound();
+        $this->actingAs($super)->patch(route('admin.users.sms-quota', $helper), ['sms_quota' => 5])->assertRedirect()->assertSessionHas("error");
         $this->assertNull($event->fresh()->sms_quota);
     }
 
