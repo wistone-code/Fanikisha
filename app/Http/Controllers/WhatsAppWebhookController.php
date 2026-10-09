@@ -82,7 +82,10 @@ class WhatsAppWebhookController extends Controller
                 return;
             }
 
-            $reason = (string) (data_get($status, 'errors.0.message') ?: data_get($status, 'errors.0.title') ?: 'WhatsApp could not deliver this message.');
+            $reason = \App\Services\WhatsAppCloudService::friendlyError(
+                (int) data_get($status, 'errors.0.code', 0),
+                (string) (data_get($status, 'errors.0.message') ?: data_get($status, 'errors.0.title') ?: ''),
+            );
             $pledge->update(['whatsapp_status' => 'failed', 'whatsapp_status_at' => $at, 'whatsapp_error' => mb_substr($reason, 0, 250)]);
 
             // Never delivered, so Meta does not bill it: give the invitation back to the event's quota.

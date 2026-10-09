@@ -71,11 +71,42 @@ class WhatsAppCloudService
             return ['successful' => true, 'message_id' => (string) data_get($response->json(), 'messages.0.id', '')];
         }
 
-        $error = (string) data_get($response->json(), 'error.message', 'WhatsApp refused the message.');
-        // The token is never logged; the guest's number is not logged either.
-        Log::warning('WhatsApp send refused', ['template' => $template, 'status' => $response->status(), 'error' => $error]);
+        $raw = (string) data_get($response->json(), 'error.message', 'WhatsApp refused the message.');
+        $code = (int) data_get($response->json(), 'error.code', 0);
+        // The token is never logged; the guest's number is not logged either. The raw Meta text stays in the log for the admin.
+        Log::warning('WhatsApp send refused', ['template' => $template, 'status' => $response->status(), 'code' => $code, 'error' => $raw]);
 
-        return ['successful' => false, 'error' => $error];
+        return ['successful' => false, 'error' => self::friendlyError($code, $raw, $response->status())];
+    }
+
+    /**
+     * Turns Meta's technical error into a sentence the event host can act on.
+     * Problems only the system admin can fix (token, billing, template) say so.
+     */
+    public static function friendlyError(int $code, string $raw = '', int $status = 0): string
+    {
+        $sms = 'Send this one by SMS instead.';
+
+        return match (true) {
+            $code === 190, $code === 102, $status === 401
+                => "WhatsApp is temporarily unavailable (the account connection needs renewing). {$sms} Please tell your system admin.",
+            $code === 131030
+                => "This number can't receive WhatsApp messages from us yet. {$sms}",
+            in_array($code, [131026, 133010], true)
+                => "This number is not on WhatsApp, or can't be reached there. {$sms}",
+            in_array($code, [131047, 131049, 131048], true)
+                => "WhatsApp declined to deliver to this number right now. {$sms}",
+            in_array($code, [132000, 132001, 132005, 132007, 132012, 132015, 132016], true)
+                => "The WhatsApp invitation message isn't ready yet (not approved, or the wrong language). {$sms} Please tell your system admin.",
+            in_array($code, [131042, 131031], true)
+                => "WhatsApp billing needs attention. {$sms} Please tell your system admin.",
+            in_array($code, [4, 80007, 130429, 131056], true), $status === 429
+                => 'Too many messages were sent too quickly. Wait a minute and try again.',
+            $code === 100
+                => "WhatsApp did not accept this phone number or message. Check the number, or {$sms}",
+            default
+                => "WhatsApp could not send this message (code {$code}). {$sms}",
+        };
     }
 
     /** Sends the invitation template for one guest; picks English or Swahili, and the card-image version when the event has a design. */

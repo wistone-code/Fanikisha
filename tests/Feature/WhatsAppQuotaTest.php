@@ -86,6 +86,35 @@ class WhatsAppQuotaTest extends TestCase
         $this->assertSame(0, $event->fresh()->whatsapp_sent_count);
     }
 
+    public function test_an_expired_token_shows_a_plain_message_not_meta_jargon(): void
+    {
+        $this->whatsappOn();
+        Http::fake(['graph.facebook.com/*' => Http::response(['error' => ['message' => 'Error validating access token', 'type' => 'OAuthException', 'code' => 190]], 401)]);
+        [$event, $admin] = $this->ecardEvent(['whatsapp_quota' => 5]);
+        $guest = $this->guestCard($event, ['phone' => '0712345678']);
+
+        $response = $this->actingAs($admin)->post(route('guests.whatsapp-send', $guest));
+
+        $message = session('error');
+        $this->assertStringContainsString('temporarily unavailable', $message);
+        $this->assertStringContainsString('SMS', $message);
+        $this->assertStringNotContainsString('Authentication', $message);
+        $this->assertStringNotContainsString('token', strtolower($message));
+        $this->assertSame(0, $event->fresh()->whatsapp_sent_count);
+    }
+
+    public function test_known_meta_errors_get_friendly_messages(): void
+    {
+        $svc = \App\Services\WhatsAppCloudService::class;
+
+        $this->assertStringContainsString('not on WhatsApp', $svc::friendlyError(131026));
+        $this->assertStringContainsString("can't receive", $svc::friendlyError(131030));
+        $this->assertStringContainsString('system admin', $svc::friendlyError(132001));
+        $this->assertStringContainsString('billing', $svc::friendlyError(131042));
+        $this->assertStringContainsString('Too many', $svc::friendlyError(0, '', 429));
+        $this->assertStringContainsString('code 999', $svc::friendlyError(999));
+    }
+
     public function test_guest_list_shows_a_disabled_button_when_the_quota_is_used_up(): void
     {
         $this->withoutVite();

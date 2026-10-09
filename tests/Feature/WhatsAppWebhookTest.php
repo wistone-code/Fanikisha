@@ -104,7 +104,7 @@ class WhatsAppWebhookTest extends TestCase
 
         $guest->refresh();
         $this->assertSame('failed', $guest->whatsapp_status);
-        $this->assertSame('Message undeliverable', $guest->whatsapp_error);
+        $this->assertStringContainsString('not on WhatsApp', $guest->whatsapp_error);
         $this->assertSame(0, $event->fresh()->whatsapp_sent_count);
     }
 
