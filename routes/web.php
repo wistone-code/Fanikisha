@@ -117,6 +117,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
         Route::patch('/users/{user}/package', [UserManagementController::class, 'updatePackage'])->name('users.package');
         Route::patch('/users/{user}/sms-quota', [UserManagementController::class, 'updateSmsQuota'])->name('users.sms-quota');
         Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+        Route::post('/users/{user}/unlock', [UserManagementController::class, 'unlock'])->name('users.unlock');
         Route::post('/users/{user}/toggle-suspend', [UserManagementController::class, 'toggleSuspend'])->name('users.toggle-suspend');
         Route::post('/users/{user}/reassign-event', [UserManagementController::class, 'reassignEvent'])->name('users.reassign-event');
 

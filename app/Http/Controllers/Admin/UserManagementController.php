@@ -27,7 +27,7 @@ class UserManagementController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->get('q'));
-        $status = $request->get('status', 'all'); // all | attention | no_event
+        $status = $request->get('status', 'all'); // all | attention | no_event | locked | suspended
 
         $base = User::query()->where('is_super_user', false);
 
@@ -50,6 +50,8 @@ class UserManagementController extends Controller
         $totalAccounts = (clone $base)->count();
         $atQuotaCount = (clone $base)->whereHas('eventMemberships.event', $atQuota)->count();
         $noEventCount = (clone $base)->whereDoesntHave('eventMemberships')->count();
+        $lockedCount = (clone $base)->whereNotNull('locked_at')->count();
+        $suspendedCount = (clone $base)->where('is_suspended', true)->count();
 
         // Lifetime running total — there's no per-send log to break this down by
         // month, so this is deliberately labelled "all-time" in the view rather
@@ -69,6 +71,10 @@ class UserManagementController extends Controller
             $base->whereHas('eventMemberships.event', $atQuota);
         } elseif ($status === 'no_event') {
             $base->whereDoesntHave('eventMemberships');
+        } elseif ($status === 'locked') {
+            $base->whereNotNull('locked_at');
+        } elseif ($status === 'suspended') {
+            $base->where('is_suspended', true);
         }
 
         $accounts = $base->with(['creator', 'eventMemberships.event'])
@@ -101,7 +107,7 @@ class UserManagementController extends Controller
             });
 
         return view('admin.users.index', compact(
-            'accounts', 'search', 'status', 'totalAccounts', 'atQuotaCount', 'noEventCount', 'totalSmsSent', 'estimatedSmsCost', 'eligibleTargets'
+            'accounts', 'search', 'status', 'totalAccounts', 'atQuotaCount', 'noEventCount', 'lockedCount', 'suspendedCount', 'totalSmsSent', 'estimatedSmsCost', 'eligibleTargets'
         ) + $this->dashboard());
     }
 
@@ -253,6 +259,18 @@ class UserManagementController extends Controller
         ActivityLogger::log($action, "{$verb} account for {$user->name} ({$user->username})", $user);
 
         return back()->with('status', "{$verb} account for {$user->name}");
+    }
+
+    /** Clears a lockout caused by too many wrong passwords, so the person can sign in again. */
+    public function unlock(User $user): RedirectResponse
+    {
+        abort_if($user->is_super_user, 404);
+
+        $user->forceFill(['locked_at' => null, 'failed_login_attempts' => 0])->save();
+
+        ActivityLogger::log('account.unlocked', "Unlocked account for {$user->name} ({$user->username})", $user);
+
+        return back()->with('status', "Unlocked {$user->name}'s account");
     }
 
     /**

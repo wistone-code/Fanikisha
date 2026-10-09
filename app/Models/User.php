@@ -16,6 +16,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'username', 'email', 'phone', 'package', 'password',
         'is_super_user', 'must_change_password', 'is_suspended', 'created_by',
+        'failed_login_attempts', 'locked_at',
     ];
 
     protected $hidden = [
@@ -28,6 +29,7 @@ class User extends Authenticatable
             'is_super_user' => 'boolean',
             'must_change_password' => 'boolean',
             'is_suspended' => 'boolean',
+            'locked_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -65,6 +67,12 @@ class User extends Authenticatable
     public function currentEvent(): ?Event
     {
         return $this->eventMemberships()->with(['event' => fn ($q) => $q->lean()])->first()?->event;
+    }
+
+    /** Locked after too many wrong passwords; only a System Admin can unlock it. */
+    public function isLocked(): bool
+    {
+        return $this->locked_at !== null;
     }
 
     public function roleOn(Event $event): ?string

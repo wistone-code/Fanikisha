@@ -122,6 +122,8 @@
             <a href="{{ route('admin.users.index', ['q' => $search ?: null]) }}" class="px-3 py-1.5 rounded-full {{ $status === 'all' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500' }}">All</a>
             <a href="{{ route('admin.users.index', ['status' => 'attention', 'q' => $search ?: null]) }}" class="px-3 py-1.5 rounded-full {{ $status === 'attention' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500' }}">Needs attention</a>
             <a href="{{ route('admin.users.index', ['status' => 'no_event', 'q' => $search ?: null]) }}" class="px-3 py-1.5 rounded-full {{ $status === 'no_event' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500' }}">No event yet</a>
+            <a href="{{ route('admin.users.index', ['status' => 'locked', 'q' => $search ?: null]) }}" class="px-3 py-1.5 rounded-full {{ $status === 'locked' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500' }}">Locked @if ($lockedCount)<span class="ml-1 text-red-500 {{ $status === 'locked' ? '!text-white' : '' }}">{{ $lockedCount }}</span>@endif</a>
+            <a href="{{ route('admin.users.index', ['status' => 'suspended', 'q' => $search ?: null]) }}" class="px-3 py-1.5 rounded-full {{ $status === 'suspended' ? 'bg-[var(--primary)] text-white' : 'bg-gray-100 text-gray-500' }}">Suspended</a>
         </div>
     </form>
 </div>
@@ -144,7 +146,8 @@
             <tr class="border-b last:border-0 {{ $account->at_quota ? 'bg-red-50' : '' }} {{ $account->is_suspended ? 'opacity-60' : '' }}">
                 <td class="px-4 py-3">
                     <div class="font-semibold">{{ $account->name }}
-                        @if ($account->is_suspended)<span class="badge bg-red-100 text-red-700 ml-1">Suspended</span>@endif</div>
+                        @if ($account->is_suspended)<span class="badge bg-red-100 text-red-700 ml-1">Suspended</span>@endif
+                        @if ($account->locked_at)<span class="badge bg-amber-100 text-amber-700 ml-1" title="Locked after too many wrong passwords"><i class="fa-solid fa-lock"></i> Locked</span>@endif</div>
                     <div class="text-xs text-gray-500">{{ $account->username }} &middot; {{ $account->email }}</div>
                 </td>
                 <td class="px-4 py-3"><span class="badge bg-teal-50 text-teal-700">{{ config('packages.packages.'.($account->package ?: 'full').'.label') }}</span></td>
@@ -185,6 +188,12 @@
                             @endif
                             @if ($account->event_id)
                             <button type="button" onclick="document.getElementById('reassignEvent{{ $account->id }}').classList.remove('hidden'); document.getElementById('rowMenu{{ $account->id }}').classList.add('hidden')" class="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-gray-50"><i class="fa-solid fa-right-left w-4"></i> Reassign event</button>
+                            @endif
+                            @if ($account->locked_at)
+                            <form method="POST" action="{{ route('admin.users.unlock', $account) }}">
+                                @csrf
+                                <button class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-amber-700 hover:bg-amber-50"><i class="fa-solid fa-lock-open w-4"></i> Unlock account</button>
+                            </form>
                             @endif
                             <form method="POST" action="{{ route('admin.users.reset-password', $account) }}" onsubmit="return confirm('Reset {{ $account->name }}\'s password? A new temporary password will be generated.')">
                                 @csrf

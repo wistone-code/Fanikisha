@@ -24,6 +24,9 @@ class LoginController extends Controller
      * since PHP's password_verify() returns false almost instantly for a
      * syntactically invalid hash instead of doing the full bcrypt computation.
      */
+    /** Wrong passwords in a row before the account is locked until a System Admin unlocks it. */
+    public const MAX_FAILED_ATTEMPTS = 5;
+
     private const DUMMY_HASH = '$2y$12$.dxO7BjARktrSSf7F2x88O2LSirU18g9hJgqcb0SwfWUnLcesnniO';
 
     public function show(): \Illuminate\View\View|RedirectResponse
@@ -67,8 +70,30 @@ class LoginController extends Controller
             ]);
         }
 
+        // A locked account refuses every attempt, even the right password, until the System Admin unlocks it.
+        if ($user->isLocked()) {
+            ActivityLogger::log('account.login_failed', "Blocked sign-in for {$user->name} ({$user->username}): account is locked · {$device}", $user, actor: null);
+
+            throw ValidationException::withMessages([
+                'username' => $this->lockedMessage(),
+            ]);
+        }
+
         if (! $passwordMatches) {
-            ActivityLogger::log('account.login_failed', "Failed sign-in for {$user->name} ({$user->username}): wrong password · {$device}", $user, actor: null);
+            // Atomic, so two parallel guesses can't both slip under the limit.
+            User::whereKey($user->id)->increment('failed_login_attempts');
+            $attempts = (int) User::whereKey($user->id)->value('failed_login_attempts');
+
+            ActivityLogger::log('account.login_failed', "Failed sign-in for {$user->name} ({$user->username}): wrong password (attempt {$attempts} of ".self::MAX_FAILED_ATTEMPTS.") · {$device}", $user, actor: null);
+
+            if ($attempts >= self::MAX_FAILED_ATTEMPTS) {
+                $user->forceFill(['locked_at' => now()])->save();
+                ActivityLogger::log('account.locked', "{$user->name} ({$user->username}) was locked after ".self::MAX_FAILED_ATTEMPTS." wrong passwords · {$device}", $user, actor: null);
+
+                throw ValidationException::withMessages([
+                    'username' => $this->lockedMessage(),
+                ]);
+            }
 
             throw ValidationException::withMessages([
                 'username' => 'Incorrect username or password.',
@@ -83,6 +108,10 @@ class LoginController extends Controller
             ]);
         }
 
+        if ($user->failed_login_attempts > 0) {
+            $user->forceFill(['failed_login_attempts' => 0])->save();
+        }
+
         // "Remember me" is opt-in, not automatic — defaulting every login to a
         // persistent cookie is a poor security default on shared/public devices.
         Auth::login($user, remember: $request->boolean('remember'));
@@ -93,6 +122,11 @@ class LoginController extends Controller
         ActivityLogger::log('account.login', "{$user->name} ({$user->username}) logged in · {$device}", $user, actor: $user);
 
         return redirect()->intended(route('dashboard'));
+    }
+
+    private function lockedMessage(): string
+    {
+        return 'This account is locked after '.self::MAX_FAILED_ATTEMPTS.' wrong passwords. Please contact Fanikisha to unlock it.';
     }
 
     public function logout(Request $request): RedirectResponse
