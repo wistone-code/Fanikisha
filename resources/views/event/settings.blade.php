@@ -20,7 +20,7 @@
     <p class="text-xs text-gray-400 mt-2">This cap is set by the system admin. Contact them to request a change.</p>
 </div>
 
-@if ($event->hasFeature('cards') && app(\App\Services\WhatsAppCloudService::class)->isConfigured())
+@if ($event->hasFeature('cards'))
 <div class="card p-6 max-w-md mb-4">
     <div class="text-sm font-semibold mb-1"><i class="fa-brands fa-whatsapp"></i> WhatsApp invitations</div>
     <p class="text-sm {{ $event->whatsappRemaining() === 0 ? 'text-red-600 font-semibold' : 'text-gray-600' }}">
