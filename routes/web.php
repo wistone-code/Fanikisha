@@ -122,6 +122,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
         Route::post('/users/{user}/reassign-event', [UserManagementController::class, 'reassignEvent'])->name('users.reassign-event');
 
         Route::get('/account', [UserManagementController::class, 'accountSettings'])->name('account');
+        Route::post('/whatsapp/check', [UserManagementController::class, 'checkWhatsApp'])->name('whatsapp.check');
         Route::patch('/account/email', [UserManagementController::class, 'updateOwnEmail'])->name('account.email');
 
         Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');

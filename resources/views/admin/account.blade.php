@@ -32,4 +32,20 @@
         </form>
     </div>
 </div>
+
+<div class="card p-6 max-w-3xl mt-5">
+    <h3 class="font-semibold mb-1"><i class="fa-brands fa-whatsapp"></i> WhatsApp connection</h3>
+    <p class="text-sm text-gray-500 mb-4">Asks Meta whether the token and phone number saved in Railway work. Nothing is sent to any guest.</p>
+    <form method="POST" action="{{ route('admin.whatsapp.check') }}">
+        @csrf
+        <button class="btn btn-primary"><i class="fa-solid fa-plug"></i> Check connection</button>
+    </form>
+    @if (session('whatsapp_check'))
+    @php($check = session('whatsapp_check'))
+    <div class="mt-4 rounded-lg p-3 text-sm {{ $check['ok'] ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800' }}">
+        <div class="font-semibold mb-1">{{ $check['ok'] ? 'Connected' : 'Not working yet' }}</div>
+        @foreach ($check['lines'] as $line)<p class="break-words">{{ $line }}</p>@endforeach
+    </div>
+    @endif
+</div>
 @endsection

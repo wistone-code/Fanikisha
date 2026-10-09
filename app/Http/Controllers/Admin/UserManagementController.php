@@ -440,6 +440,12 @@ class UserManagementController extends Controller
         return back()->with('status', 'Quota updated');
     }
 
+    /** Asks Meta whether the saved WhatsApp token and phone number work, and shows the exact answer. */
+    public function checkWhatsApp(\App\Services\WhatsAppCloudService $whatsapp): RedirectResponse
+    {
+        return back()->with('whatsapp_check', $whatsapp->diagnose());
+    }
+
     /** The System Admin's own account settings — separate from the accounts they manage. */
     public function accountSettings(Request $request): View
     {
