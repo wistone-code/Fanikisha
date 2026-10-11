@@ -26,7 +26,7 @@
 </div>
 
 {{-- Key numbers --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
     <div class="card p-5">
         <div class="ad-h"><i class="fa-solid fa-users"></i> Accounts</div>
         <div class="text-2xl font-semibold mt-2">{{ $totalAccounts }}</div>
@@ -41,6 +41,11 @@
         <div class="ad-h"><i class="fa-solid fa-comment-sms"></i> SMS sent (all-time)</div>
         <div class="text-2xl font-semibold mt-2">{{ number_format($totalSmsSent) }}</div>
         <div class="text-xs text-gray-400 mt-1">~TZS {{ number_format($estimatedSmsCost) }} estimated{{ $quotaUsedPct !== null ? ' · '.$quotaUsedPct.'% of quotas used' : '' }}</div>
+    </div>
+    <div class="card p-5">
+        <div class="ad-h"><i class="fa-brands fa-whatsapp"></i> WhatsApp sent (all-time)</div>
+        <div class="text-2xl font-semibold mt-2">{{ number_format($whatsappSent) }}<span class="text-sm font-normal text-gray-400"> / {{ number_format($whatsappQuota) }}</span></div>
+        <div class="text-xs text-gray-400 mt-1">{{ number_format($whatsappDelivered) }} delivered · {{ number_format($whatsappRead) }} read @if ($whatsappFailed) · <span class="text-red-600">{{ number_format($whatsappFailed) }} failed</span>@endif</div>
     </div>
     <a href="{{ route('admin.users.index', ['status' => 'attention', 'q' => $search ?: null]) }}" class="card p-5 block {{ $atQuotaCount > 0 ? 'ring-1 ring-red-200' : '' }}">
         <div class="ad-h"><i class="fa-solid fa-triangle-exclamation"></i> Needs attention</div>

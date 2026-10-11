@@ -129,6 +129,11 @@ class UserManagementController extends Controller
         $today = now()->startOfDay();
         $quotaTotals = Event::whereNotNull('sms_quota')->selectRaw('COALESCE(SUM(sms_sent_count),0) as sent, COALESCE(SUM(sms_quota),0) as quota')->first();
 
+        // WhatsApp invitations: totals only (no guest data). Delivery states come from Meta's webhook.
+        $waTotals = Event::selectRaw('COALESCE(SUM(whatsapp_sent_count),0) as sent, COALESCE(SUM(whatsapp_quota),0) as quota')->first();
+        $waStates = \App\Models\Pledge::whereNotNull('whatsapp_status')
+            ->selectRaw('whatsapp_status as s, COUNT(*) as n')->groupBy('whatsapp_status')->pluck('n', 's');
+
         return [
             'packageCounts' => $packageCounts,
             'suspendedCount' => (clone $people)->where('is_suspended', true)->count(),
@@ -138,6 +143,12 @@ class UserManagementController extends Controller
             'soonCount' => Event::whereDate('event_date', '>=', $today)->whereDate('event_date', '<=', $today->copy()->addDays(30))->count(),
             'upcomingEvents' => Event::with('owner')->whereDate('event_date', '>=', $today)->orderBy('event_date')->limit(5)->get(),
             'topSms' => Event::with('owner')->where('sms_sent_count', '>', 0)->orderByDesc('sms_sent_count')->limit(5)->get(),
+            'whatsappSent' => (int) ($waTotals->sent ?? 0),
+            'whatsappQuota' => (int) ($waTotals->quota ?? 0),
+            // "read" messages were delivered too, so they count in both.
+            'whatsappDelivered' => (int) (($waStates['delivered'] ?? 0) + ($waStates['read'] ?? 0)),
+            'whatsappRead' => (int) ($waStates['read'] ?? 0),
+            'whatsappFailed' => (int) ($waStates['failed'] ?? 0),
             'quotaUsedPct' => $quotaTotals && (int) $quotaTotals->quota > 0 ? (int) round($quotaTotals->sent / $quotaTotals->quota * 100) : null,
             'recentActivity' => \App\Models\ActivityLog::with(['actor', 'targetUser'])->latest('created_at')->limit(6)->get(),
         ];

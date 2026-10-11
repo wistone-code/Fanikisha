@@ -71,6 +71,13 @@
             </label>
             @endforeach
         </div>
+        <div>
+            <label for="themeColorName" class="text-xs font-semibold">Search by color name</label>
+            <input type="text" id="themeColorName" list="themeColorNames" autocomplete="off" placeholder="e.g. maroon, rose gold, emerald, #8a2d3b"
+                class="w-full border rounded-lg px-3 py-2 text-sm">
+            <datalist id="themeColorNames"></datalist>
+            <p id="themeColorNameHint" class="text-xs text-gray-500 mt-1 hidden"></p>
+        </div>
         <div class="flex items-center gap-2">
             <label class="text-xs font-semibold">Or choose your own</label>
             <input type="color" id="customThemeColor" value="{{ $currentColor }}" class="w-10 h-8 p-0 border rounded cursor-pointer">
@@ -104,8 +111,9 @@
         hexLabel.textContent = hex;
     }
 
-    custom.addEventListener('input', function () {
-        setColor(custom.value);
+    function useCustom(hex) {
+        custom.value = hex;
+        setColor(hex);
         form.querySelectorAll('.theme-preset').forEach(function (r) { r.checked = false; });
         if (!hidden) {
             hidden = document.createElement('input');
@@ -113,7 +121,103 @@
             hidden.name = 'theme_color';
             form.appendChild(hidden);
         }
-        hidden.value = custom.value;
+        hidden.value = hex;
+    }
+
+    custom.addEventListener('input', function () { useCustom(custom.value); });
+
+    // ---- Search by color name (English and Swahili names, any web color name, or a #hex code) ----
+    const nameInput = document.getElementById('themeColorName');
+    const nameHint = document.getElementById('themeColorNameHint');
+    const nameList = document.getElementById('themeColorNames');
+
+    // Event-friendly colors, already dark enough for white text. Swahili names are search words only.
+    const NAMED = {
+        'navy': '#1f3a52', 'royal blue': '#3d5a99', 'ocean': '#1f7a8c', 'teal': '#1f6b6b',
+        'emerald': '#2e7d5b', 'purple': '#6b3fa0', 'plum': '#7b2d5b', 'burgundy': '#8a2d3b',
+        'terracotta': '#b0553a', 'gold': '#8a6a1f', 'charcoal': '#3a4750',
+        'maroon': '#7a1f2b', 'wine': '#6e1f3a', 'red': '#b22222', 'crimson': '#a3162c',
+        'rose gold': '#a5605a', 'rose': '#a8466a', 'pink': '#b0457a', 'hot pink': '#b0256a',
+        'magenta': '#9c1f7a', 'lilac': '#7d5a9e', 'lavender': '#6f5d9e', 'violet': '#6a3fa0',
+        'champagne': '#8c7350', 'bronze': '#8a5a2b', 'copper': '#9a5530', 'brown': '#6b4226',
+        'chocolate': '#5c3a21', 'coffee': '#5a3e2b', 'beige': '#8a7a5c', 'cream': '#8c7d5e',
+        'orange': '#b8541c', 'peach': '#b0654a', 'coral': '#b0503f', 'mustard': '#8f7414',
+        'yellow': '#8f7a10', 'olive': '#5e6b2b', 'green': '#2e7d32', 'sage': '#5b7059',
+        'mint': '#2f7a62', 'forest green': '#2d5a3a', 'turquoise': '#1f7f7a', 'sky blue': '#2f6f9e',
+        'blue': '#1f4fa0', 'cobalt': '#1f4a8a', 'black': '#1a1a1a', 'grey': '#5a6068', 'gray': '#5a6068',
+        'silver': '#5f6b75', 'white': '#5a6068',
+        // Swahili
+        'nyekundu': '#b22222', 'damu ya mzee': '#7a1f2b', 'waridi': '#b0457a', 'pinki': '#b0457a',
+        'zambarau': '#6b3fa0', 'bluu': '#1f4fa0', 'buluu': '#1f4fa0', 'samawati': '#2f6f9e',
+        'bluu bahari': '#1f3a52', 'kijani': '#2e7d32', 'kijani kibichi': '#2d5a3a', 'njano': '#8f7a10',
+        'manjano': '#8f7a10', 'dhahabu': '#8a6a1f', 'machungwa': '#b8541c', 'chungwa': '#b8541c',
+        'kahawia': '#6b4226', 'hudhurungi': '#6b4226', 'nyeusi': '#1a1a1a', 'kijivu': '#5a6068',
+        'fedha': '#5f6b75', 'shaba': '#9a5530', 'nyeupe': '#5a6068'
+    };
+    Object.keys(NAMED).forEach(function (n) {
+        const o = document.createElement('option');
+        o.value = n;
+        nameList.appendChild(o);
+    });
+
+    const ctx = document.createElement('canvas').getContext('2d');
+    // Any color the browser knows (e.g. "darkslateblue"), turned into #rrggbb; null if unknown.
+    function browserColor(text) {
+        ctx.fillStyle = '#010203';
+        ctx.fillStyle = text;
+        const v = ctx.fillStyle;
+        if (v === '#010203' && text.replace(/\s/g, '') !== '#010203') return null;
+        return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null;
+    }
+
+    function luminance(hex) {
+        return [1, 3, 5].map(function (i) { return parseInt(hex.substr(i, 2), 16) / 255; })
+            .map(function (v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); })
+            .reduce(function (s, v, i) { return s + v * [0.2126, 0.7152, 0.0722][i]; }, 0);
+    }
+    // Same rule as the server: luminance must be 0.4 or less so white text stays readable.
+    function darkEnough(hex) {
+        let rgb = [1, 3, 5].map(function (i) { return parseInt(hex.substr(i, 2), 16); });
+        let out = hex;
+        for (let k = 0; k < 20 && luminance(out) > 0.4; k++) {
+            rgb = rgb.map(function (c) { return Math.round(c * 0.9); });
+            out = '#' + rgb.map(function (c) { return c.toString(16).padStart(2, '0'); }).join('');
+        }
+        return out;
+    }
+
+    function hint(text, isError) {
+        nameHint.textContent = text;
+        nameHint.classList.toggle('hidden', !text);
+        nameHint.classList.toggle('text-red-600', !!isError);
+        nameHint.classList.toggle('text-gray-500', !isError);
+    }
+
+    function findColor() {
+        const raw = nameInput.value.trim().toLowerCase();
+        if (!raw) { hint(''); return; }
+        let hex = NAMED[raw] || null;
+        if (!hex) {
+            const hexText = /^#?[0-9a-f]{6}$/.test(raw) ? (raw[0] === '#' ? raw : '#' + raw) : raw;
+            hex = browserColor(hexText) || browserColor(raw.replace(/\s+/g, ''));
+        }
+        if (!hex) {
+            hint('Color not found. Try another name, or pick it below.', true);
+            return;
+        }
+        const usable = darkEnough(hex);
+        useCustom(usable);
+        hint(usable === hex
+            ? 'Found: ' + usable + '. Tap "Save color" to keep it.'
+            : 'That color is too light for white text, so a darker shade was chosen: ' + usable + '. Tap "Save color" to keep it.');
+    }
+
+    nameInput.addEventListener('change', findColor);
+    nameInput.addEventListener('input', function () {
+        if (NAMED[nameInput.value.trim().toLowerCase()]) findColor();
+    });
+    nameInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); findColor(); }
     });
 
     form.querySelectorAll('.theme-preset').forEach(function (r) {
@@ -121,6 +225,8 @@
             setColor(r.value);
             custom.value = r.value;
             if (hidden) { hidden.remove(); hidden = null; }
+            nameInput.value = '';
+            hint('');
         });
     });
 })();
