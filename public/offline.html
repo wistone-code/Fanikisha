@@ -67,6 +67,22 @@
     document.getElementById('noCheckin').textContent = t.none;
     document.getElementById('retryBtn').addEventListener('click', function () { location.reload(); });
 
+    // Come back by itself: as soon as the internet works again, reload the page the person was on.
+    // This page is shown at the address they asked for, so a reload opens that page.
+    var checking = false;
+    function tryReconnect() {
+        if (checking || document.visibilityState === 'hidden') return;
+        checking = true;
+        fetch('/manifest.json?ping=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' })
+            .then(function (res) { if (res.ok) location.reload(); })
+            .catch(function () {})
+            .then(function () { checking = false; });
+    }
+    window.addEventListener('online', tryReconnect);
+    document.addEventListener('visibilitychange', tryReconnect);
+    setInterval(tryReconnect, 4000);
+    setTimeout(tryReconnect, 1000);
+
     // Is the check-in page saved on this phone? (Saved by the "Prepare for offline" button.)
     var found = false;
     function show() {

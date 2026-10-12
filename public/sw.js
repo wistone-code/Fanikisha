@@ -78,6 +78,17 @@ function withTimeout(promise, ms) {
     });
 }
 
+// When the app comes back from the background, the phone's data connection is often still waking up and
+// the very first request fails at once. Try again a couple of times (about 3 seconds in total) before
+// showing the offline page, so minimising the app no longer lands people on "You're offline".
+function fetchWithRetry(request, delays = [700, 2000]) {
+    return fetch(request).catch((error) => {
+        if (!delays.length) throw error;
+        const [wait, ...rest] = delays;
+        return new Promise((resolve) => setTimeout(resolve, wait)).then(() => fetchWithRetry(request, rest));
+    });
+}
+
 function isCacheable(response) {
     // ok responses, plus opaque ones (cross-origin no-cors, status 0) for fonts and icon CSS.
     return response && (response.ok || response.type === 'opaque');
@@ -139,7 +150,7 @@ self.addEventListener('fetch', (event) => {
             return;
         }
 
-        event.respondWith(fetch(request).then(plain).catch(() => caches.match(OFFLINE_URL)));
+        event.respondWith(fetchWithRetry(request).then(plain).catch(() => caches.match(OFFLINE_URL)));
         return;
     }
 
