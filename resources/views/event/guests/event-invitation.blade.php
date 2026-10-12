@@ -98,6 +98,8 @@
                                 </form>
                             @elseif (($p->invite_token || !$cards) && $optOuts->inSet($optSet, $p->phone))
                                 <span class="text-xs text-gray-400">Will not be messaged</span>
+                            @elseif (($p->invite_token || !$cards) && $p->invitationAlreadySent())
+                                <span class="badge badge-admin" title="Each guest gets the invitation once. To send again, reset the link (↺)."><i class="fa-solid fa-check text-[9px]"></i> {{ $p->invitationSentLabel() }}</span>
                             @elseif (($p->invite_token || !$cards) && $p->phone)
                                 <form method="POST" action="{{ route('guests.sms', $p) }}" class="inline">
                                     @csrf

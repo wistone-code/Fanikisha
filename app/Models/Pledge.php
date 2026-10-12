@@ -167,6 +167,30 @@ class Pledge extends Model
         return 'Pending';
     }
 
+    /**
+     * An invitation goes to each guest once. It counts as sent from the first SMS, WhatsApp or "mark as sent",
+     * except a WhatsApp invitation that Meta reported as failed (it never arrived, so SMS is still allowed).
+     * To send again on purpose, the host resets the guest's link, which clears this.
+     */
+    public function invitationAlreadySent(): bool
+    {
+        return $this->invite_sent_at !== null
+            && ! ($this->invite_channel === 'whatsapp' && $this->whatsapp_status === 'failed');
+    }
+
+    /** Short label for an invitation that was already sent, e.g. "Sent · WhatsApp · Oct 12". */
+    public function invitationSentLabel(): string
+    {
+        $channel = match ($this->invite_channel) {
+            'sms' => 'SMS',
+            'whatsapp' => 'WhatsApp',
+            'manual' => 'marked sent',
+            default => null,
+        };
+
+        return implode(' · ', array_filter(['Sent', $channel, $this->invite_sent_at?->format('M j')]));
+    }
+
     public function inviteLink(): ?string
     {
         return $this->invite_token ? route('guest.rsvp', $this->invite_token) : null;

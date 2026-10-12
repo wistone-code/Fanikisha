@@ -322,11 +322,21 @@ class GuestController extends Controller
         return back()->with('status', 'Invitation link activated');
     }
 
+    /** Each guest receives the invitation once; a second send is refused with a way forward. */
+    private function alreadyInvited(Pledge $pledge): RedirectResponse
+    {
+        return back()->with('error', "{$pledge->name} has already received the invitation (".mb_strtolower($pledge->invitationSentLabel()).'). '
+            .'To send it again, reset their link first with the ↺ button — the old link will stop working.');
+    }
+
     /** Sends the invitation directly via Beem SMS instead of opening the phone's Messages app. */
     public function inviteSms(Pledge $pledge, MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $this->assertPledgeInCurrentEvent($pledge);
         abort_unless($this->canSendInvite($pledge), 403, 'Activate the invitation link first.');
+        if ($pledge->invitationAlreadySent()) {
+            return $this->alreadyInvited($pledge);
+        }
 
         $event = app('currentEvent');
         $result = $sms->sendSingle($messages->forInvitationSms($event, $pledge), $pledge->phone);
@@ -348,6 +358,9 @@ class GuestController extends Controller
             return $blocked;
         }
         abort_unless($this->canSendInvite($pledge), 403, 'Activate the invitation link first.');
+        if ($pledge->invitationAlreadySent()) {
+            return $this->alreadyInvited($pledge);
+        }
 
         $event = app('currentEvent');
         $digits = $phones->digitsOnly($pledge->phone);
@@ -368,6 +381,9 @@ class GuestController extends Controller
             return $blocked;
         }
         abort_unless($this->canSendInvite($pledge), 403, 'Activate the invitation link first.');
+        if ($pledge->invitationAlreadySent()) {
+            return $this->alreadyInvited($pledge);
+        }
 
         $digits = $phones->digitsOnly($pledge->phone);
 

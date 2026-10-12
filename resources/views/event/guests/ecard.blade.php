@@ -56,6 +56,8 @@
                             <button type="button" data-copy="{{ $g->inviteLink() }}" class="btn btn-ghost !py-1.5 !px-2.5 copy-link-btn" title="Copy card link"><i class="fa-solid fa-link"></i></button>
                             @if ($optOuts->inSet($optSet, $g->phone))
                             <span class="text-xs text-gray-400">Will not be messaged</span>
+                            @elseif ($g->invitationAlreadySent())
+                            <span class="badge badge-admin" title="Each guest gets the invitation once. To send again, reset the link (↺)."><i class="fa-solid fa-check text-[9px]"></i> {{ $g->invitationSentLabel() }}</span>
                             @else
                             @if ($g->phone)
                             <form method="POST" action="{{ route('guests.sms', $g) }}" class="inline">
