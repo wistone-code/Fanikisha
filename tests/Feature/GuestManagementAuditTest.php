@@ -61,8 +61,13 @@ class GuestManagementAuditTest extends TestCase
 
         [, $fullAdmin] = $this->fullEvent();
         $this->actingAs($fullAdmin)->post(route('guests.store'), ['name' => 'Nope', 'card_type' => 'single'])->assertNotFound();
-        $this->actingAs($fullAdmin)->post(route('guests.import'), ['import_text' => 'A'])->assertNotFound();
         $this->assertSame(0, Pledge::where('name', 'Nope')->count());
+
+        // A contribution account may import a guest list (invitation list only), but a funeral may not.
+        $this->actingAs($fullAdmin)->post(route('guests.import'), ['import_text' => 'Invited Guest'])->assertSessionHas('status');
+        $this->assertTrue((bool) Pledge::where('name', 'Invited Guest')->first()->guest_only);
+        [, $funeralAdmin] = $this->fullEvent(['event_type' => 'Funeral']);
+        $this->actingAs($funeralAdmin)->post(route('guests.import'), ['import_text' => 'A'])->assertNotFound();
     }
 
     public function test_pasted_import_skips_header_and_blank_rows_and_reads_card_type(): void

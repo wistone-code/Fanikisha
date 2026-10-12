@@ -13,7 +13,10 @@
 
 @if ($isAdmin)
 <div class="mb-5">
-    <button type="button" id="addGuestBtn" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add guest</button>
+    <div class="flex gap-2 flex-wrap">
+        <button type="button" id="addGuestBtn" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add guest</button>
+        <button type="button" id="importGuestBtn" class="btn btn-ghost"><i class="fa-solid fa-file-import"></i> Import list</button>
+    </div>
     <div id="addGuestPanel" class="card p-5 mt-3 max-w-md {{ $errors->has('name') || $errors->has('phone') || $errors->has('card_type') ? '' : 'hidden' }}">
         <p class="text-sm text-gray-500 mb-3">For family, VIPs or anyone who is not a contributor. Their link is ready at once and they never appear in pledges or finance.</p>
         <form method="POST" action="{{ route('guests.invite.new') }}" class="space-y-3">
@@ -31,8 +34,20 @@
             </div>
         </form>
     </div>
+    <div id="importGuestPanel" class="card p-5 mt-3 max-w-md {{ $errors->has('import_file') ? '' : 'hidden' }}">
+        <p class="text-sm text-gray-500 mb-3">Add many guests at once. Like guests added one by one, they join the invitation list only and never appear in pledges or finance.</p>
+        @include('event.guests._import-guests', ['cancelId' => 'importGuestPanel'])
+    </div>
 </div>
 <script>
+(function () {
+    var importPanel = document.getElementById('importGuestPanel');
+    document.getElementById('importGuestBtn').addEventListener('click', function () {
+        importPanel.classList.toggle('hidden');
+        document.getElementById('addGuestPanel').classList.add('hidden');
+        var t = document.getElementById('importGuestsText'); if (t && !importPanel.classList.contains('hidden')) t.focus();
+    });
+})();
 (function () {
     var panel = document.getElementById('addGuestPanel');
     document.getElementById('addGuestBtn').addEventListener('click', function () {

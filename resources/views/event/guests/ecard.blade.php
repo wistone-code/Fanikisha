@@ -140,24 +140,8 @@
 <div id="importGuestsModal" class="{{ $errors->has('import_file') ? '' : 'hidden' }} fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 max-h-[85vh] overflow-y-auto">
         <h3 class="font-semibold mb-1">Import guests</h3>
-        <p class="text-xs text-gray-500 mb-4">Upload a CSV or text file, or paste rows. Each row: <strong>Name, Phone, Card</strong> — phone and card are optional (card is <em>single</em> or <em>double</em>). Up to 500 at a time.</p>
-        @error('import_file')
-        <div class="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2 mb-3">{{ $message }}</div>
-        @enderror
-        <form method="POST" action="{{ route('guests.import') }}" enctype="multipart/form-data" class="space-y-4">
-            @csrf
-            <div><label class="text-xs font-semibold">Upload a file</label><input type="file" name="import_file" accept=".csv,.txt" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div class="text-center text-xs text-gray-400">— or —</div>
-            <div>
-                <label class="text-xs font-semibold">Paste rows</label>
-                <textarea name="import_text" rows="6" placeholder="Juma Ally, 0712345678&#10;Asha & Said, 0765432198, double" class="w-full border rounded-lg px-3 py-2 text-sm font-mono">{{ old('import_text') }}</textarea>
-                <p class="text-xs text-gray-400 mt-1">One guest per line — copy straight from WhatsApp or a spreadsheet.</p>
-            </div>
-            <div class="flex gap-2 pt-2">
-                <button type="button" onclick="document.getElementById('importGuestsModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
-                <button class="btn btn-primary flex-1 justify-center">Import</button>
-            </div>
-        </form>
+        <p class="text-xs text-gray-500 mb-4">Add many guests at once from a typed list, a photo of a list, or a file.</p>
+        @include('event.guests._import-guests', ['cancelId' => 'importGuestsModal'])
     </div>
 </div>
 

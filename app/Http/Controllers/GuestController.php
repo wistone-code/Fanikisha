@@ -166,58 +166,80 @@ class GuestController extends Controller
         return back()->with('status', "{$data['name']} added to the invitation list.");
     }
 
-    /** Bulk add from a CSV/text file or pasted rows. Columns: Name, Phone, Card (single/double, optional). */
+    /** Guest lists can be added in e-card accounts and on a contribution account's invitation list (not funerals). */
+    private function abortUnlessGuestImport(): void
+    {
+        $event = app('currentEvent');
+        abort_unless($event->isEcard() || ! $event->isFuneral(), 404);
+    }
+
+    /**
+     * Bulk add guests from pasted lines, a CSV/text file, or lines read from a photo.
+     * Each line: name, phone, card (single/double) - in any order, phone and card optional,
+     * e.g. "Asha Said 0712 345 678 double". In a contribution account they join the invitation
+     * list only and never appear in pledges or finance.
+     */
     public function importGuests(Request $request, PhoneNumberService $phones): RedirectResponse
     {
-        $this->abortUnlessEcard();
+        $this->abortUnlessGuestImport();
 
         $request->validate([
             'import_file' => ['nullable', 'file', 'mimes:csv,txt', 'max:2048'],
             'import_text' => ['nullable', 'string', 'max:100000'],
         ]);
 
-        $rows = collect();
+        // Each entry becomes [name, phone, card].
+        $entries = collect();
 
         if ($request->hasFile('import_file')) {
             $handle = fopen($request->file('import_file')->getRealPath(), 'r');
 
-            while (($line = fgetcsv($handle)) !== false) {
-                $rows->push(\App\Support\ImportRows::stripBom($line));
+            while (($row = fgetcsv($handle)) !== false) {
+                $row = array_map(fn ($cell) => trim((string) $cell), \App\Support\ImportRows::stripBom($row));
+                if (implode('', $row) === '') {
+                    continue;
+                }
+                // A spreadsheet with columns Name, Phone, Card; a one-column file is read like a pasted line.
+                $entries->push(count($row) >= 2
+                    ? [$row[0], $row[1], strtolower($row[2] ?? '')]
+                    : \App\Support\ImportRows::guestLine($row[0]));
             }
 
             fclose($handle);
         } elseif ($request->filled('import_text')) {
-            $rows = collect(preg_split('/\r\n|\r|\n/', trim($request->input('import_text'))))
-                ->filter(fn ($line) => trim($line) !== '')
-                ->map(fn ($line) => \App\Support\ImportRows::splitLine($line));
+            $entries = collect(preg_split('/\r\n|\r|\n/', trim($request->input('import_text'))))
+                ->filter(fn ($line) => trim($line, " \t,;") !== '')
+                ->map(fn ($line) => \App\Support\ImportRows::guestLine($line))
+                ->values();
         }
 
-        if ($rows->isEmpty()) {
-            return back()->withErrors(['import_file' => 'Upload a file or paste some rows first.']);
+        if ($entries->isEmpty()) {
+            return back()->withErrors(['import_file' => 'Upload a file or paste some rows first.'])->withInput();
         }
 
-        if ($rows->count() > 500) {
-            return back()->withErrors(['import_file' => 'Please import up to 500 guests at a time.']);
+        if ($entries->count() > 500) {
+            return back()->withErrors(['import_file' => 'Please import up to 500 guests at a time.'])->withInput();
         }
 
         $event = app('currentEvent');
+        $guestOnly = ! $event->isEcard();
         $imported = 0;
         $skipped = 0;
         $seen = $event->pledges()->get(['name', 'phone'])->map(fn ($p) => mb_strtolower(trim($p->name)).'|'.$p->phone)->flip();
 
-        foreach ($rows as $row) {
-            $name = trim((string) ($row[0] ?? ''));
-            $phone = trim((string) ($row[1] ?? ''));
-            $card = strtolower(trim((string) ($row[2] ?? ''))) === 'double' ? 'double' : 'single';
+        foreach ($entries as [$name, $phone, $card]) {
+            $name = mb_substr(trim((string) $name), 0, 255);
+            $phone = trim((string) $phone);
 
-            // A header row such as "Name, Phone" is skipped like any other row without a usable name.
-            if ($name === '' || strtolower($name) === 'name') {
+            // A header row such as "Name, Phone, Card" is skipped like any other row without a usable name.
+            $plain = trim(preg_replace('/\s+/u', ' ', preg_replace('/[^\p{L}\s]/u', ' ', mb_strtolower($name))));
+            if ($name === '' || in_array($plain, ['name', 'jina', 'names', 'majina', 'guest', 'guests', 'mgeni', 'wageni'], true)) {
                 $skipped++;
 
                 continue;
             }
 
-            // The same file uploaded twice must not double the guest list.
+            // The same list imported twice must not double the guest list.
             $key = mb_strtolower($name).'|'.$phones->normalize($phone ?: null);
             if ($seen->has($key)) {
                 $skipped++;
@@ -226,11 +248,34 @@ class GuestController extends Controller
             }
             $seen[$key] = true;
 
-            $this->newEcardGuest($event, $name, $phone, $card, $phones);
+            $double = in_array(mb_strtolower(trim((string) $card)), ['double', 'couple', 'wawili'], true);
+            $guest = $this->newEcardGuest($event, $name, $phone ?: null, $double ? 'double' : 'single', $phones);
+            if ($guestOnly) {
+                $guest->forceFill(['guest_only' => true])->save();
+            }
             $imported++;
         }
 
-        return back()->with('status', "Added {$imported} guest(s)".($skipped > 0 ? ", skipped {$skipped} row(s) without a name or already on the list" : '').'.');
+        return back()->with('status', "Added {$imported} guest(s)".($skipped > 0 ? ", skipped {$skipped} line(s) without a name or already on the list" : '').'.');
+    }
+
+    /** Read names, phones and card types from photos of a list. Nothing is saved: the page fills the box for checking. */
+    public function importGuestsPhoto(Request $request, \App\Services\GuestImportService $reader): \Illuminate\Http\JsonResponse
+    {
+        $this->abortUnlessGuestImport();
+
+        $request->validate([
+            'photos' => ['required', 'array', 'min:1', 'max:4'],
+            'photos.*' => ['required', 'image', 'max:10240'], // 10MB each
+        ]);
+
+        $result = $reader->extract($request->file('photos'));
+
+        if (! $result['successful']) {
+            return response()->json(['error' => $result['error']], 422);
+        }
+
+        return response()->json(['items' => $result['items']]);
     }
 
     public function updateGuest(Request $request, Pledge $pledge, PhoneNumberService $phones): RedirectResponse

@@ -257,6 +257,7 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
             // E-card-only accounts: add / import / edit / remove guests (each gets a live card link).
             Route::post('/guests', [GuestController::class, 'storeGuest'])->name('guests.store');
             Route::post('/guests/import', [GuestController::class, 'importGuests'])->name('guests.import');
+            Route::post('/guests/import-photo', [GuestController::class, 'importGuestsPhoto'])->middleware('throttle:20,1')->name('guests.import-photo');
             Route::patch('/guests/{pledge}', [GuestController::class, 'updateGuest'])->name('guests.update');
             Route::delete('/guests/{pledge}', [GuestController::class, 'destroyGuest'])->name('guests.destroy');
 

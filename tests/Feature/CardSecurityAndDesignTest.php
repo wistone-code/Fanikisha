@@ -21,7 +21,7 @@ class CardSecurityAndDesignTest extends TestCase
         $this->actingAs($admin)->post(route('delivery.revoke', $g))->assertRedirect();
         $this->assertNull($g->fresh()->invite_token);
 
-        $this->get(route('guest.rsvp', $old))->assertStatus(410)->assertSee('no longer valid');
+        $this->get(route('guest.rsvp', $old))->assertStatus(410)->assertSee('Card unavailable');
         $this->actingAs($admin)->postJson(route('checkin.verify'), ['token' => $old])->assertNotFound()->assertJsonPath('revoked', true);
         $this->get(route('guest.rsvp', 'never-existed'))->assertNotFound();
     }
