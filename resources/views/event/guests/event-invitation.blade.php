@@ -100,6 +100,11 @@
                                 <span class="text-xs text-gray-400">Will not be messaged</span>
                             @elseif (($p->invite_token || !$cards) && $p->invitationAlreadySent())
                                 <span class="badge badge-admin" title="Each guest gets the invitation once. To send again, reset the link (↺)."><i class="fa-solid fa-check text-[9px]"></i> {{ $p->invitationSentLabel() }}</span>
+                            @if ($p->phone && $p->smsInvitationAllowed())
+                            <form method="POST" action="{{ route('guests.sms', $p) }}" class="inline" data-confirm="Also send {{ $p->name }}'s card by normal SMS? Use this for a guest on a basic phone without WhatsApp. It can be sent once." data-confirm-title="Send by SMS?" data-confirm-button="Send SMS">@csrf
+                                <button class="btn btn-ghost !py-1.5 !px-2.5" title="Also send by normal SMS (for a phone without WhatsApp)"><i class="fa-solid fa-comment-sms"></i> SMS</button>
+                            </form>
+                            @endif
                             @elseif (($p->invite_token || !$cards) && $p->phone)
                                 <form method="POST" action="{{ route('guests.sms', $p) }}" class="inline">
                                     @csrf

@@ -334,7 +334,7 @@ class GuestController extends Controller
     {
         $this->assertPledgeInCurrentEvent($pledge);
         abort_unless($this->canSendInvite($pledge), 403, 'Activate the invitation link first.');
-        if ($pledge->invitationAlreadySent()) {
+        if (! $pledge->smsInvitationAllowed()) {
             return $this->alreadyInvited($pledge);
         }
 

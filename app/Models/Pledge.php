@@ -178,11 +178,20 @@ class Pledge extends Model
             && ! ($this->invite_channel === 'whatsapp' && $this->whatsapp_status === 'failed');
     }
 
+    /**
+     * A guest who got the invitation on WhatsApp may be on a basic phone without WhatsApp, so one normal SMS is
+     * still allowed after it. After an SMS, nothing more goes out until the link is reset.
+     */
+    public function smsInvitationAllowed(): bool
+    {
+        return ! $this->invitationAlreadySent() || $this->invite_channel === 'whatsapp';
+    }
+
     /** Short label for an invitation that was already sent, e.g. "Sent · WhatsApp · Oct 12". */
     public function invitationSentLabel(): string
     {
         $channel = match ($this->invite_channel) {
-            'sms' => 'SMS',
+            'sms' => $this->whatsapp_message_id ? 'WhatsApp + SMS' : 'SMS',
             'whatsapp' => 'WhatsApp',
             'manual' => 'marked sent',
             default => null,

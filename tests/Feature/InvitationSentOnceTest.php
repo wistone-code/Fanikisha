@@ -69,16 +69,38 @@ class InvitationSentOnceTest extends TestCase
         $this->actingAs($admin)->post(route('guests.sms', $guest->fresh()))->assertSessionHas('error');
     }
 
+    public function test_after_whatsapp_one_normal_sms_is_still_allowed_for_basic_phones(): void
+    {
+        $this->fakeSmsAndWhatsApp();
+        [$event, $admin] = $this->ecardEvent(['whatsapp_quota' => 5]);
+        $guest = $this->guestCard($event, ['phone' => '0712345678']);
+
+        $this->actingAs($admin)->post(route('guests.whatsapp-send', $guest))->assertSessionHas('status');
+        $this->assertSame('whatsapp', $guest->fresh()->invite_channel);
+
+        $this->actingAs($admin)->post(route('guests.sms', $guest))->assertSessionHas('status');
+        $this->assertSame('Sent · WhatsApp + SMS', explode(' · '.now()->format('M j'), $guest->fresh()->invitationSentLabel())[0]);
+
+        // Now both have gone out: no more SMS and no more WhatsApp.
+        $this->actingAs($admin)->post(route('guests.sms', $guest))->assertSessionHas('error');
+        $this->actingAs($admin)->post(route('guests.whatsapp-send', $guest))->assertSessionHas('error');
+        Http::assertSentCount(2);
+    }
+
     public function test_the_list_shows_sent_instead_of_send_buttons(): void
     {
         [$event, $admin] = $this->ecardEvent();
-        $this->guestCard($event, ['name' => 'Sent Guest', 'phone' => '0712345678', 'invite_sent_at' => now(), 'invite_channel' => 'whatsapp']);
+        $this->guestCard($event, ['name' => 'Sms Guest', 'phone' => '0712345670', 'invite_sent_at' => now(), 'invite_channel' => 'sms']);
+        $this->guestCard($event, ['name' => 'Wa Guest', 'phone' => '0712345678', 'invite_sent_at' => now(), 'invite_channel' => 'whatsapp']);
         $this->guestCard($event, ['name' => 'New Guest', 'phone' => '0712345679']);
 
         $html = $this->actingAs($admin)->get(route('guests.index'))->assertOk()->getContent();
 
+        $this->assertStringContainsString('Sent · SMS', $html);
         $this->assertStringContainsString('Sent · WhatsApp', $html);
-        // Only the guest who has not been invited yet still has an SMS button.
-        $this->assertSame(1, substr_count($html, '<i class="fa-solid fa-comment-sms"></i> SMS'));
+        // The new guest and the WhatsApp guest (who may have a basic phone) can get an SMS; the SMS guest cannot.
+        $this->assertSame(2, substr_count($html, '<i class="fa-solid fa-comment-sms"></i> SMS'));
+        $this->assertStringContainsString("Also send Wa Guest's card by normal SMS", $html);
+        $this->assertStringNotContainsString("Also send Sms Guest's card", $html);
     }
 }
