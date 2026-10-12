@@ -34,4 +34,16 @@
 <div class="text-center mt-4">
     <a href="{{ route('password.forgot.identify') }}" class="text-sm font-semibold text-[#1F3A52]">Forgot password?</a>
 </div>
+<script>
+// When the phone shows this page from memory (back button, reopening the app) or it has been open for over
+// an hour, load it fresh first, so its security token is current and Sign in works on the first tap.
+(function () {
+    var openedAt = Date.now();
+    function fresh() { if (!document.querySelector('input[name=password]').value) location.reload(); }
+    window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible' && Date.now() - openedAt > 60 * 60 * 1000) fresh();
+    });
+})();
+</script>
 @endsection

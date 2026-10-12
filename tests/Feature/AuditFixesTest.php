@@ -63,7 +63,9 @@ class AuditFixesTest extends TestCase
             $this->post(route('login.attempt'), ['username' => $variant, 'password' => 'nope']);
         }
 
-        $this->post(route('login.attempt'), ['username' => 'mary  ', 'password' => 'nope'])->assertStatus(429);
+        $this->post(route('login.attempt'), ['username' => 'mary  ', 'password' => 'nope'])
+            ->assertRedirect(route('login'))->assertSessionHasErrors('username');
+        $this->assertStringContainsString('Too many sign-in attempts', session('errors')->first('username'));
     }
 
     public function test_each_guest_is_flagged_as_soon_as_their_sms_is_sent_and_quota_counts_per_message(): void

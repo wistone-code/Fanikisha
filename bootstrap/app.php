@@ -56,5 +56,18 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // A sign-in or sign-out form that was left open too long (or restored from the phone's memory) carries an
+        // old security token. Instead of a dead-end "session expired" page, show the sign-in form again with a
+        // fresh token and the username still filled in, so one more tap signs in.
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, Request $request) {
+            if ($e->getStatusCode() !== 419 || $request->expectsJson() || ! $request->routeIs('login.attempt', 'logout')) {
+                return null;
+            }
+
+            return redirect()->route('login')
+                ->withInput($request->only('username'))
+                ->with('status', $request->routeIs('logout')
+                    ? 'You are signed out.'
+                    : 'The sign-in page had been open for a while, so it was refreshed. Please tap Sign in again.');
+        });
     })->create();

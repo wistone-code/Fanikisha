@@ -63,7 +63,15 @@ class AppServiceProvider extends ServiceProvider
             $username = strtolower(trim((string) preg_replace('/[\x{00A0}\x{200B}-\x{200D}\x{FEFF}]/u', ' ', (string) $request->input('username'))));
             $key = $username.'|'.$request->ip();
 
-            return Limit::perMinute(5)->by($key);
+            // Back to the sign-in form with a clear message, instead of a bare "429 Too many requests" screen.
+            return Limit::perMinute(5)->by($key)->response(function ($request, array $headers) {
+                $seconds = max(1, (int) ($headers['Retry-After'] ?? 60));
+
+                return redirect()->route('login')
+                    ->withInput($request->only('username'))
+                    ->withErrors(['username' => "Too many sign-in attempts. Please wait {$seconds} seconds, then try again."])
+                    ->withHeaders($headers);
+            });
         });
 
         // The forgot-password identify step is the closest thing to a username-

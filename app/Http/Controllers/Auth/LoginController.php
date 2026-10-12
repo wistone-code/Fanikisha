@@ -29,13 +29,14 @@ class LoginController extends Controller
 
     private const DUMMY_HASH = '$2y$12$.dxO7BjARktrSSf7F2x88O2LSirU18g9hJgqcb0SwfWUnLcesnniO';
 
-    public function show(): \Illuminate\View\View|RedirectResponse
+    public function show(): \Illuminate\Http\Response|RedirectResponse
     {
         if (Auth::check()) {
             return redirect()->route('dashboard');
         }
 
-        return view('auth.login');
+        // Never keep a copy of the sign-in form: an old copy carries an old security token and fails to sign in.
+        return response()->view('auth.login')->header('Cache-Control', 'no-store, private');
     }
 
     public function authenticate(Request $request): RedirectResponse
