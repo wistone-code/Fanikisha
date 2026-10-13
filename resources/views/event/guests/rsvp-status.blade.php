@@ -46,7 +46,7 @@
         <label class="flex items-center gap-2"><input type="checkbox" name="rsvp_meal_enabled" value="1" @checked($event->rsvp_meal_enabled)> Ask for a meal choice</label>
         <div><label class="text-xs font-semibold">Meal options <span class="text-gray-400 font-normal">(one per line)</span></label><textarea name="rsvp_meal_options" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Chicken&#10;Beef&#10;Vegetarian">{{ $event->rsvp_meal_options }}</textarea></div>
         <label class="flex items-center gap-2"><input type="checkbox" name="rsvp_dietary_enabled" value="1" @checked($event->rsvp_dietary_enabled)> Ask about dietary needs / allergies</label>
-        <label class="flex items-center gap-2"><input type="checkbox" name="rsvp_message_enabled" value="1" @checked($event->rsvp_message_enabled)> Let guests leave a message for the hosts</label>
+        <label class="flex items-center gap-2"><input type="checkbox" name="rsvp_message_enabled" value="1" @checked($event->rsvp_message_enabled)> Let guests leave a message for {{ $event->name }} <span class="text-gray-400">(also when they can't attend)</span></label>
         <div><label class="text-xs font-semibold">Last day to reply</label> <input type="date" name="rsvp_cutoff_date" value="{{ $event->rsvp_cutoff_date?->format('Y-m-d') }}" class="border rounded-lg px-2 py-1 text-sm"></div>
         <button class="btn btn-primary">Save</button>
     </form>

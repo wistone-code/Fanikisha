@@ -8,7 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 @php
-    $hasDetails = $maxPlus > 0 || count($mealOptions) > 0 || $event->rsvp_dietary_enabled || $event->rsvp_message_enabled;
+    $hasAttendDetails = $maxPlus > 0 || count($mealOptions) > 0 || $event->rsvp_dietary_enabled;
+    $hasDetails = $hasAttendDetails || $event->rsvp_message_enabled;
     $date = $event->event_date->copy()->locale($lang)->translatedFormat('l, F j, Y');
     $timeText = $event->event_time ? ' '.$L['at'].' '.$event->event_time : '';
     $note = $lang === 'sw' ? ($event->landmark_note_sw ?: $event->landmark_note_en) : ($event->landmark_note_en ?: $event->landmark_note_sw);
@@ -153,7 +154,7 @@
             <form id="rsvpForm" method="POST" action="{{ route('guest.rsvp.respond', $pledge->invite_token) }}" class="{{ $pledge->rsvp_status ? 'hidden' : '' }} space-y-3 text-left">
                 @csrf
                 <input type="hidden" name="lang" value="{{ $lang }}">
-                <div id="detailsBox" class="space-y-3 {{ $hasDetails && $pledge->rsvp_status !== 'attending' ? 'hidden' : '' }}">
+                <div id="detailsBox" class="space-y-3 {{ $hasAttendDetails && $pledge->rsvp_status !== 'attending' ? 'hidden' : '' }}">
                     @if ($maxPlus > 0)
                     <div><label class="text-xs font-semibold">{{ $L['extra_guests'] }}</label>
                         <select name="plus_ones" class="fld">@for ($i = 0; $i <= $maxPlus; $i++)<option value="{{ $i }}" @selected((int) old('plus_ones', $pledge->plus_ones) === $i)>{{ $i }}</option>@endfor</select></div>
@@ -166,14 +167,15 @@
                     <div><label class="text-xs font-semibold">{{ $L['dietary'] }} <span class="text-gray-400 font-normal">({{ $L['optional'] }})</span></label>
                         <input type="text" name="dietary_note" maxlength="255" value="{{ old('dietary_note', $pledge->dietary_note) }}" class="fld"></div>
                     @endif
-                    @if ($event->rsvp_message_enabled)
-                    <div><label class="text-xs font-semibold">{{ $L['message'] }} <span class="text-gray-400 font-normal">({{ $L['optional'] }})</span></label>
-                        <textarea name="host_message" rows="2" maxlength="500" class="fld">{{ old('host_message', $pledge->host_message) }}</textarea></div>
-                    @endif
                 </div>
+                {{-- The message is offered whatever the answer: guests who can't come often want to send their wishes. --}}
+                @if ($event->rsvp_message_enabled)
+                <div id="msgBox" class="{{ $pledge->rsvp_status ? '' : 'hidden' }}"><label class="text-xs font-semibold">{{ str_replace(':name', $event->name, $L['message']) }} <span class="text-gray-400 font-normal">({{ $L['optional'] }})</span></label>
+                    <textarea name="host_message" rows="2" maxlength="500" class="fld">{{ old('host_message', $pledge->host_message) }}</textarea></div>
+                @endif
                 <div class="flex gap-2">
                     <button type="submit" name="response" value="attending" id="yesBtn" class="btn btn-primary flex-1"><i class="fa-solid fa-check"></i> {{ $hasDetails && ! $pledge->rsvp_status ? $L['yes'] : ($pledge->rsvp_status === 'attending' ? $L['send_response'] : $L['yes']) }}</button>
-                    <button type="submit" name="response" value="not_attending" class="btn btn-ghost flex-1">{{ $L['no'] }}</button>
+                    <button type="submit" name="response" value="not_attending" id="noBtn" class="btn btn-ghost flex-1">{{ $L['no'] }}</button>
                 </div>
             </form>
             @if ($pledge->rsvp_status)
@@ -261,24 +263,44 @@
             env.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') openEnv(); });
         })();
 
-        // RSVP form: "Yes" reveals the extra questions first when the hosts asked any.
+        // RSVP form: "Yes" first shows the questions the hosts asked (and the message box); "Can't make it" first
+        // shows only the message box, so a guest who can't come can still send their wishes. The second tap sends.
         (function () {
             const form = document.getElementById('rsvpForm');
             if (!form) return;
             const details = document.getElementById('detailsBox');
+            const msg = document.getElementById('msgBox');
             const yes = document.getElementById('yesBtn');
+            const no = document.getElementById('noBtn');
             const hasDetails = {{ Js::from($hasDetails) }};
+            const L = {{ Js::from(['yes' => $L['yes'], 'no' => $L['no'], 'send' => $L['send_response']]) }};
+            let armed = {{ Js::from($pledge->rsvp_status ? 'both' : null) }};
+            function setLabels() {
+                yes.lastChild.textContent = ' ' + (armed === 'yes' || armed === 'both' ? L.send : L.yes);
+                no.textContent = armed === 'no' ? L.send : L.no;
+            }
             yes.addEventListener('click', function (e) {
-                if (hasDetails && details.classList.contains('hidden')) {
+                if (hasDetails && armed !== 'yes' && armed !== 'both') {
                     e.preventDefault();
                     details.classList.remove('hidden');
-                    yes.lastChild.textContent = ' ' + {{ Js::from($L['send_response']) }};
+                    if (msg) msg.classList.remove('hidden');
+                    armed = 'yes'; setLabels();
+                }
+            });
+            no.addEventListener('click', function (e) {
+                if (msg && armed !== 'no' && armed !== 'both') {
+                    e.preventDefault();
+                    details.classList.add('hidden');
+                    msg.classList.remove('hidden');
+                    armed = 'no'; setLabels();
+                    msg.querySelector('textarea').focus();
                 }
             });
             const change = document.getElementById('changeBtn');
             if (change) change.addEventListener('click', function () {
                 form.classList.remove('hidden');
                 if (details) details.classList.remove('hidden');
+                if (msg) msg.classList.remove('hidden');
                 const done = document.getElementById('rsvpDone'); if (done) done.classList.add('hidden');
                 change.classList.add('hidden');
             });
