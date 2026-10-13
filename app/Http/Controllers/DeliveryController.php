@@ -39,12 +39,14 @@ class DeliveryController extends Controller
             'arrived' => $all->whereNotNull('checked_in_at')->count(),
             'not_sent' => $all->whereNull('invite_sent_at')->count(),
             'unopened' => $all->whereNotNull('invite_sent_at')->whereNull('first_opened_at')->count(),
+            'no_reply' => $all->whereNotNull('invite_sent_at')->whereNull('rsvp_status')->whereNull('checked_in_at')->count(),
         ];
 
         $rows = $all->filter(fn (Pledge $p) => match ($stage) {
             'not_sent' => $p->invite_sent_at === null,
             'sent' => $p->invite_sent_at !== null,
             'unopened' => $p->invite_sent_at !== null && $p->first_opened_at === null,
+            'no_reply' => $p->invite_sent_at !== null && $p->rsvp_status === null && $p->checked_in_at === null,
             'opened' => $p->first_opened_at !== null,
             'responded' => $p->rsvp_status !== null,
             'arrived' => $p->checked_in_at !== null,
@@ -91,15 +93,15 @@ class DeliveryController extends Controller
         return back()->with($result['successful'] ? 'status' : 'error', $this->summary('Cards sent', $result));
     }
 
-    /** Re-sends a nudge to everyone who got their card but has not opened it. */
+    /** Texts everyone who got their card but has not confirmed attendance yet (not opened, or opened without answering). */
     public function remindUnopened(MessageTemplateService $messages, BeemSmsService $sms): RedirectResponse
     {
         $event = app('currentEvent');
 
-        $targets = $event->pledges()->whereNotNull('invite_token')->whereNotNull('invite_sent_at')->whereNull('first_opened_at')->whereNotNull('phone')->get();
+        $targets = $event->pledges()->awaitingReply()->whereNotNull('phone')->get();
 
         if ($targets->isEmpty()) {
-            return back()->with('status', 'Everyone who received a card has opened it — nothing to remind.');
+            return back()->with('status', 'Everyone who received a card has already said whether they are coming — nothing to remind.');
         }
 
         $result = $sms->sendPersonalised($targets->map(fn (Pledge $p) => (object) [

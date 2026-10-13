@@ -307,12 +307,12 @@ class GuestManagementAuditTest extends TestCase
         Http::assertSentCount(1); // nothing left to send
     }
 
-    public function test_remind_unopened_nudges_only_those_who_have_not_opened(): void
+    public function test_remind_nudges_only_those_who_have_not_confirmed(): void
     {
         $this->beem();
         [$event, $admin] = $this->ecardEvent();
         $unopened = $this->guestCard($event, ['phone' => '+255712000001', 'invite_sent_at' => now()->subDays(3)]);
-        $opened = $this->guestCard($event, ['phone' => '+255712000002', 'invite_sent_at' => now()->subDays(3), 'first_opened_at' => now()]);
+        $opened = $this->guestCard($event, ['phone' => '+255712000002', 'invite_sent_at' => now()->subDays(3), 'first_opened_at' => now(), 'rsvp_status' => 'attending']);
 
         $this->actingAs($admin)->post(route('delivery.remind-unopened'))->assertSessionHas('status');
 

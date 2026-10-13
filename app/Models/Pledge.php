@@ -118,6 +118,16 @@ class Pledge extends Model
         return $query->where('guest_only', false);
     }
 
+    /**
+     * Guests to remind: their card went out but they have not said whether they are coming — whether they never
+     * opened it, or opened it and did not answer. Anyone already checked in is left alone.
+     */
+    public function scopeAwaitingReply($query)
+    {
+        return $query->whereNotNull('invite_token')->whereNotNull('invite_sent_at')
+            ->whereNull('rsvp_status')->whereNull('checked_in_at');
+    }
+
     public function remaining(): float
     {
         return max(0.0, (float) $this->amount - (float) $this->paid);

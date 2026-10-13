@@ -103,13 +103,34 @@ class DeliveryFunnelTest extends TestCase
         $this->beem();
         [$event, $admin] = $this->ecardEvent();
         $unopened = $this->guestCard($event, ['phone' => '255712345678', 'invite_sent_at' => now()]);
-        $this->guestCard($event, ['phone' => '255712345679', 'invite_sent_at' => now(), 'first_opened_at' => now()]);
+        $this->guestCard($event, ['phone' => '255712345679', 'invite_sent_at' => now(), 'first_opened_at' => now(), 'rsvp_status' => 'attending']);
         $this->guestCard($event, ['phone' => '255712345670']);
 
         $this->actingAs($admin)->post(route('delivery.remind-unopened'))->assertRedirect();
 
         Http::assertSentCount(1);
         $this->assertNotNull($unopened->fresh()->unopened_reminded_at);
+    }
+
+    public function test_reminder_also_goes_to_guests_who_opened_but_did_not_confirm(): void
+    {
+        $this->beem();
+        [$event, $admin] = $this->ecardEvent();
+        $unopened = $this->guestCard($event, ['phone' => '255712345671', 'invite_sent_at' => now()]);
+        $openedNoReply = $this->guestCard($event, ['phone' => '255712345672', 'invite_sent_at' => now(), 'first_opened_at' => now()]);
+        $attending = $this->guestCard($event, ['phone' => '255712345673', 'invite_sent_at' => now(), 'first_opened_at' => now(), 'rsvp_status' => 'attending']);
+        $declined = $this->guestCard($event, ['phone' => '255712345674', 'invite_sent_at' => now(), 'first_opened_at' => now(), 'rsvp_status' => 'not_attending']);
+        $this->guestCard($event, ['phone' => '255712345675']); // never sent
+
+        $this->actingAs($admin)->get(route('delivery.index'))->assertSee('Remind not confirmed (2)');
+        $this->actingAs($admin)->post(route('delivery.remind-unopened'))->assertSessionHas('status');
+
+        Http::assertSentCount(2); // the never-opened guest and the opened-but-silent guest
+        Http::assertSent(fn ($r) => str_contains((string) $r['message'], 'tap "Yes, I\'ll be there" or "Can\'t make it"'));
+        $this->assertNotNull($unopened->fresh()->unopened_reminded_at);
+        $this->assertNotNull($openedNoReply->fresh()->unopened_reminded_at);
+        $this->assertNull($attending->fresh()->unopened_reminded_at);
+        $this->assertNull($declined->fresh()->unopened_reminded_at);
     }
 
     public function test_auto_reminder_command_runs_once_per_guest_in_the_window(): void

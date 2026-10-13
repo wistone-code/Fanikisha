@@ -36,16 +36,16 @@
         <form method="POST" action="{{ route('delivery.send-all') }}" data-confirm="Send the card by SMS to the {{ $counts['not_sent'] }} guest(s) who have not been sent one? Each message uses SMS quota." data-confirm-title="Send all unsent cards?" data-confirm-button="Send">
             @csrf <button class="btn btn-primary" @disabled($counts['not_sent'] === 0)><i class="fa-solid fa-paper-plane"></i> Send to all not yet sent ({{ $counts['not_sent'] }})</button>
         </form>
-        <form method="POST" action="{{ route('delivery.remind-unopened') }}" data-confirm="Remind the {{ $counts['unopened'] }} guest(s) who got a card but have not opened it? Each message uses SMS quota." data-confirm-title="Remind unopened?" data-confirm-button="Send">
-            @csrf <button class="btn btn-ghost" @disabled($counts['unopened'] === 0)><i class="fa-solid fa-bell"></i> Remind unopened ({{ $counts['unopened'] }})</button>
+        <form method="POST" action="{{ route('delivery.remind-unopened') }}" data-confirm="Remind the {{ $counts['no_reply'] }} guest(s) who got a card but have not confirmed whether they are coming (not opened, or opened without answering)? Each message uses SMS quota." data-confirm-title="Remind to confirm attendance?" data-confirm-button="Send">
+            @csrf <button class="btn btn-ghost" @disabled($counts['no_reply'] === 0)><i class="fa-solid fa-bell"></i> Remind not confirmed ({{ $counts['no_reply'] }})</button>
         </form>
         <span class="text-xs text-gray-500">SMS left: <strong>{{ $event->smsRemaining() === null ? 'unlimited' : $event->smsRemaining() }}</strong></span>
     </div>
     <details class="mt-3">
-        <summary class="text-xs font-semibold cursor-pointer">Automatic reminder for unopened cards</summary>
+        <summary class="text-xs font-semibold cursor-pointer">Automatic reminder to confirm attendance</summary>
         <form method="POST" action="{{ route('delivery.auto') }}" class="mt-3 space-y-3">
             @csrf @method('PATCH')
-            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="auto_remind_unopened" value="1" @checked($event->auto_remind_unopened)> Remind guests who have not opened their card</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="auto_remind_unopened" value="1" @checked($event->auto_remind_unopened)> Remind guests who have not confirmed attendance (card not opened, or opened without answering)</label>
             <div class="flex items-center gap-2 text-sm">Send it <input type="number" name="auto_remind_unopened_days" min="1" max="30" value="{{ $event->auto_remind_unopened_days }}" class="w-16 border rounded-lg px-2 py-1 text-sm"> day(s) before the event, once per guest.</div>
             <div><label class="text-xs font-semibold">Reminder message <span class="text-gray-400 font-normal">({name} {event} {date} {link})</span></label>
                 <textarea name="unopened_reminder_message" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('unopened_reminder', false) }}</textarea></div>

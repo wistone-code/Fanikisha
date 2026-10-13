@@ -12,7 +12,7 @@ class SendUnopenedReminders extends Command
 {
     protected $signature = 'cards:remind-unopened';
 
-    protected $description = 'Text guests who were sent their card but have not opened it, N days before the event (once per guest).';
+    protected $description = 'Text guests who were sent their card but have not confirmed attendance (not opened, or opened without answering), N days before the event (once per guest).';
 
     public function handle(MessageTemplateService $messages, BeemSmsService $sms): int
     {
@@ -31,8 +31,7 @@ class SendUnopenedReminders extends Command
                 continue;
             }
 
-            $targets = $event->pledges()->whereNotNull('invite_token')->whereNotNull('invite_sent_at')
-                ->whereNull('first_opened_at')->whereNull('unopened_reminded_at')->whereNotNull('phone')->get();
+            $targets = $event->pledges()->awaitingReply()->whereNull('unopened_reminded_at')->whereNotNull('phone')->get();
 
             if ($targets->isEmpty()) {
                 continue;

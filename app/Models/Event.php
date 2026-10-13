@@ -298,8 +298,8 @@ class Event extends Model
                 ? 'Habari {name}, umechaguliwa kuwa {role} katika kamati ya {committee}.'
                 : 'Dear {name}, you have been elected as {role} on {committee} committee.',
             'unopened_reminder' => $sw
-                ? 'Habari {name}, bado hujafungua kadi yako ya mwaliko wa {event} ({date}). Bofya hapa: {link}'
-                : "Dear {name}, we noticed you haven't opened your invitation to {event} ({date}) yet. Tap here to see it and RSVP: {link}",
+                ? 'Habari {name}, bado hatujapokea jibu lako kwa mwaliko wa {event} tarehe {date}. Tafadhali fungua kadi yako sasa na uchague "Ndiyo, nitakuwepo" au "Siwezi kuja": {link} Jibu lako linatusaidia kupanga. Asante!'
+                : 'Dear {name}, we have not yet received your reply to the invitation to {event} on {date}. Please open your card now and tap "Yes, I\'ll be there" or "Can\'t make it": {link} Your answer helps us plan. Thank you!',
             'thank_you_attended' => $sw
                 ? 'Habari {name}, asante kwa kuwa nasi kwenye {event}. Uwepo wako ulituongezea furaha! — {hosts}'
                 : 'Dear {name}, thank you for celebrating {event} with us. Your presence made the day special! — {hosts}',
