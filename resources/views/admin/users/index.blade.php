@@ -189,7 +189,7 @@
                         {{ $account->sms_sent_count }} / {{ $account->sms_quota ?? '∞' }}
                         @if ($account->at_quota)<i class="fa-solid fa-triangle-exclamation ml-1"></i>@endif
                     </span>
-                    @if ($account->owns_event)<button onclick="document.getElementById('editQuota{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1 !px-2 ml-1" title="Edit quotas"><i class="fa-solid fa-pen text-xs"></i></button>@else<span class="text-[11px] text-gray-400 ml-1" title="{{ $account->event_id ? "Shares the host's event. Set quotas on the account that owns it." : 'No event yet. Quotas can be set once the account creates its event.' }}">{{ $account->event_id ? 'team member' : 'no event yet' }}</span>@endif
+                    @if ($account->owns_event)<button onclick="document.getElementById('editQuota{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1 !px-2 ml-1" title="Edit quotas"><i class="fa-solid fa-pen text-xs"></i></button><button onclick="document.getElementById('msg{{ $account->id }}').classList.remove('hidden')" class="btn btn-ghost !py-1 !px-2 ml-1" title="Send a message"><i class="fa-solid fa-bullhorn text-xs"></i></button>@else<span class="text-[11px] text-gray-400 ml-1" title="{{ $account->event_id ? "Shares the host's event. Set quotas on the account that owns it." : 'No event yet. Quotas can be set once the account creates its event.' }}">{{ $account->event_id ? 'team member' : 'no event yet' }}</span>@endif
                     @if ($qpct !== null)<div class="ad-bar mt-1 w-24"><span style="width: {{ $qpct }}%; background: {{ $qpct >= 100 ? '#dc2626' : ($qpct >= 80 ? '#d97706' : 'var(--primary)') }}"></span></div>@endif
                     @if ($account->has_cards)
                     <div class="text-xs mt-1 {{ $account->whatsapp_sent_count >= $account->whatsapp_quota ? 'text-red-600' : 'text-gray-600' }}"><i class="fa-brands fa-whatsapp"></i> {{ $account->whatsapp_sent_count }} / {{ $account->whatsapp_quota }}</div>
@@ -329,6 +329,24 @@
 
 
             @if ($account->owns_event)
+            <div id="msg{{ $account->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
+                <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
+                    <h3 class="font-semibold mb-1">Message to {{ $account->name }}</h3>
+                    <p class="text-sm text-gray-500 mb-3">Shows as a banner at the top of their event until they tap "Got it". A newer message replaces an unread one.</p>
+                    <form method="POST" action="{{ route('admin.users.message', $account) }}">
+                        @csrf
+                        <textarea name="body" maxlength="300" rows="4" required placeholder="e.g. Check-in opens at 3pm. Open the Check-in page and test it before guests arrive." class="w-full border rounded-lg px-3 py-2 text-sm mb-3"></textarea>
+                        @if ($account->phone)
+                        <label class="flex items-start gap-2 text-sm mb-4"><input type="checkbox" name="also_sms" value="1" class="mt-1"> <span>Also send by SMS to {{ $account->phone }} <span class="text-gray-400">(for urgent messages; uses your SMS balance)</span></span></label>
+                        @endif
+                        <div class="flex gap-2">
+                            <button type="button" onclick="document.getElementById('msg{{ $account->id }}').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
+                            <button class="btn btn-primary flex-1 justify-center"><i class="fa-solid fa-paper-plane"></i> Send</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div id="editQuota{{ $account->id }}" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto">
                     <h3 class="font-semibold mb-1">Edit quotas</h3>

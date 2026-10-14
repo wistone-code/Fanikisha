@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
+use App\Services\BeemSmsService;
 use App\Models\EventMember;
 use App\Models\User;
 use App\Services\AccountMailer;
@@ -449,6 +450,32 @@ class UserManagementController extends Controller
         }
 
         return back()->with('status', 'Quota updated');
+    }
+
+    /** A short note to the account's host, shown as a banner on their event until they tap "Got it". Optionally also sent by SMS. */
+    public function sendMessage(Request $request, User $user, BeemSmsService $sms): RedirectResponse
+    {
+        $event = $user->is_super_user ? null : $this->ownEvent($user);
+
+        if (! $event) {
+            return back()->with('error', "{$user->name} has no event of their own to show a message on. Send it to the account that owns the event.");
+        }
+
+        $data = $request->validate(['body' => ['required', 'string', 'max:300']]);
+        $body = trim($data['body']);
+
+        // Only the newest message is shown, so an older unread one is replaced rather than stacked.
+        \App\Models\AdminMessage::where('event_id', $event->id)->whereNull('dismissed_at')->update(['dismissed_at' => now()]);
+
+        $smsSent = false;
+        if ($request->boolean('also_sms') && filled($user->phone)) {
+            $smsSent = (bool) ($sms->sendSingle('Fanikisha: '.$body, $user->phone)['successful'] ?? false);
+        }
+
+        \App\Models\AdminMessage::create(['event_id' => $event->id, 'body' => $body, 'sent_sms' => $smsSent, 'created_by' => $request->user()->id]);
+        ActivityLogger::log('account.message_sent', "Sent a message to {$user->name}".($smsSent ? ' (also by SMS)' : ''), $user, $event);
+
+        return back()->with('status', "Message sent to {$user->name}".($smsSent ? ' (banner and SMS)' : ($request->boolean('also_sms') ? ' as a banner. The SMS could not be sent.' : ' as a banner')).'.');
     }
 
     /** Asks Meta whether the saved WhatsApp token and phone number work, and shows the exact answer. */

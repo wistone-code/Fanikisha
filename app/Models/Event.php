@@ -46,6 +46,7 @@ class Event extends Model
     {
         return [
             'event_date' => 'date',
+            'wishes_dismissed_on' => 'date',
             'pledge_deadline' => 'date',
             'reminder_auto_enabled' => 'boolean',
             'reminder_auto_last_sent_at' => 'datetime',

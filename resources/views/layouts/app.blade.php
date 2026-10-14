@@ -52,18 +52,16 @@
 
 @auth
     @unless (auth()->user()->is_super_user)
-        @php($bannerEvent = app('currentEvent'))
-        @if ($bannerEvent && $bannerEvent->sms_quota !== null)
-            @php($bannerRemaining = max(0, $bannerEvent->sms_quota - $bannerEvent->sms_sent_count))
-            @if ($bannerRemaining <= 0)
-            <div class="bg-red-50 text-red-700 text-sm px-4 py-2 text-center">
-                <i class="fa-solid fa-triangle-exclamation"></i> Your SMS quota is finished — sending is paused. Contact your system admin to raise it.
-            </div>
-            @elseif ($bannerRemaining < 100)
-            <div class="bg-amber-50 text-amber-700 text-sm px-4 py-2 text-center">
-                <i class="fa-solid fa-triangle-exclamation"></i> Your SMS quota is running low — {{ $bannerRemaining }} message(s) remaining.
-            </div>
+        @php($banner = app(\App\Services\EventBanner::class)->for(app('currentEvent'), auth()->user()->name))
+        @if ($banner)
+        @php($tone = ['quota_finished' => 'bg-red-50 text-red-700', 'quota_low' => 'bg-amber-50 text-amber-700', 'admin' => 'bg-blue-50 text-blue-800', 'wishes' => 'bg-emerald-50 text-emerald-800'][$banner['kind']])
+        @php($icon = ['quota_finished' => 'fa-triangle-exclamation', 'quota_low' => 'fa-triangle-exclamation', 'admin' => 'fa-bullhorn', 'wishes' => 'fa-champagne-glasses'][$banner['kind']])
+        <div class="{{ $tone }} text-sm px-4 py-2 text-center" role="status">
+            <i class="fa-solid {{ $icon }}"></i> {{ $banner['text'] }}
+            @if ($banner['dismissible'])
+            <form method="POST" action="{{ route('banner.dismiss') }}" class="inline">@csrf<button class="ml-2 underline font-semibold">Got it</button></form>
             @endif
+        </div>
         @endif
     @endunless
 @endauth
