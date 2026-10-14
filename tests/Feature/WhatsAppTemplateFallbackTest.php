@@ -42,6 +42,7 @@ class WhatsAppTemplateFallbackTest extends TestCase
     public function test_a_missing_card_template_falls_back_to_the_plain_invitation(): void
     {
         $this->on();
+        config(['services.whatsapp.invite_card_template' => 'event_invitation_card']);
         $this->metaWithout(['event_invitation_card']);
         [$event] = $this->ecardEvent(['card_photo_mime' => 'image/jpeg']);
         $guest = $this->guestCard($event);
@@ -50,6 +51,19 @@ class WhatsAppTemplateFallbackTest extends TestCase
 
         $this->assertTrue($r['successful']);
         $this->assertSame(['event_invitation_card:en', 'event_invitation:en'], $this->names());
+    }
+
+    public function test_without_a_card_template_configured_the_plain_one_is_sent_straight_away(): void
+    {
+        $this->on();
+        $this->metaWithout([]);
+        [$event] = $this->ecardEvent(['card_photo_mime' => 'image/jpeg']);
+        $guest = $this->guestCard($event);
+
+        $r = app(WhatsAppCloudService::class)->sendInvitation($event, $guest, '255712345678');
+
+        $this->assertTrue($r['successful']);
+        $this->assertSame(['event_invitation:en'], $this->names());
     }
 
     public function test_a_swahili_template_saved_as_english_falls_back_to_english(): void

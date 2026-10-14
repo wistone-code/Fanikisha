@@ -30,9 +30,9 @@ return [
         'app_secret' => env('WHATSAPP_APP_SECRET'),
         'invite_template' => env('WHATSAPP_TEMPLATE_INVITE', 'event_invitation'),
         'invite_template_sw' => env('WHATSAPP_TEMPLATE_INVITE_SW', 'event_invitation_sw'),
-        // Used instead when the event has its own card design or photo: same text, with an Image header.
-        'invite_card_template' => env('WHATSAPP_TEMPLATE_INVITE_CARD', 'event_invitation_card'),
-        'invite_card_template_sw' => env('WHATSAPP_TEMPLATE_INVITE_CARD_SW', 'event_invitation_card_sw'),
+        // Optional. Used instead when the event has its own card design or photo: same text, with an Image header. Left empty = the plain invitation template is always used.
+        'invite_card_template' => env('WHATSAPP_TEMPLATE_INVITE_CARD'),
+        'invite_card_template_sw' => env('WHATSAPP_TEMPLATE_INVITE_CARD_SW'),
     ],
 
     'anthropic' => [

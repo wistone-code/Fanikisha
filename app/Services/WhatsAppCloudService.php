@@ -248,7 +248,7 @@ class WhatsAppCloudService
         $card = $sw ? config('services.whatsapp.invite_card_template_sw') : config('services.whatsapp.invite_card_template');
 
         $attempts = [];
-        if ($image) {
+        if ($image && filled($card)) {
             $attempts[] = [$card, $lang, $image];
         }
         $attempts[] = [$plain, $lang, null];
