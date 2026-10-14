@@ -164,4 +164,22 @@ class WhatsAppWebhookTest extends TestCase
             ->assertSee('WhatsApp failed', false)
             ->assertSee('use SMS', false);
     }
+
+    public function test_a_card_picture_meta_cannot_load_is_resent_once_as_a_plain_message_not_by_sms(): void
+    {
+        config(['services.whatsapp.token' => 'EAAtest', 'services.whatsapp.phone_number_id' => '12345']);
+        Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.NEW']]], 200)]);
+        [$event, $guest] = $this->sentGuest();
+
+        $this->report([['id' => 'wamid.ABC', 'status' => 'failed', 'timestamp' => time(), 'errors' => [['code' => 131053, 'title' => 'Media upload error']]]])->assertOk();
+
+        $guest->refresh();
+        $this->assertSame('wamid.NEW', $guest->whatsapp_message_id);
+        $this->assertSame('sent', $guest->whatsapp_status);
+        $this->assertNotSame('sms', $guest->invite_channel);
+
+        // A second picture failure for the same guest is not retried again.
+        $this->report([['id' => 'wamid.NEW', 'status' => 'failed', 'timestamp' => time(), 'errors' => [['code' => 131053]]]])->assertOk();
+        $this->assertSame('failed', $guest->fresh()->whatsapp_status);
+    }
 }

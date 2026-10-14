@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Pledge;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -94,6 +95,11 @@ class WhatsAppWebhookController extends Controller
             $event = Event::find($pledge->event_id);
             $event?->releaseWhatsapp();
 
+            // Meta could not load the card picture: send the same invitation once more as a plain WhatsApp message.
+            if ($event && in_array($code, [131052, 131053], true) && $this->resendWithoutPicture($pledge, $event)) {
+                return;
+            }
+
             // The guest still gets the card: by normal SMS, straight away.
             if ($event && app(\App\Services\WhatsAppSmsFallback::class)->send($pledge, $event)) {
                 $pledge->update(['whatsapp_error' => mb_substr('Sent by SMS instead. '.$pledge->whatsapp_error, 0, 250)]);
@@ -107,5 +113,27 @@ class WhatsAppWebhookController extends Controller
         }
 
         $pledge->update(['whatsapp_status' => $state, 'whatsapp_status_at' => $at, 'whatsapp_error' => null]);
+    }
+
+    /** One retry only (guarded by a short lock), and only while the event still has WhatsApp quota. */
+    private function resendWithoutPicture(Pledge $pledge, Event $event): bool
+    {
+        $digits = app(\App\Services\PhoneNumberService::class)->digitsOnly($pledge->phone);
+
+        if (! $digits || ! Cache::add('wa-picture-retry:'.$pledge->id, 1, now()->addDay()) || ! $event->reserveWhatsapp()) {
+            return false;
+        }
+
+        $result = app(\App\Services\WhatsAppCloudService::class)->sendInvitation($event, $pledge, $digits, false);
+
+        if (! $result['successful']) {
+            $event->releaseWhatsapp();
+
+            return false;
+        }
+
+        $pledge->update(['whatsapp_message_id' => $result['message_id'] ?? null, 'whatsapp_status' => 'sent', 'whatsapp_status_at' => now(), 'whatsapp_error' => null]);
+
+        return true;
     }
 }

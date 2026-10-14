@@ -164,8 +164,14 @@ class WhatsAppCloudService
                 => "This number is not on WhatsApp, or can't be reached there. {$sms}",
             $code === 131049
                 => "WhatsApp held this message back: it limits how many business messages one person gets. {$sms}",
-            in_array($code, [131047, 131048], true)
+            in_array($code, [131047, 131048, 130472], true)
                 => "WhatsApp declined to deliver to this number right now. {$sms}",
+            $code === 131050
+                => "This person has switched off business promotions on WhatsApp. {$sms}",
+            in_array($code, [131052, 131053], true)
+                => "WhatsApp could not load the card picture. The invitation is re-sent without the picture. {$sms}",
+            in_array($code, [131000, 131016, 131021, 131057, 135000, 1, 2], true)
+                => "WhatsApp had a temporary problem. {$sms}",
             in_array($code, [132000, 132001, 132005, 132007, 132012, 132015, 132016], true)
                 => "The WhatsApp invitation message isn't ready yet (not approved, or the wrong language). {$sms} Please tell your system admin.",
             in_array($code, [131042, 131031], true)
@@ -184,10 +190,10 @@ class WhatsAppCloudService
      * If Meta says that template (or that language of it) does not exist, it quietly tries the next-best one so the guest still gets the link:
      * card-image template, then the plain text template, then the plain template in English.
      */
-    public function sendInvitation(Event $event, Pledge $pledge, string $toDigits): array
+    public function sendInvitation(Event $event, Pledge $pledge, string $toDigits, bool $withImage = true): array
     {
         $sw = $event->sms_language === 'sw';
-        $image = $this->cardImageUrl($event, $pledge);
+        $image = $withImage ? $this->cardImageUrl($event, $pledge) : null;
         $lang = $sw ? 'sw' : 'en';
 
         $plain = $sw ? config('services.whatsapp.invite_template_sw') : config('services.whatsapp.invite_template');
