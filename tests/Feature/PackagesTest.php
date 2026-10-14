@@ -289,22 +289,31 @@ class PackagesTest extends TestCase
         $this->actingAs($viewer)->get(route('dashboard'))->assertOk()->assertDontSee('Event Photos');
     }
 
-    public function test_sms_invitation_has_the_entry_code_and_no_link_while_whatsapp_keeps_the_link(): void
+    public function test_sms_invitation_has_the_card_link_and_the_entry_code(): void
     {
-        $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'sms_language' => 'en', 'place' => 'Hall', 'event_date' => now()->addDays(20)->toDateString(), 'invitation_message' => 'Hi {name}, tap to RSVP: {link}']);
+        $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'sms_language' => 'en', 'place' => 'Hall', 'event_date' => now()->addDays(20)->toDateString()]);
         $p = $this->pledge($full, ['phone' => '255712345678', 'invite_token' => Str::random(32)]);
         $svc = app(\App\Services\MessageTemplateService::class);
+        $link = $p->fresh()->inviteLink();
 
         $sms = $svc->forInvitationSms($full->fresh(), $p->fresh());
-        $this->assertStringNotContainsString('http', $sms);
-        $this->assertStringNotContainsString('tap to RSVP', $sms);
-        $this->assertStringContainsString($p->fresh()->card_code, $sms);
-        $this->assertStringContainsString('/rsvp/', $svc->forInvitation($full->fresh(), $p->fresh()));
+        $this->assertStringContainsString('Open your card and confirm attendance: '.$link, $sms);
+        $this->assertStringContainsString('Entry code: '.$p->fresh()->card_code, $sms);
+        $this->assertStringNotContainsString('{', $sms);
 
-        $full->update(['invitation_message' => 'Karibu {name}, tukutane {place}']);
+        // The host's own wording is kept, with {link} filled in.
+        $full->update(['invitation_message' => 'Hi {name}, tap to RSVP: {link}']);
+        $sms = $svc->forInvitationSms($full->fresh(), $p->fresh());
+        $this->assertStringStartsWith('Hi ', $sms);
+        $this->assertStringContainsString('tap to RSVP: '.$link, $sms);
+        $this->assertStringContainsString($p->fresh()->card_code, $sms);
+
+        // Wording without {link} or {code} still gets both added.
+        $full->update(['invitation_message' => 'Karibu {name}, tukutane {place}', 'sms_language' => 'sw']);
         $sms = $svc->forInvitationSms($full->fresh(), $p->fresh());
         $this->assertStringStartsWith('Karibu', $sms);
-        $this->assertStringContainsString($p->fresh()->card_code, $sms);
+        $this->assertStringContainsString('Fungua kadi yako: '.$link, $sms);
+        $this->assertStringContainsString('Namba ya kuingia: '.$p->fresh()->card_code, $sms);
     }
 
     public function test_photo_wall_has_a_back_to_card_link_for_guests(): void

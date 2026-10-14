@@ -404,6 +404,13 @@ class GuestController extends Controller
         if (! $result['successful']) {
             $event->releaseWhatsapp();
 
+            // Meta refused it outright: the guest still gets the card by normal SMS.
+            if (app(\App\Services\WhatsAppSmsFallback::class)->send($pledge, $event)) {
+                $pledge->update(['whatsapp_status' => 'failed', 'whatsapp_status_at' => now(), 'whatsapp_error' => mb_substr('Sent by SMS instead. '.($result['error'] ?? ''), 0, 250)]);
+
+                return back()->with('status', "WhatsApp could not send to {$pledge->name}, so the invitation was sent by SMS instead.");
+            }
+
             return back()->with('error', 'WhatsApp send failed: '.($result['error'] ?? 'Unknown error'));
         }
 

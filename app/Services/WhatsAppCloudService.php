@@ -162,7 +162,9 @@ class WhatsAppCloudService
                 => "This number can't receive WhatsApp messages from us yet. {$sms}",
             in_array($code, [131026, 133010], true)
                 => "This number is not on WhatsApp, or can't be reached there. {$sms}",
-            in_array($code, [131047, 131049, 131048], true)
+            $code === 131049
+                => "WhatsApp held this message back: it limits how many business messages one person gets. {$sms}",
+            in_array($code, [131047, 131048], true)
                 => "WhatsApp declined to deliver to this number right now. {$sms}",
             in_array($code, [132000, 132001, 132005, 132007, 132012, 132015, 132016], true)
                 => "The WhatsApp invitation message isn't ready yet (not approved, or the wrong language). {$sms} Please tell your system admin.",

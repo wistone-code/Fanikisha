@@ -44,9 +44,10 @@ class MessageTemplateService
      * Placeholders: {name} {place} {link}
      */
     /**
-     * The invitation sent by SMS carries the guest's entry code instead of a link, so it works on any phone.
-     * A message you wrote yourself is used as written when it has no {link}; otherwise the standard
-     * text is sent. The code is always included. Contributions accounts (no cards) are unaffected.
+     * The invitation sent by normal SMS: the card link, so guests with a smartphone can open the card and confirm
+     * attendance, plus the entry code, so a guest on a basic phone can still give it at the door.
+     * A message you wrote yourself is used as written; the link and the code are added if it leaves them out.
+     * Contributions accounts (no cards) are unaffected.
      */
     public function forInvitationSms(Event $event, Pledge $pledge): string
     {
@@ -55,24 +56,27 @@ class MessageTemplateService
         }
 
         $sw = $event->sms_language === 'sw';
-        $custom = $event->invitation_message;
-        $template = $custom && ! str_contains($custom, '{link}')
-            ? $custom
-            : ($sw
-                ? 'Habari {name}, umealikwa kwenye {event}! Tujiunge tarehe {date}'.($event->place ? ' katika {place}' : '').'. Namba yako ya kuingia: {code}. Itaje mlangoni.'
-                : "Dear {name}, you're invited to {event}! Join us on {date}".($event->place ? ' at {place}' : '').'. Your entry code: {code}. Please give it at the door.');
+        $link = (string) ($pledge->inviteLink() ?? '');
+        $template = $event->invitation_message ?: ($sw
+            ? 'Habari {name}, umealikwa kwenye {event} tarehe {date}'.($event->place ? ' katika {place}' : '').'. Fungua kadi yako na uthibitishe kuhudhuria: {link} Namba ya kuingia: {code}'
+            : "Dear {name}, you're invited to {event} on {date}".($event->place ? ' at {place}' : '').'. Open your card and confirm attendance: {link} Entry code: {code}');
 
-        $text = trim(strtr($template, [
+        $text = trim(strtr($event->fillEventFields($template), [
             '{name}' => $pledge->name,
             '{place}' => $event->place ?? '',
+            '{link}' => $link,
             '{code}' => (string) $pledge->card_code,
             '{wall_link}' => $this->wallLink($event, $pledge),
             '{event}' => $event->name,
             '{date}' => $event->event_date->format('d.m.Y'),
         ]));
 
+        if ($link !== '' && ! str_contains($text, $link)) {
+            $text .= ($sw ? ' Fungua kadi yako: ' : ' Open your card: ').$link;
+        }
+
         if ($pledge->card_code && ! str_contains($text, (string) $pledge->card_code)) {
-            $text .= ($sw ? ' Namba yako ya kuingia: ' : ' Your entry code: ').$pledge->card_code;
+            $text .= ($sw ? ' Namba ya kuingia: ' : ' Entry code: ').$pledge->card_code;
         }
 
         return $text;

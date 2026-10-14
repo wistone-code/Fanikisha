@@ -82,14 +82,22 @@ class WhatsAppWebhookController extends Controller
                 return;
             }
 
+            $code = (int) data_get($status, 'errors.0.code', 0);
             $reason = \App\Services\WhatsAppCloudService::friendlyError(
-                (int) data_get($status, 'errors.0.code', 0),
+                $code,
                 (string) (data_get($status, 'errors.0.message') ?: data_get($status, 'errors.0.title') ?: ''),
             );
-            $pledge->update(['whatsapp_status' => 'failed', 'whatsapp_status_at' => $at, 'whatsapp_error' => mb_substr($reason, 0, 250)]);
+            Log::info('WhatsApp invitation failed', ['pledge' => $pledge->id, 'code' => $code, 'error' => data_get($status, 'errors.0')]);
+            $pledge->update(['whatsapp_status' => 'failed', 'whatsapp_status_at' => $at, 'whatsapp_error' => mb_substr($reason.($code ? " [{$code}]" : ''), 0, 250)]);
 
             // Never delivered, so Meta does not bill it: give the invitation back to the event's quota.
-            Event::find($pledge->event_id)?->releaseWhatsapp();
+            $event = Event::find($pledge->event_id);
+            $event?->releaseWhatsapp();
+
+            // The guest still gets the card: by normal SMS, straight away.
+            if ($event && app(\App\Services\WhatsAppSmsFallback::class)->send($pledge, $event)) {
+                $pledge->update(['whatsapp_error' => mb_substr('Sent by SMS instead. '.$pledge->whatsapp_error, 0, 250)]);
+            }
 
             return;
         }

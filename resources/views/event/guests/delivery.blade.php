@@ -74,7 +74,8 @@
                         @default <span class="text-xs text-gray-400">Not sent</span>
                     @endswitch
                     @if ($p->whatsapp_status)
-                    <div class="text-[11px] mt-1 {{ $p->whatsapp_status === 'failed' ? 'text-red-600' : 'text-gray-500' }}" @if ($p->whatsapp_error) title="{{ $p->whatsapp_error }}" @endif><i class="fa-brands fa-whatsapp"></i> WhatsApp {{ $p->whatsapp_status }}@if ($p->whatsapp_status === 'failed') — use SMS @endif</div>
+                    <div class="text-[11px] mt-1 {{ $p->whatsapp_status === 'failed' ? 'text-red-600' : 'text-gray-500' }}" @if ($p->whatsapp_error) title="{{ $p->whatsapp_error }}" @endif><i class="fa-brands fa-whatsapp"></i> WhatsApp {{ $p->whatsapp_status }}@if ($p->whatsapp_status === 'failed') @if ($p->invite_channel === 'sms') — <span class="text-green-700">sent by SMS instead</span> @else — use SMS @endif @endif</div>
+                    @if ($p->whatsapp_status === 'failed' && $p->whatsapp_error && $p->invite_channel !== 'sms')<div class="text-[11px] text-gray-500 mt-0.5">{{ $p->whatsapp_error }}</div>@endif
                     @endif
                     @if (isset($shared[$p->id]))<div class="text-[11px] text-amber-700 mt-1" title="Opened on {{ $shared[$p->id] }} different phones"><i class="fa-solid fa-share-nodes"></i> Possibly forwarded ({{ $shared[$p->id] }} devices)</div>@endif
                     @if ($p->scan_attempts > 0)<div class="text-[11px] text-red-600 mt-1"><i class="fa-solid fa-triangle-exclamation"></i> Scanned again {{ $p->scan_attempts }}× after check-in</div>@endif
