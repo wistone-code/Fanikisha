@@ -80,4 +80,19 @@ class WhatsAppConnectionCheckTest extends TestCase
         $this->actingAs($super)->withSession(['whatsapp_check' => ['ok' => false, 'lines' => ['Meta refused it: code 190']]])
             ->get(route('admin.account'))->assertOk()->assertSee('Not working yet')->assertSee('code 190');
     }
+
+    public function test_diagnose_flags_a_low_quality_number_and_a_paused_template(): void
+    {
+        Http::fake([
+            'graph.facebook.com/*/message_templates*' => Http::response(['data' => [['name' => 'event_invite_v2', 'language' => 'en', 'status' => 'PAUSED', 'category' => 'MARKETING']]]),
+            'graph.facebook.com/*' => Http::response(['display_phone_number' => '+255 676 056 651', 'verified_name' => 'Fanikisha', 'quality_rating' => 'YELLOW', 'messaging_limit_tier' => 'TIER_250']),
+        ]);
+        config(['services.whatsapp.token' => 'EAAgood', 'services.whatsapp.phone_number_id' => '555', 'services.whatsapp.waba_id' => '777', 'services.whatsapp.invite_template' => 'event_invite_v2']);
+
+        $text = implode("\n", app(WhatsAppCloudService::class)->diagnose()['lines']);
+
+        $this->assertStringContainsString('WARNING: the number quality is YELLOW', $text);
+        $this->assertStringContainsString('event_invite_v2 (en): PAUSED', $text);
+        $this->assertStringContainsString('NOT approved', $text);
+    }
 }

@@ -63,7 +63,7 @@ class WhatsAppCloudService
         try {
             $response = Http::timeout(15)->withToken($token)->acceptJson()->get(
                 sprintf('https://graph.facebook.com/%s/%s', config('services.whatsapp.api_version', 'v25.0'), $id),
-                ['fields' => 'display_phone_number,verified_name,quality_rating,code_verification_status'],
+                ['fields' => 'display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier,status'],
             );
         } catch (Throwable $e) {
             $lines[] = 'Could not reach Meta from the server: '.$e->getMessage();
@@ -73,7 +73,11 @@ class WhatsAppCloudService
 
         if ($response->successful()) {
             $d = $response->json();
-            $lines[] = 'Meta accepted the token. Number: '.($d['display_phone_number'] ?? '?').', name: '.($d['verified_name'] ?? '?').', quality: '.($d['quality_rating'] ?? '?').'.';
+            $lines[] = 'Meta accepted the token. Number: '.($d['display_phone_number'] ?? '?').', name: '.($d['verified_name'] ?? '?').', quality: '.($d['quality_rating'] ?? '?').', status: '.($d['status'] ?? '?').', daily limit: '.($d['messaging_limit_tier'] ?? '?').'.';
+            if (in_array($d['quality_rating'] ?? '', ['YELLOW', 'RED'], true)) {
+                $lines[] = 'WARNING: the number quality is '.$d['quality_rating'].'. Meta then limits or blocks new conversations. Guests blocking or reporting the number lowers it.';
+            }
+            array_push($lines, ...$this->templateLines());
 
             return ['ok' => true, 'lines' => $lines];
         }
@@ -89,6 +93,48 @@ class WhatsAppCloudService
         };
 
         return ['ok' => false, 'lines' => $lines];
+    }
+
+    /** Status, category and quality of the invitation templates, straight from Meta (a paused or disabled template fails every send). */
+    private function templateLines(): array
+    {
+        $waba = preg_replace('/\D+/', '', (string) config('services.whatsapp.waba_id'));
+        if ($waba === '') {
+            return [];
+        }
+
+        try {
+            $r = Http::timeout(15)->withToken($this->token())->acceptJson()->get(
+                sprintf('https://graph.facebook.com/%s/%s/message_templates', config('services.whatsapp.api_version', 'v25.0'), $waba),
+                ['fields' => 'name,language,status,category,quality_score,rejected_reason', 'limit' => 100],
+            );
+        } catch (Throwable $e) {
+            return ['Could not read templates: '.$e->getMessage()];
+        }
+
+        if (! $r->successful()) {
+            return ['Could not read templates ('.data_get($r->json(), 'error.message', 'Meta refused').'). The token may lack whatsapp_business_management.'];
+        }
+
+        $used = array_filter([
+            config('services.whatsapp.invite_template'), config('services.whatsapp.invite_template_sw'),
+            config('services.whatsapp.invite_card_template'), config('services.whatsapp.invite_card_template_sw'),
+        ]);
+        $lines = [];
+        $found = [];
+        foreach ((array) $r->json('data', []) as $t) {
+            if (! in_array($t['name'] ?? '', $used, true)) {
+                continue;
+            }
+            $found[] = $t['name'];
+            $score = data_get($t, 'quality_score.score');
+            $lines[] = "Template {$t['name']} ({$t['language']}): {$t['status']}, {$t['category']}".($score ? ", quality {$score}" : '').(($t['status'] ?? '') !== 'APPROVED' ? '  <-- NOT approved, sends will fail' : '');
+        }
+        foreach (array_diff($used, $found) as $missing) {
+            $lines[] = "Template {$missing}: not found in WhatsApp Manager (check WHATSAPP_TEMPLATE_* in Railway).";
+        }
+
+        return $lines;
     }
 
     /**
@@ -162,9 +208,11 @@ class WhatsAppCloudService
                 => "This number can't receive WhatsApp messages from us yet. {$sms}",
             in_array($code, [131026, 133010], true)
                 => "This number is not on WhatsApp, or can't be reached there. {$sms}",
+            $code === 131048
+                => "WhatsApp is limiting messages from our number because too many people reported or blocked it. {$sms} Please tell your system admin.",
             $code === 131049
                 => "WhatsApp held this message back: it limits how many business messages one person gets. {$sms}",
-            in_array($code, [131047, 131048, 130472], true)
+            in_array($code, [131047, 130472], true)
                 => "WhatsApp declined to deliver to this number right now. {$sms}",
             $code === 131050
                 => "This person has switched off business promotions on WhatsApp. {$sms}",

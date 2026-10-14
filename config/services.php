@@ -23,6 +23,8 @@ return [
         'token' => env('WHATSAPP_TOKEN'),
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
         'api_version' => env('WHATSAPP_API_VERSION', 'v25.0'),
+        // WhatsApp Business Account ID (WhatsApp Manager), used only by the System Admin's connection check to read template status.
+        'waba_id' => env('WHATSAPP_BUSINESS_ACCOUNT_ID', '1634041045020643'),
         // Webhook: the word you type into Meta's "Verify token" box, and the App secret (App settings > Basic) that signs each report.
         'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
         'app_secret' => env('WHATSAPP_APP_SECRET'),
