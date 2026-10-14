@@ -54,6 +54,21 @@
     </a>
 </div>
 
+{{-- WhatsApp health: asks Meta about the number, its quality and the invitation templates --}}
+<div class="card p-4 mb-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="text-sm"><span class="font-semibold"><i class="fa-brands fa-whatsapp"></i> WhatsApp connection</span> <span class="text-gray-500">— number quality, daily limit and template status. Nothing is sent to any guest.</span></div>
+        <form method="POST" action="{{ route('admin.whatsapp.check') }}">@csrf<button class="btn btn-primary"><i class="fa-solid fa-plug"></i> Check connection</button></form>
+    </div>
+    @if (session('whatsapp_check'))
+    @php($check = session('whatsapp_check'))
+    <div class="mt-3 rounded-lg p-3 text-sm {{ $check['ok'] ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800' }}">
+        <div class="font-semibold mb-1">{{ $check['ok'] ? 'Connected' : 'Not working yet' }}</div>
+        @foreach ($check['lines'] as $line)<p class="break-words">{{ $line }}</p>@endforeach
+    </div>
+    @endif
+</div>
+
 {{-- Packages, upcoming events, SMS leaders --}}
 <div class="grid lg:grid-cols-3 gap-4 mb-4">
     <div class="card overflow-hidden">
