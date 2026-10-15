@@ -113,6 +113,33 @@ class BeemSmsService
     }
 
     /**
+     * Beem's plain-text SMS refuses "special" characters (long dashes, curly quotes, accents, emoji, …), and one such character
+     * fails the whole message. Everything is turned into its plain keyboard equivalent before sending; anything with no
+     * equivalent is dropped. Guests' names with accents (José) go out as Jose.
+     */
+    public static function plainText(string $text): string
+    {
+        $text = strtr($text, [
+            "\u{2014}" => '-', "\u{2013}" => '-', "\u{2012}" => '-', "\u{2212}" => '-',
+            "\u{2018}" => "'", "\u{2019}" => "'", "\u{201A}" => "'", "\u{2032}" => "'", "\u{60}" => "'", "\u{B4}" => "'",
+            "\u{201C}" => '"', "\u{201D}" => '"', "\u{201E}" => '"', "\u{2033}" => '"',
+            "\u{2026}" => '...', "\u{2022}" => '-', "\u{B7}" => '-', "\u{A0}" => ' ', "\u{202F}" => ' ', "\u{2009}" => ' ',
+            "\u{200B}" => '', "\u{FEFF}" => '', "\u{2192}" => '->', "\u{2190}" => '<-', "\u{D7}" => 'x', "\u{B0}" => ' degrees ',
+            'à' => 'a', 'á' => 'a', 'â' => 'a', 'ä' => 'a', 'ã' => 'a', 'å' => 'a', 'À' => 'A', 'Á' => 'A', 'Â' => 'A', 'Ä' => 'A', 'Ã' => 'A', 'Å' => 'A',
+            'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e', 'È' => 'E', 'É' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+            'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i', 'Ì' => 'I', 'Í' => 'I', 'Î' => 'I', 'Ï' => 'I',
+            'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'ö' => 'o', 'õ' => 'o', 'Ò' => 'O', 'Ó' => 'O', 'Ô' => 'O', 'Ö' => 'O', 'Õ' => 'O',
+            'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u', 'Ù' => 'U', 'Ú' => 'U', 'Û' => 'U', 'Ü' => 'U',
+            'ç' => 'c', 'Ç' => 'C', 'ñ' => 'n', 'Ñ' => 'N', 'ý' => 'y', 'ÿ' => 'y', 'Ý' => 'Y', 'ß' => 'ss',
+        ]);
+
+        // Whatever is left outside plain keyboard characters (emoji, other scripts) is dropped; line breaks and tabs are kept.
+        $text = preg_replace('/[^\x20-\x7E\n\r]/u', '', $text) ?? '';
+
+        return trim(preg_replace('/[ ]{2,}/', ' ', $text) ?? $text);
+    }
+
+    /**
      * Send one message to many recipients through Beem Africa's bulk SMS API.
      *
      * @param  Collection  $pledgers  Any collection of objects/models with a ->phone attribute.
@@ -120,6 +147,8 @@ class BeemSmsService
      */
     public function sendBulk(string $message, Collection $pledgers): array
     {
+        $message = self::plainText($message);
+
         $apiKey = config('services.beem.api_key');
         $secretKey = config('services.beem.secret_key');
         $senderId = config('services.beem.sender_id', 'INFO');
