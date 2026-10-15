@@ -75,6 +75,7 @@
                 <li><a href="{{ route('terms', ['lang' => $sw ? 'sw' : null]) }}" class="hover:text-white">{{ $sw ? 'Vigezo na Masharti' : 'Terms of Service' }}</a></li>
                 <li><a href="{{ route('acceptable-use', ['lang' => $sw ? 'sw' : null]) }}" class="hover:text-white">{{ $sw ? 'Sera ya Matumizi na Ujumbe' : 'Acceptable Use & Messaging' }}</a></li>
                 <li><a href="{{ route('data-request', ['lang' => $sw ? 'sw' : null]) }}" class="hover:text-white">{{ $sw ? 'Taarifa zako na ujumbe' : 'Your data & messages' }}</a></li>
+                <li><a href="{{ route('site-feedback', ['lang' => $sw ? 'sw' : null]) }}" class="hover:text-white">{{ $sw ? 'Tupe maoni' : 'Send us feedback' }}</a></li>
                 <li><a href="{{ route('login') }}" class="hover:text-white">{{ $sw ? 'Ingia' : 'Sign in' }}</a></li>
             </ul>
         </div>

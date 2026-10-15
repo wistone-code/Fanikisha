@@ -34,6 +34,8 @@ Route::get('/terms', [PublicPageController::class, 'terms'])->name('terms');
 Route::get('/acceptable-use', [PublicPageController::class, 'acceptableUse'])->name('acceptable-use');
 Route::get('/data-request', [PublicPageController::class, 'dataRequestForm'])->name('data-request');
 Route::post('/data-request', [PublicPageController::class, 'dataRequestStore'])->middleware('throttle:5,10')->name('data-request.store');
+Route::get('/feedback', [\App\Http\Controllers\FeedbackController::class, 'siteForm'])->name('site-feedback');
+Route::post('/feedback', [\App\Http\Controllers\FeedbackController::class, 'siteStore'])->middleware('throttle:5,10')->name('site-feedback.store');
 Route::get('/request-account', [PublicPageController::class, 'accountRequestForm'])->name('account-request');
 Route::post('/request-account', [PublicPageController::class, 'accountRequestStore'])->middleware('throttle:5,10')->name('account-request.store');
 
@@ -131,6 +133,10 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
         Route::post('/users/{user}/toggle-suspend', [UserManagementController::class, 'toggleSuspend'])->name('users.toggle-suspend');
         Route::post('/users/{user}/reassign-event', [UserManagementController::class, 'reassignEvent'])->name('users.reassign-event');
 
+        Route::get('/feedback', [\App\Http\Controllers\Admin\FeedbackController::class, 'index'])->name('feedback');
+        Route::patch('/feedback/{feedback}', [\App\Http\Controllers\Admin\FeedbackController::class, 'update'])->name('feedback.update');
+        Route::post('/feedback/{feedback}/reply', [\App\Http\Controllers\Admin\FeedbackController::class, 'reply'])->name('feedback.reply');
+
         Route::get('/account', [UserManagementController::class, 'accountSettings'])->name('account');
         Route::post('/whatsapp/check', [UserManagementController::class, 'checkWhatsApp'])->name('whatsapp.check');
         Route::patch('/account/email', [UserManagementController::class, 'updateOwnEmail'])->name('account.email');
@@ -160,6 +166,8 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
     // a graceful redirect, since app('currentEvent') would never have been bound at all.
     Route::middleware('resolve_event')->group(function () {
 
+        Route::get('/send-feedback', [\App\Http\Controllers\FeedbackController::class, 'hostForm'])->name('feedback.host');
+        Route::post('/send-feedback', [\App\Http\Controllers\FeedbackController::class, 'hostStore'])->middleware('throttle:10,10')->name('feedback.host.store');
         Route::post('/banner/dismiss', [\App\Http\Controllers\BannerController::class, 'dismiss'])->name('banner.dismiss');
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/manual', [\App\Http\Controllers\ManualController::class, 'show'])->name('manual');

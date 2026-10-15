@@ -120,6 +120,8 @@
                         <a href="{{ route('admin.users.index') }}" class="cm-item" role="menuitem"><i class="fa-solid fa-gauge-high"></i> Dashboard &amp; accounts</a>
                         @if (Route::has('admin.sms-usage'))<a href="{{ route('admin.sms-usage') }}" class="cm-item" role="menuitem"><i class="fa-solid fa-comment-sms"></i> SMS usage</a>@endif
                         <a href="{{ route('admin.logs.index') }}" class="cm-item" role="menuitem"><i class="fa-solid fa-clock-rotate-left"></i> Activity logs</a>
+                        @php($newFeedback = \App\Models\FeedbackItem::unreadCount())
+                        <a href="{{ route('admin.feedback') }}" class="cm-item" role="menuitem"><i class="fa-solid fa-comment-dots"></i> Feedback @if ($newFeedback)<span class="badge" style="background:#fde8e8;color:#b42318;">{{ $newFeedback }}</span>@endif</a>
                         <div class="cm-sep"></div>
                         <div class="cm-label">Compliance</div>
                         @php($openRequests = \App\Models\DataRequest::whereIn('status', ['new', 'acknowledged'])->count())
@@ -175,6 +177,7 @@
                     <button onclick="document.getElementById('accountSettingsModal').classList.remove('hidden'); document.getElementById('accountMenu').classList.add('hidden')" class="cm-item" role="menuitem"><i class="fa-solid fa-gear"></i> Account settings</button>
                     <div class="cm-sep"></div>
                     @endif
+                    @if (Route::has('feedback.host') && $rightEvent)<a href="{{ route('feedback.host', ['from' => request()->path()]) }}" class="cm-item" role="menuitem"><i class="fa-solid fa-comment-dots"></i> Send feedback</a><div class="cm-sep"></div>@endif
                     <form method="POST" action="{{ route('logout') }}">@csrf
                         <button class="cm-item cm-danger" role="menuitem"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>
                     </form>
