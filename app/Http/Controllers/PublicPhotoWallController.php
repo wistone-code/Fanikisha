@@ -64,6 +64,16 @@ class PublicPhotoWallController extends Controller
         return null;
     }
 
+    /** The short photo-wall link sent by SMS (fanikisha.app/w/AbCd1234): opens the wall as that guest. */
+    public function short(string $code): RedirectResponse
+    {
+        $pledge = Pledge::where('feedback_code', $code)->whereNotNull('invite_token')->firstOrFail();
+        $event = $pledge->event;
+        abort_unless($event->photo_wall_enabled && $event->photo_wall_token, 404);
+
+        return redirect()->route('wall.show', ['wallToken' => $event->photo_wall_token, 'c' => $pledge->invite_token]);
+    }
+
     public function show(Request $request, string $wallToken): View
     {
         $event = $this->wall($wallToken);

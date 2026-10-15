@@ -20,7 +20,7 @@ class MessageTemplateService
             '{pledged}' => number_format((float) $pledge->amount),
             '{paid}' => number_format((float) $pledge->paid),
             '{remain}' => number_format($pledge->remaining()),
-            '{pay_link}' => $pledge->payLink(),
+            '{pay_link}' => $pledge->shortPayLink(),
         ]);
     }
 
@@ -57,9 +57,7 @@ class MessageTemplateService
 
         $sw = $event->sms_language === 'sw';
         $link = (string) ($pledge->shortCardLink() ?? '');
-        $template = $event->invitation_message ?: ($sw
-            ? 'Habari {name}, umealikwa kwenye {event} tarehe {date}'.($event->place ? ' katika {place}' : '').'. Thibitisha: {link} Namba: {code}'
-            : "Dear {name}, you're invited to {event} on {date}".($event->place ? ' at {place}' : '').'. RSVP: {link} Entry code: {code}');
+        $template = $event->messageOrDefault('invitation', false);
 
         $text = trim(strtr($event->fillEventFields($template), [
             '{name}' => $pledge->name,
@@ -264,12 +262,6 @@ class MessageTemplateService
     {
         $text = strtr($event->messageOrDefault('event_day_reminder'), $this->common($event, $pledge));
 
-        // The default reminder also points to the photo wall when it is on (your own wording is left as written).
-        $wall = $this->wallLink($event, $pledge);
-        if ($wall !== '' && ! $event->event_day_reminder_message) {
-            $text .= ($event->sms_language === 'sw' ? ' Tuma picha zako: ' : ' Share your photos: ').$wall;
-        }
-
         return $text;
     }
 
@@ -280,7 +272,10 @@ class MessageTemplateService
             return '';
         }
 
-        return route('wall.show', array_filter(['wallToken' => $event->photo_wall_token, 'c' => $pledge->invite_token]));
+        // Guests with a card get the short link (it signs them in to the wall as themselves); others get the plain wall link.
+        return $pledge->invite_token
+            ? route('wall.short', $pledge->shortCode())
+            : route('wall.show', ['wallToken' => $event->photo_wall_token]);
     }
 
     /** Placeholders shared by the guest-facing messages above. */
@@ -292,7 +287,7 @@ class MessageTemplateService
             '{date}' => $event->event_date->format('d.m.Y'),
             '{place}' => $event->place ? ', '.$event->venueLine() : '',
             '{time}' => $event->event_time ? ($event->sms_language === 'sw' ? ' saa ' : ' at ').$event->event_time : '',
-            '{link}' => $pledge->inviteLink() ?? '',
+            '{link}' => $pledge->shortCardLink() ?? '',
             '{code}' => (string) $pledge->card_code,
             '{wall_link}' => $this->wallLink($event, $pledge),
             '{hosts}' => $event->host_names ?: $event->name,

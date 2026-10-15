@@ -61,6 +61,12 @@ Route::get('/rsvp/{token}', [GuestCardController::class, 'show'])->name('guest.r
 Route::get('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');
 Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'receive'])->middleware('throttle:600,1')->name('webhooks.whatsapp.receive');
 
+Route::get('/p/{code}', function (string $code) {
+    $pledge = \App\Models\Pledge::where('feedback_code', $code)->firstOrFail();
+
+    return redirect()->route('guest.pay', $pledge->pay_token);
+})->middleware('throttle:120,1')->name('guest.pay.short');
+Route::get('/w/{code}', [\App\Http\Controllers\PublicPhotoWallController::class, 'short'])->middleware('throttle:120,1')->name('wall.short');
 Route::get('/c/{code}', [GuestCardController::class, 'short'])->middleware('throttle:120,1')->name('guest.card.short');
 Route::get('/f/{code}', [\App\Http\Controllers\GuestFeedbackController::class, 'show'])->name('guest.feedback');
 Route::post('/f/{code}', [\App\Http\Controllers\GuestFeedbackController::class, 'store'])->middleware('throttle:20,1')->name('guest.feedback.store');

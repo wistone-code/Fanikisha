@@ -336,11 +336,11 @@ class Event extends Model
                 ? 'Habari {name}, tunathibitisha uteuzi wako kama mtoa huduma wa {service} kwa ajili ya {event}. Bajeti: {budget}. Wasiliana nasi endapo utakuwa na maswali.'
                 : 'Dear {name}, confirming your booking as our {service} provider for {event}. Budget: {budget}. Please reach out if you have any questions.',
             'reminder' => $sw
-                ? 'Habari {name}, kikumbusho cha mchango wako wa {event}: uliahidi {pledged}, umeshalipa {paid}, umebakiza {remain}. Lipa hapa: {pay_link}. Asante!'
-                : 'Dear {name}, friendly reminder on {event} contribution: pledged {pledged}, paid {paid} so far, {remain} remaining. Pay here: {pay_link}. Thank you!',
+                ? 'Habari {name}, kikumbusho cha {event}: uliahidi {pledged}, umelipa {paid}, umebakiza {remain}. Lipa: {pay_link} Asante!'
+                : 'Dear {name}, reminder for {event}: pledged {pledged}, paid {paid}, balance {remain}. Pay: {pay_link} Thank you!',
             'invitation' => $sw
-                ? 'Habari {name}, umealikwa kwenye {event}! Tujiunge tarehe {date}'.($this->place ? ' katika {place}' : '').($this->hasFeature('cards') ? '. Bofya kiungo chako kuthibitisha: {link} Namba yako ya kuingia: {code}' : '. Karibu sana!')
-                : "Dear {name}, you're invited to {event}! Join us on {date}".($this->place ? ' at {place}' : '').($this->hasFeature('cards') ? '. Tap your link to RSVP: {link} Your entry code: {code}' : '. We look forward to seeing you!'),
+                ? 'Habari {name}, umealikwa kwenye {event} tarehe {date}'.($this->place ? ' katika {place}' : '').($this->hasFeature('cards') ? '. Thibitisha: {link} Namba: {code}' : '. Karibu sana!')
+                : "Dear {name}, you're invited to {event} on {date}".($this->place ? ' at {place}' : '').($this->hasFeature('cards') ? '. RSVP: {link} Entry code: {code}' : '. We look forward to seeing you!'),
             'announcement' => $sw
                 ? 'Habari {name}, hii ni taarifa kuhusu {event}'.($this->place ? ' katika {place}' : '').' tarehe {date}. Uwepo na msaada wako una maana kubwa kwa familia. Asante.'
                 : 'Dear {name}, this is to inform you about {event}'.($this->place ? ' at {place}' : '').' on {date}. Your presence and support mean a lot to the family. Thank you.',
@@ -348,8 +348,8 @@ class Event extends Model
                 ? 'Habari {name}, umechaguliwa kuwa {role} katika kamati ya {committee}.'
                 : 'Dear {name}, you have been elected as {role} on {committee} committee.',
             'unopened_reminder' => $sw
-                ? 'Habari {name}, bado hatujapokea jibu lako kwa mwaliko wa {event} tarehe {date}. Tafadhali fungua kadi yako sasa na uchague "Ndiyo, nitakuwepo" au "Siwezi kuja": {link} Jibu lako linatusaidia kupanga. Asante!'
-                : 'Dear {name}, we have not yet received your reply to the invitation to {event} on {date}. Please open your card now and tap "Yes, I\'ll be there" or "Can\'t make it": {link} Your answer helps us plan. Thank you!',
+                ? 'Habari {name}, tafadhali thibitisha kama utahudhuria {event} tarehe {date}: {link} Asante!'
+                : 'Dear {name}, please confirm if you will attend {event} on {date}: {link} Thank you!',
             'thank_you_attended' => $this->feedback_enabled
                 // With the feedback link the message is kept short so it still fits in one SMS.
                 ? ($sw ? 'Habari {name}, asante kwa kuwa nasi kwenye {event}! Tupe maoni yako: {feedback_link} - {hosts}' : 'Dear {name}, thank you for celebrating {event}! Rate it: {feedback_link} - {hosts}')
@@ -360,8 +360,8 @@ class Event extends Model
                 ? 'Habari {name}, tulikukumbuka kwenye {event}. Asante kwa mawazo na dua zako. — {hosts}'
                 : 'Dear {name}, we missed you at {event}. Thank you for your thoughts and good wishes. — {hosts}',
             'event_day_reminder' => $sw
-                ? 'Habari {name}, leo ni {event}! Tarehe {date}{time}{place}. Kadi yako (QR ya kuingia): {link} Namba: {code}'
-                : 'Dear {name}, today is {event}! {date}{time}{place}. Your card and entry QR: {link} Entry code: {code}',
+                ? 'Habari {name}, leo ni {event}!{time}{place}. Kadi na QR: {link} Namba: {code}'
+                : 'Dear {name}, today is {event}!{time}{place}. Card and QR: {link} Code: {code}',
             default => '',
         };
 

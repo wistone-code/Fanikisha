@@ -183,7 +183,7 @@ class Pledge extends Model
      * To send again on purpose, the host resets the guest's link, which clears this.
      */
     /** A short random code (the same one for the short card link and the feedback link), so SMS links stay short. */
-    private function shortCode(): string
+    public function shortCode(): string
     {
         if (! $this->feedback_code) {
             do {
@@ -242,6 +242,12 @@ class Pledge extends Model
     public function inviteLink(): ?string
     {
         return $this->invite_token ? route('guest.rsvp', $this->invite_token) : null;
+    }
+
+    /** The pay page for SMS reminders, as a short link. */
+    public function shortPayLink(): string
+    {
+        return route('guest.pay.short', $this->shortCode());
     }
 
     /** Always available, unlike inviteLink() — pay_token exists from creation. */

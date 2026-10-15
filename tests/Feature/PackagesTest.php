@@ -251,7 +251,7 @@ class PackagesTest extends TestCase
         $p = $this->pledge($full, ['phone' => '255712345678', 'invite_token' => Str::random(32)]);
 
         $text = app(\App\Services\MessageTemplateService::class)->forInvitation($full, $p->fresh());
-        $this->assertStringContainsString('Your entry code: '.$p->fresh()->card_code, $text);
+        $this->assertStringContainsString('Entry code: '.$p->fresh()->card_code, $text);
 
         $this->actingAs($admin)->get(route('guests.index', ['tab' => 'rsvp']))->assertOk()->assertSee('Mark yes');
         $this->actingAs($admin)->post(route('rsvp.mark', $p), ['response' => 'attending', 'plus_ones' => 1])->assertRedirect();
@@ -280,7 +280,7 @@ class PackagesTest extends TestCase
 
         $text = app(\App\Services\MessageTemplateService::class)->forInvitation($full, $p->fresh());
         $this->assertStringContainsString('/rsvp/', $text);
-        $this->assertStringContainsString('/wall/', $text);
+        $this->assertStringContainsString('/w/', $text);
 
         $full->update(['photo_wall_enabled' => false]);
         $this->assertStringNotContainsString('/wall/', app(\App\Services\MessageTemplateService::class)->forInvitation($full->fresh(), $p->fresh()));
@@ -346,5 +346,41 @@ class PackagesTest extends TestCase
         // A revoked card no longer opens through the short link either.
         $p->update(['invite_token' => null]);
         $this->get(route('guest.card.short', $code))->assertStatus(410);
+    }
+
+    public function test_every_default_sms_with_a_link_fits_in_one_sms(): void
+    {
+        $svc = app(\App\Services\MessageTemplateService::class);
+        $plain = fn (string $t) => \App\Services\BeemSmsService::plainText($t);
+
+        foreach (['en', 'sw'] as $lang) {
+            $event = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'sms_language' => $lang, 'name' => 'Asha & Juma Send-off', 'place' => 'Mlimani City Hall', 'event_time' => '14:00', 'event_date' => now()->addDays(20)->toDateString(), 'photo_wall_enabled' => true, 'photo_wall_token' => Str::random(32)]);
+            $p = $this->pledge($event, ['name' => 'Amina Juma', 'phone' => '255712345678', 'invite_token' => Str::random(32), 'amount' => 500000, 'paid' => 200000]);
+
+            $messages = [
+                'invitation' => $svc->forInvitationSms($event->fresh(), $p->fresh()),
+                'unopened' => $svc->forUnopenedReminder($event->fresh(), $p->fresh()),
+                'event day' => $svc->forEventDayReminder($event->fresh(), $p->fresh()),
+                'pay reminder' => $svc->forReminder($event->fresh(), $p->fresh()),
+            ];
+
+            foreach ($messages as $name => $text) {
+                $text = $plain($text);
+                $this->assertLessThanOrEqual(160, mb_strlen($text), "{$lang} {$name}: {$text}");
+                $this->assertStringNotContainsString('/rsvp/', $text, "{$lang} {$name} should use a short link");
+                $this->assertStringNotContainsString('{', $text);
+            }
+        }
+    }
+
+    public function test_the_short_pay_and_photo_wall_links_open_the_right_page(): void
+    {
+        $event = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString(), 'photo_wall_enabled' => true, 'photo_wall_token' => 'WALLTOKEN123']);
+        $p = $this->pledge($event, ['invite_token' => Str::random(32)]);
+        $code = $p->shortCode();
+
+        $this->get(route('guest.pay.short', $code))->assertRedirect(route('guest.pay', $p->pay_token));
+        $this->get(route('wall.short', $code))->assertRedirect(route('wall.show', ['wallToken' => 'WALLTOKEN123', 'c' => $p->invite_token]));
+        $this->get(route('guest.pay.short', 'nope0000'))->assertNotFound();
     }
 }

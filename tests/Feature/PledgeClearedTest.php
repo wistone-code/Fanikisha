@@ -89,8 +89,8 @@ class PledgeClearedTest extends TestCase
 
         [$first, $second] = $this->sentMessages();
         $this->assertStringContainsString('fully paid', $first);
-        $this->assertStringNotContainsString('friendly reminder', $first);
-        $this->assertStringContainsString('friendly reminder', $second);
+        $this->assertStringNotContainsString('reminder for', $first);
+        $this->assertStringContainsString('reminder for', $second);
     }
 
     public function test_the_broadcast_goes_only_to_people_who_still_owe(): void

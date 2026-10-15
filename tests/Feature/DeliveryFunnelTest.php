@@ -126,7 +126,7 @@ class DeliveryFunnelTest extends TestCase
         $this->actingAs($admin)->post(route('delivery.remind-unopened'))->assertSessionHas('status');
 
         Http::assertSentCount(2); // the never-opened guest and the opened-but-silent guest
-        Http::assertSent(fn ($r) => str_contains((string) $r['message'], 'tap "Yes, I\'ll be there" or "Can\'t make it"'));
+        Http::assertSent(fn ($r) => str_contains((string) $r['message'], 'please confirm if you will attend') && str_contains((string) $r['message'], '/c/'));
         $this->assertNotNull($unopened->fresh()->unopened_reminded_at);
         $this->assertNotNull($openedNoReply->fresh()->unopened_reminded_at);
         $this->assertNull($attending->fresh()->unopened_reminded_at);

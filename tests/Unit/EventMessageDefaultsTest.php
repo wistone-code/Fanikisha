@@ -21,7 +21,7 @@ class EventMessageDefaultsTest extends TestCase
     {
         $event = Event::factory()->create(['reminder_message' => null]);
 
-        $this->assertStringContainsString('friendly reminder', $event->messageOrDefault('reminder'));
+        $this->assertStringContainsString('reminder for', $event->messageOrDefault('reminder'));
     }
 
     public function test_saved_message_overrides_the_default(): void

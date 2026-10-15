@@ -336,7 +336,7 @@ class PhotoWallAndAfterEventTest extends TestCase
         $this->artisan('reminders:event-day')->assertSuccessful();
 
         Http::assertSentCount(1);
-        Http::assertSent(fn ($r) => str_contains($r['message'], 'today is') && str_contains($r['message'], '14:00') && str_contains($r['message'], $yes->invite_token));
+        Http::assertSent(fn ($r) => str_contains($r['message'], 'today is') && str_contains($r['message'], '14:00') && str_contains($r['message'], '/c/') && ! str_contains($r['message'], $yes->invite_token));
         $this->assertNotNull($yes->fresh()->event_day_reminder_sent_at);
     }
 
