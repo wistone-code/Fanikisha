@@ -131,6 +131,6 @@ class GuestFeedbackTest extends TestCase
         $this->assertSame(8, strlen($g->fresh()->feedback_code));
 
         // The After-the-event page tells the host the same.
-        $this->actingAs($admin)->get(route('after.index'))->assertSee('= 1 SMS', false)->assertSee('characters');
+        $this->actingAs($admin)->get(route('after.index'))->assertSee('<b>1 SMS</b>', false)->assertSee('characters');
     }
 }
