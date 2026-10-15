@@ -48,6 +48,14 @@
 <table>@foreach ($meals as $meal => $n)<tr><td>{{ $meal }}</td><td style="width:60px">{{ $n }}</td></tr>@endforeach</table>
 @endif
 
+@if ($feedback['count'])
+<h2>Guest feedback: {{ number_format($feedback['average'], 1) }} / 5 from {{ $feedback['count'] }} guest(s)</h2>
+<table>@foreach ($feedback['spread'] as $stars => $n)<tr><td>{{ $stars }} stars</td><td style="width:60px">{{ $n }}</td></tr>@endforeach</table>
+@if ($feedback['comments']->isNotEmpty())
+<table>@foreach ($feedback['comments'] as $c)<tr><td>{{ str_repeat('*', $c->feedback_rating) }} {{ $c->feedback_message }}</td><td style="width:140px">{{ $c->name }}</td></tr>@endforeach</table>
+@endif
+@endif
+
 @if ($noShows->count())
 <h2>Said yes but did not check in ({{ $noShows->count() }})</h2>
 <table>@foreach ($noShows as $p)<tr><td>{{ $p->name }}</td><td>{{ $p->phone }}</td></tr>@endforeach</table>

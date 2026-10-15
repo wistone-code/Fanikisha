@@ -18,7 +18,7 @@ class Event extends Model
         'schedule_message',
         'reminder_auto_enabled', 'reminder_auto_frequency_days', 'reminder_auto_time', 'reminder_auto_last_sent_at',
         'sms_quota', 'sms_sent_count', 'whatsapp_quota', 'whatsapp_sent_count', 'card_photo', 'card_photo_mime',
-        'payout_phone', 'payout_network', 'couple_threshold_amount', 'sms_language', 'account_active_until',
+        'payout_phone', 'payout_network', 'couple_threshold_amount', 'sms_language', 'account_active_until', 'feedback_enabled',
         'auto_remind_unopened', 'auto_remind_unopened_days', 'unopened_reminder_message',
         'rsvp_plus_ones_enabled', 'rsvp_max_plus_single', 'rsvp_max_plus_double', 'rsvp_meal_enabled', 'rsvp_meal_options',
         'rsvp_dietary_enabled', 'rsvp_message_enabled', 'rsvp_cutoff_date',
@@ -48,6 +48,7 @@ class Event extends Model
             'event_date' => 'date',
             'wishes_dismissed_on' => 'date',
             'account_active_until' => 'date',
+            'feedback_enabled' => 'boolean',
             'pledge_deadline' => 'date',
             'reminder_auto_enabled' => 'boolean',
             'reminder_auto_last_sent_at' => 'datetime',
@@ -166,6 +167,18 @@ class Event extends Model
     public function photoWallExpired(): bool
     {
         return $this->event_date !== null && now()->startOfDay()->gt($this->event_date->copy()->addDays(self::PHOTO_WALL_LINK_DAYS)->startOfDay());
+    }
+
+    /** Guests can rate the event from the event day until 14 days later (the same window as the thank-you messages). */
+    public function feedbackOpen(): bool
+    {
+        if (! $this->feedback_enabled || $this->event_date === null) {
+            return false;
+        }
+
+        $today = now()->startOfDay();
+
+        return $today->gte($this->event_date->copy()->startOfDay()) && $today->lte($this->event_date->copy()->addDays(\App\Services\ThankYouService::MAX_DAYS_AFTER)->startOfDay());
     }
 
     /** The last day the event's accounts can sign in: one month after the event date, unless the System Admin set another day. */

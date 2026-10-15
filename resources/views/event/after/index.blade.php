@@ -20,6 +20,7 @@
         @unless ($event->isEcard())
         <label class="flex items-center gap-2"><input type="checkbox" name="thank_you_acknowledge_paid" value="1" @checked($event->thank_you_acknowledge_paid)> Also thank guests for the amount they contributed</label>
         @endunless
+        <label class="flex items-start gap-2"><input type="checkbox" name="feedback_enabled" value="1" class="mt-1" @checked($event->feedback_enabled)> <span>Ask guests who came to rate the event <span class="text-gray-400">(adds a "Rate the event" link to their thank-you SMS, so it may use 2 SMS per guest; ratings can be sent from the event day for 14 days)</span></span></label>
         <label class="flex items-center gap-2"><input type="checkbox" name="thank_you_enabled" value="1" @checked($event->thank_you_enabled)> Send automatically the morning after, at <input type="time" name="thank_you_time" value="{{ $event->thank_you_time }}" class="border rounded-lg px-2 py-1"></label>
         <button class="btn btn-primary">Save</button>
     </form>
@@ -32,4 +33,5 @@
         @unless ($eventOver)<p class="text-xs text-gray-400 mt-2">Available once the event day has arrived.</p>@endunless
     </div>
 </div>
+@include('event.after._feedback', ['feedback' => $feedback, 'event' => $event])
 @endsection

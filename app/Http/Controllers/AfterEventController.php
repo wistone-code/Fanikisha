@@ -21,6 +21,7 @@ class AfterEventController extends Controller
             'absentCount' => $thanks->targets($event)->whereNull('checked_in_at')->count(),
             'alreadySent' => $cards->whereNotNull('thank_you_sent_at')->count(),
             'eventOver' => $event->event_date->lte(now()->startOfDay()),
+            'feedback' => $this->feedbackSummary($event),
         ]);
     }
 
@@ -36,6 +37,7 @@ class AfterEventController extends Controller
         app('currentEvent')->update($data + [
             'thank_you_enabled' => $request->boolean('thank_you_enabled'),
             'thank_you_acknowledge_paid' => $request->boolean('thank_you_acknowledge_paid'),
+            'feedback_enabled' => $request->boolean('feedback_enabled'),
         ]);
 
         return back()->with('status', 'Thank-you settings saved');
@@ -98,6 +100,20 @@ class AfterEventController extends Controller
             'photos' => $event->photos()->where('hidden', false)->count(),
             'smsUsed' => $event->sms_sent_count,
             'money' => $event->isEcard() ? null : $event->stats(),
+            'feedback' => $this->feedbackSummary($event),
         ]);
+    }
+
+    /** Ratings and comments guests left; only the host sees them. */
+    private function feedbackSummary($event): array
+    {
+        $rated = $event->pledges()->whereNotNull('feedback_rating')->orderByDesc('feedback_at')->get(['name', 'feedback_rating', 'feedback_message', 'feedback_at']);
+
+        return [
+            'count' => $rated->count(),
+            'average' => $rated->count() ? round((float) $rated->avg('feedback_rating'), 1) : null,
+            'spread' => collect([5, 4, 3, 2, 1])->mapWithKeys(fn ($n) => [$n => $rated->where('feedback_rating', $n)->count()])->all(),
+            'comments' => $rated->filter(fn ($p) => filled($p->feedback_message))->values(),
+        ];
     }
 }

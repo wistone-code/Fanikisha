@@ -61,6 +61,8 @@ Route::get('/rsvp/{token}', [GuestCardController::class, 'show'])->name('guest.r
 Route::get('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');
 Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'receive'])->middleware('throttle:600,1')->name('webhooks.whatsapp.receive');
 
+Route::get('/feedback/{token}', [\App\Http\Controllers\GuestFeedbackController::class, 'show'])->name('guest.feedback');
+Route::post('/feedback/{token}', [\App\Http\Controllers\GuestFeedbackController::class, 'store'])->middleware('throttle:20,1')->name('guest.feedback.store');
 Route::post('/rsvp/{token}/stop', [GuestCardController::class, 'stopMessages'])->middleware('throttle:10,1')->name('guest.rsvp.stop');
 Route::post('/rsvp/{token}/respond', [GuestCardController::class, 'respond'])->middleware('throttle:30,1')->name('guest.rsvp.respond');
 Route::get('/rsvp/{token}/photo', [GuestCardController::class, 'photo'])->name('guest.rsvp.photo');
