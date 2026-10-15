@@ -26,6 +26,12 @@ class GuestCardController extends Controller
         return $pledge && $pledge->event->hasFeature('cards') ? $pledge : null;
     }
 
+    /** From 00:00 after the event date a card no longer opens (opting out of messages still works, see stopMessages). */
+    private function expired(?Pledge $pledge): ?Response
+    {
+        return $pledge && $pledge->event->cardExpired() ? response()->view('guest.expired', [], 410) : null;
+    }
+
     /** A revoked card says so plainly; a link that never existed is a normal 404. */
     private function missing(string $token): Response
     {
@@ -46,6 +52,10 @@ class GuestCardController extends Controller
 
         if (! $pledge) {
             return $this->missing($token);
+        }
+
+        if ($gone = $this->expired($pledge)) {
+            return $gone;
         }
 
         $event = $pledge->event;
@@ -83,10 +93,14 @@ class GuestCardController extends Controller
         return redirect()->route('guest.rsvp', array_filter(['token' => $token, 'lang' => $request->query('lang')]))->with('stopped', true)->with('card_just_acted', true);
     }
 
-    public function respond(Request $request, string $token): RedirectResponse
+    public function respond(Request $request, string $token): RedirectResponse|Response
     {
         $pledge = $this->find($token);
         abort_unless($pledge, 404);
+
+        if ($gone = $this->expired($pledge)) {
+            return $gone;
+        }
 
         $event = $pledge->event;
         $lang = CardLabels::normalize($request->input('lang'), $event->card_default_lang ?? 'en');
@@ -139,6 +153,10 @@ class GuestCardController extends Controller
         $pledge = $this->find($token);
         abort_unless($pledge && $pledge->event->hasCardPhoto(), 404);
 
+        if ($gone = $this->expired($pledge)) {
+            return $gone;
+        }
+
         return response($pledge->event->cardPhotoBytes())->header('Content-Type', $pledge->event->card_photo_mime)->header('Cache-Control', 'public, max-age=3600');
     }
 
@@ -146,6 +164,10 @@ class GuestCardController extends Controller
     {
         $pledge = $this->find($token);
         abort_unless($pledge && $pledge->event->card_has_custom_design, 404);
+
+        if ($gone = $this->expired($pledge)) {
+            return $gone;
+        }
 
         $asset = EventAsset::where('event_id', $pledge->event_id)->where('kind', 'design')->firstOrFail();
 
@@ -157,6 +179,10 @@ class GuestCardController extends Controller
     {
         $pledge = $this->find($token);
         abort_unless($pledge && $pledge->event->card_has_music, 404);
+
+        if ($gone = $this->expired($pledge)) {
+            return $gone;
+        }
 
         return $this->streamMusic($request, $pledge->event_id);
     }
@@ -194,6 +220,10 @@ class GuestCardController extends Controller
     {
         $pledge = $this->find($token);
         abort_unless($pledge, 404);
+
+        if ($gone = $this->expired($pledge)) {
+            return $gone;
+        }
 
         $event = $pledge->event;
         $tz = config('app.timezone');

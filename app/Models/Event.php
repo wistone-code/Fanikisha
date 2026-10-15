@@ -18,7 +18,7 @@ class Event extends Model
         'schedule_message',
         'reminder_auto_enabled', 'reminder_auto_frequency_days', 'reminder_auto_time', 'reminder_auto_last_sent_at',
         'sms_quota', 'sms_sent_count', 'whatsapp_quota', 'whatsapp_sent_count', 'card_photo', 'card_photo_mime',
-        'payout_phone', 'payout_network', 'couple_threshold_amount', 'sms_language',
+        'payout_phone', 'payout_network', 'couple_threshold_amount', 'sms_language', 'account_active_until',
         'auto_remind_unopened', 'auto_remind_unopened_days', 'unopened_reminder_message',
         'rsvp_plus_ones_enabled', 'rsvp_max_plus_single', 'rsvp_max_plus_double', 'rsvp_meal_enabled', 'rsvp_meal_options',
         'rsvp_dietary_enabled', 'rsvp_message_enabled', 'rsvp_cutoff_date',
@@ -47,6 +47,7 @@ class Event extends Model
         return [
             'event_date' => 'date',
             'wishes_dismissed_on' => 'date',
+            'account_active_until' => 'date',
             'pledge_deadline' => 'date',
             'reminder_auto_enabled' => 'boolean',
             'reminder_auto_last_sent_at' => 'datetime',
@@ -70,6 +71,9 @@ class Event extends Model
     }
 
     /** Event types that hide the home-page countdown ring and lead the dashboard with the event day instead of a "days left" counter. */
+    /** The shared photo wall link stops opening this many days after the event date. */
+    public const PHOTO_WALL_LINK_DAYS = 7;
+
     public const NO_COUNTDOWN_TYPES = ['Graduation', 'Baptism', 'Funeral'];
 
     public const TYPES = [
@@ -150,6 +154,38 @@ class Event extends Model
     public function hasFeature(string $feature): bool
     {
         return in_array($feature, $this->features(), true);
+    }
+
+    /** Guest card links stop working at 00:00 after the event date (the event day itself is the last day they open). */
+    public function cardExpired(): bool
+    {
+        return $this->event_date !== null && now()->startOfDay()->gt($this->event_date->copy()->startOfDay());
+    }
+
+    /** True from 00:00 on the day after the wall's last day (event date + 7 days). */
+    public function photoWallExpired(): bool
+    {
+        return $this->event_date !== null && now()->startOfDay()->gt($this->event_date->copy()->addDays(self::PHOTO_WALL_LINK_DAYS)->startOfDay());
+    }
+
+    /** The last day the event's accounts can sign in: one month after the event date, unless the System Admin set another day. */
+    public function accountClosesOn(): ?\Illuminate\Support\Carbon
+    {
+        return $this->account_active_until?->copy() ?? $this->event_date?->copy()->addMonth();
+    }
+
+    /** True from the day after the last active day. */
+    public function accountClosed(): bool
+    {
+        $last = $this->accountClosesOn();
+
+        return $last !== null && now()->startOfDay()->gt($last->startOfDay());
+    }
+
+    /** The event has taken place and its account is in the last month before closing. */
+    public function accountClosing(): bool
+    {
+        return $this->cardExpired() && ! $this->accountClosed();
     }
 
     public function isFuneral(): bool

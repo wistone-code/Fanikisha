@@ -18,10 +18,11 @@
             <div><label class="text-xs font-semibold">Uploads open</label>
                 <select name="photo_wall_open_mode" class="w-full border rounded-lg px-3 py-2"><option value="event_day" @selected($event->photo_wall_open_mode === 'event_day')>From the event day</option><option value="always" @selected($event->photo_wall_open_mode === 'always')>Right away</option></select></div>
             <div class="grid grid-cols-3 gap-2">
-                <div><label class="text-xs font-semibold">Close after (days)</label><input type="number" name="photo_wall_close_days" min="0" max="90" value="{{ $event->photo_wall_close_days }}" class="w-full border rounded-lg px-2 py-2"></div>
+                <div><label class="text-xs font-semibold">Close uploads after (days, up to 7)</label><input type="number" name="photo_wall_close_days" min="1" max="7" value="{{ $event->photo_wall_close_days }}" class="w-full border rounded-lg px-2 py-2"></div>
                 <div><label class="text-xs font-semibold">Per guest</label><input type="number" name="photo_wall_max_per_guest" min="1" max="50" value="{{ $event->photo_wall_max_per_guest }}" class="w-full border rounded-lg px-2 py-2"></div>
                 <div><label class="text-xs font-semibold">Wall total</label><input type="number" name="photo_wall_max_total" min="10" max="1000" value="{{ $event->photo_wall_max_total }}" class="w-full border rounded-lg px-2 py-2"></div>
             </div>
+            <p class="text-xs text-gray-500">The wall link stops opening 7 days after the event date. You can still see and download every photo here.</p>
             <label class="flex items-center gap-2"><input type="checkbox" name="photo_wall_uploads_blocked" value="1" @checked($event->photo_wall_uploads_blocked)> Pause new uploads</label>
             <button class="btn btn-primary w-full justify-center">Save</button>
         </form>

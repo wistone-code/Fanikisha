@@ -31,7 +31,7 @@ class PhotoWallController extends Controller
         $data = $request->validate([
             'photo_wall_access' => ['required', 'in:link,guests'],
             'photo_wall_open_mode' => ['required', 'in:event_day,always'],
-            'photo_wall_close_days' => ['required', 'integer', 'min:0', 'max:90'],
+            'photo_wall_close_days' => ['required', 'integer', 'min:1', 'max:7'],
             'photo_wall_max_per_guest' => ['required', 'integer', 'min:1', 'max:50'],
             'photo_wall_max_total' => ['required', 'integer', 'min:10', 'max:1000'],
             'photo_wall_pin' => ['nullable', 'string', 'max:12'],

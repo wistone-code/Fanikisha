@@ -109,6 +109,12 @@ class LoginController extends Controller
             ]);
         }
 
+        if ($closed = $user->closedEvent()) {
+            ActivityLogger::log('account.login_failed', "Blocked sign-in for {$user->name} ({$user->username}): the event account has closed · {$device}", $user, actor: null);
+
+            throw ValidationException::withMessages(['username' => \App\Services\EventBanner::closedMessage($closed)]);
+        }
+
         if ($user->failed_login_attempts > 0) {
             $user->forceFill(['failed_login_attempts' => 0])->save();
         }
@@ -122,7 +128,11 @@ class LoginController extends Controller
         $request->session()->put(NoteSignedInDevice::FLAG, true);
         ActivityLogger::log('account.login', "{$user->name} ({$user->username}) logged in · {$device}", $user, actor: $user);
 
-        return redirect()->intended(route('dashboard'));
+        $warning = ($event = $user->is_super_user ? null : $user->currentEvent()) && $event->accountClosing()
+            ? \App\Services\EventBanner::closingMessage($event)
+            : null;
+
+        return redirect()->intended(route('dashboard'))->with($warning ? ['status' => $warning] : []);
     }
 
     private function lockedMessage(): string

@@ -100,6 +100,7 @@ class UserManagementController extends Controller
                 $u->sms_sent_count = $event?->sms_sent_count;
                 $u->owns_event = (bool) ($event && $this->ownEvent($u));
                 $u->has_cards = (bool) $event?->hasFeature('cards');
+                $u->account_active_until = $event?->account_active_until?->toDateString();
                 $u->whatsapp_quota = $event?->whatsapp_quota;
                 $u->whatsapp_sent_count = $event?->whatsapp_sent_count;
                 $u->at_quota = $event && $event->sms_quota !== null && $event->sms_sent_count >= $event->sms_quota;
@@ -436,9 +437,15 @@ class UserManagementController extends Controller
         $data = $request->validate([
             'sms_quota' => ['nullable', 'integer', 'min:0'],
             'whatsapp_quota' => ['nullable', 'integer', 'min:0', 'max:1000000'],
+            'account_active_until' => ['nullable', 'date'],
         ]);
 
         $event->update(['sms_quota' => $data['sms_quota'] ?? null]);
+
+        if ($request->has('account_active_until')) {
+            $event->update(['account_active_until' => $data['account_active_until'] ?? null]);
+            ActivityLogger::log('account.active_until_updated', "Set account open until ".($data['account_active_until'] ?? 'automatic (one month after the event)')." for {$user->name}'s event", $user, $event);
+        }
 
         ActivityLogger::log('account.sms_quota_updated', "Set SMS quota for {$user->name}'s event to ".($data['sms_quota'] ?? 'unlimited'), $user, $event);
 

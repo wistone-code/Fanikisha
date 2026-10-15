@@ -10,7 +10,8 @@ use App\Models\Event;
  *   1. SMS quota finished (sending is paused, the host must act)
  *   2. a message from the System Admin (until dismissed)
  *   3. the event-day best wishes (on the event date only, until dismissed)
- *   4. SMS quota running low
+ *   4. after the event: the account is closing soon (it closes one month after the event date)
+ *   5. SMS quota running low
  */
 class EventBanner
 {
@@ -37,11 +38,31 @@ class EventBanner
             return ['kind' => 'wishes', 'text' => $this->wishes($event, $hostName), 'dismissible' => true];
         }
 
+        if ($event->accountClosing()) {
+            return ['kind' => 'closing', 'text' => self::closingMessage($event), 'dismissible' => false];
+        }
+
         if ($remaining !== null && $remaining < 100) {
             return ['kind' => 'quota_low', 'text' => "Your SMS quota is running low — {$remaining} message(s) remaining.", 'dismissible' => false];
         }
 
         return null;
+    }
+
+    /** Shown on every page and after sign-in once the event is over. */
+    public static function closingMessage(Event $event): string
+    {
+        $on = $event->accountClosesOn()?->format('j F Y');
+
+        return "Your event has ended. This account closes on {$on}, after which you can no longer sign in. Export your guest list, recap and any photos you need before then. Guest cards stopped opening after the event day.";
+    }
+
+    /** Sign-in message once the account has closed. */
+    public static function closedMessage(Event $event): string
+    {
+        $on = $event->accountClosesOn()?->format('j F Y');
+
+        return "This account closed on {$on}, one month after the event. Contact Fanikisha (info@fanikisha.app) if you need it opened again.";
     }
 
     public function isEventDay(Event $event): bool

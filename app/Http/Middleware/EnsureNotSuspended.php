@@ -30,6 +30,15 @@ class EnsureNotSuspended
             ]);
         }
 
+        if ($user && ! $request->routeIs('logout') && ($closed = $user->closedEvent())) {
+            \App\Services\ActivityLogger::log('account.logout', "{$user->name} ({$user->username}) was signed out: the event account has closed", $user, actor: $user);
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->withErrors(['username' => \App\Services\EventBanner::closedMessage($closed)]);
+        }
+
         return $next($request);
     }
 }

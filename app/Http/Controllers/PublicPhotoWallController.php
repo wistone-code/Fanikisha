@@ -25,6 +25,11 @@ class PublicPhotoWallController extends Controller
         $event = Event::where('photo_wall_enabled', true)->where('photo_wall_token', $wallToken)->firstOrFail();
         abort_unless($event->hasFeature('cards'), 404);
 
+        // The shared link stops working 7 days after the event (the hosts still see every photo in their own Event Photos page).
+        if ($event->photoWallExpired()) {
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(response()->view('guest.wall-expired', [], 410));
+        }
+
         return $event;
     }
 

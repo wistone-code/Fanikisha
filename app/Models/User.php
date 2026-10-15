@@ -69,6 +69,18 @@ class User extends Authenticatable
         return $this->eventMemberships()->with(['event' => fn ($q) => $q->lean()])->first()?->event;
     }
 
+    /** The event whose closing date has passed, when this account belongs to one (System Admins are never closed). */
+    public function closedEvent(): ?Event
+    {
+        if ($this->is_super_user) {
+            return null;
+        }
+
+        $event = $this->currentEvent();
+
+        return $event && $event->accountClosed() ? $event : null;
+    }
+
     /** Locked after too many wrong passwords; only a System Admin can unlock it. */
     public function isLocked(): bool
     {

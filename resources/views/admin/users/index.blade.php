@@ -355,6 +355,9 @@
                         @csrf @method('PATCH')
                         <label class="text-xs font-semibold">SMS quota</label>
                         <input type="number" name="sms_quota" value="{{ $account->sms_quota }}" min="0" placeholder="Unlimited" class="w-full border rounded-lg px-3 py-2 text-sm mb-4">
+                        <label class="text-xs font-semibold">Keep account open until</label>
+                        <input type="date" name="account_active_until" value="{{ $account->account_active_until }}" class="w-full border rounded-lg px-3 py-2 text-sm mb-1">
+                        <p class="text-xs text-gray-400 mb-4">Leave blank for the automatic day: one month after the event date{{ $account->event_date ? ' ('.\Carbon\Carbon::parse($account->event_date)->addMonth()->format('j M Y').')' : '' }}.</p>
                         @if ($account->has_cards)
                         <label class="text-xs font-semibold"><i class="fa-brands fa-whatsapp"></i> WhatsApp invitations</label>
                         <input type="number" name="whatsapp_quota" value="{{ $account->whatsapp_quota }}" min="0" placeholder="0" class="w-full border rounded-lg px-3 py-2 text-sm mb-1">

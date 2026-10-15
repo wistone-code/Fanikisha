@@ -54,8 +54,8 @@
     @unless (auth()->user()->is_super_user)
         @php($banner = app(\App\Services\EventBanner::class)->for(app('currentEvent'), auth()->user()->name))
         @if ($banner)
-        @php($tone = ['quota_finished' => 'bg-red-50 text-red-700', 'quota_low' => 'bg-amber-50 text-amber-700', 'admin' => 'bg-blue-50 text-blue-800', 'wishes' => 'bg-emerald-50 text-emerald-800'][$banner['kind']])
-        @php($icon = ['quota_finished' => 'fa-triangle-exclamation', 'quota_low' => 'fa-triangle-exclamation', 'admin' => 'fa-bullhorn', 'wishes' => 'fa-champagne-glasses'][$banner['kind']])
+        @php($tone = ['quota_finished' => 'bg-red-50 text-red-700', 'quota_low' => 'bg-amber-50 text-amber-700', 'admin' => 'bg-blue-50 text-blue-800', 'wishes' => 'bg-emerald-50 text-emerald-800', 'closing' => 'bg-amber-50 text-amber-800'][$banner['kind']])
+        @php($icon = ['quota_finished' => 'fa-triangle-exclamation', 'quota_low' => 'fa-triangle-exclamation', 'admin' => 'fa-bullhorn', 'wishes' => 'fa-champagne-glasses', 'closing' => 'fa-hourglass-half'][$banner['kind']])
         <div class="{{ $tone }} text-sm px-4 py-2 text-center" role="status">
             <i class="fa-solid {{ $icon }}"></i> {{ $banner['text'] }}
             @if ($banner['dismissible'])
