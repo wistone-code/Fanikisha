@@ -82,6 +82,19 @@ class GuestCardController extends Controller
         ]);
     }
 
+    /** The short card link sent by SMS (fanikisha.app/c/AbCd1234): sends the guest to their own card. */
+    public function short(Request $request, string $code): RedirectResponse|Response
+    {
+        $pledge = Pledge::where('feedback_code', $code)->first();
+        abort_unless($pledge, 404);
+
+        if (! $pledge->invite_token) {
+            return response()->view('guest.unavailable', [], 410);
+        }
+
+        return redirect()->route('guest.rsvp', array_filter(['token' => $pledge->invite_token, 'lang' => $request->query('lang')]));
+    }
+
     /** "Stop messages" on the card: the number goes on the suppression list at once, for every event. */
     public function stopMessages(Request $request, string $token, \App\Services\OptOutService $optOuts): RedirectResponse
     {

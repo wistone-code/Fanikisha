@@ -56,10 +56,10 @@ class MessageTemplateService
         }
 
         $sw = $event->sms_language === 'sw';
-        $link = (string) ($pledge->inviteLink() ?? '');
+        $link = (string) ($pledge->shortCardLink() ?? '');
         $template = $event->invitation_message ?: ($sw
-            ? 'Habari {name}, umealikwa kwenye {event} tarehe {date}'.($event->place ? ' katika {place}' : '').'. Fungua kadi yako na uthibitishe kuhudhuria: {link} Namba ya kuingia: {code}'
-            : "Dear {name}, you're invited to {event} on {date}".($event->place ? ' at {place}' : '').'. Open your card and confirm attendance: {link} Entry code: {code}');
+            ? 'Habari {name}, umealikwa kwenye {event} tarehe {date}'.($event->place ? ' katika {place}' : '').'. Thibitisha: {link} Namba: {code}'
+            : "Dear {name}, you're invited to {event} on {date}".($event->place ? ' at {place}' : '').'. RSVP: {link} Entry code: {code}');
 
         $text = trim(strtr($event->fillEventFields($template), [
             '{name}' => $pledge->name,
@@ -72,14 +72,24 @@ class MessageTemplateService
         ]));
 
         if ($link !== '' && ! str_contains($text, $link)) {
-            $text .= ($sw ? ' Fungua kadi yako: ' : ' Open your card: ').$link;
+            $text .= ($sw ? ' Thibitisha: ' : ' RSVP: ').$link;
         }
 
         if ($pledge->card_code && ! str_contains($text, (string) $pledge->card_code)) {
-            $text .= ($sw ? ' Namba ya kuingia: ' : ' Entry code: ').$pledge->card_code;
+            $text .= ($sw ? ' Namba: ' : ' Entry code: ').$pledge->card_code;
         }
 
         return $text;
+    }
+
+    /** The invitation SMS for a sample guest, as it is really sent (plain characters), with its length and SMS count. */
+    public function smsSample(Event $event): array
+    {
+        $sample = new Pledge(['name' => 'Amina Juma', 'invite_token' => 'sample', 'card_code' => '88KMT', 'feedback_code' => 'AbCd1234']);
+        $text = BeemSmsService::plainText($this->forInvitationSms($event, $sample));
+        $length = mb_strlen($text);
+
+        return ['text' => $text, 'length' => $length, 'parts' => $length <= 160 ? 1 : (int) ceil($length / 153)];
     }
 
     public function forInvitation(Event $event, Pledge $pledge): string

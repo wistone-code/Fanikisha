@@ -294,10 +294,10 @@ class PackagesTest extends TestCase
         $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'sms_language' => 'en', 'place' => 'Hall', 'event_date' => now()->addDays(20)->toDateString()]);
         $p = $this->pledge($full, ['phone' => '255712345678', 'invite_token' => Str::random(32)]);
         $svc = app(\App\Services\MessageTemplateService::class);
-        $link = $p->fresh()->inviteLink();
+        $link = $p->fresh()->shortCardLink();
 
         $sms = $svc->forInvitationSms($full->fresh(), $p->fresh());
-        $this->assertStringContainsString('Open your card and confirm attendance: '.$link, $sms);
+        $this->assertStringContainsString('RSVP: '.$link, $sms);
         $this->assertStringContainsString('Entry code: '.$p->fresh()->card_code, $sms);
         $this->assertStringNotContainsString('{', $sms);
 
@@ -312,8 +312,8 @@ class PackagesTest extends TestCase
         $full->update(['invitation_message' => 'Karibu {name}, tukutane {place}', 'sms_language' => 'sw']);
         $sms = $svc->forInvitationSms($full->fresh(), $p->fresh());
         $this->assertStringStartsWith('Karibu', $sms);
-        $this->assertStringContainsString('Fungua kadi yako: '.$link, $sms);
-        $this->assertStringContainsString('Namba ya kuingia: '.$p->fresh()->card_code, $sms);
+        $this->assertStringContainsString('Thibitisha: '.$link, $sms);
+        $this->assertStringContainsString('Namba: '.$p->fresh()->card_code, $sms);
     }
 
     public function test_photo_wall_has_a_back_to_card_link_for_guests(): void
@@ -325,5 +325,26 @@ class PackagesTest extends TestCase
             ->assertSee('Back to my card')->assertSee(route('guest.rsvp', $p->invite_token), false);
         $this->flushSession();
         $this->get(route('wall.show', $full->photo_wall_token))->assertOk()->assertDontSee('Back to my card');
+    }
+
+    public function test_the_default_invitation_sms_uses_the_short_card_link_and_fits_in_one_sms(): void
+    {
+        $full = Event::factory()->create(['package' => 'full', 'mode' => 'contributions', 'event_type' => 'Wedding', 'sms_language' => 'en', 'name' => 'Asha & Juma Send-off', 'place' => 'Mlimani City Hall', 'event_date' => now()->addDays(20)->toDateString()]);
+        $p = $this->pledge($full, ['name' => 'Amina Juma', 'phone' => '255712345678', 'invite_token' => Str::random(32)]);
+
+        $sms = \App\Services\BeemSmsService::plainText(app(\App\Services\MessageTemplateService::class)->forInvitationSms($full->fresh(), $p->fresh()));
+
+        $this->assertLessThanOrEqual(160, mb_strlen($sms), $sms);
+        $this->assertMatchesRegularExpression('~https?://[^/]+/c/[A-Za-z0-9]{8}~', $sms);
+        $this->assertStringNotContainsString($p->invite_token, $sms);
+
+        // The short link opens that guest's own card.
+        $code = $p->fresh()->feedback_code;
+        $this->get(route('guest.card.short', $code))->assertRedirect(route('guest.rsvp', $p->invite_token));
+        $this->get(route('guest.card.short', 'nope0000'))->assertNotFound();
+
+        // A revoked card no longer opens through the short link either.
+        $p->update(['invite_token' => null]);
+        $this->get(route('guest.card.short', $code))->assertStatus(410);
     }
 }

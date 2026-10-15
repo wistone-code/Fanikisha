@@ -109,6 +109,8 @@
             <form method="POST" action="{{ route('guests.message.invitation') }}">
                 @csrf @method('PATCH')
                 <textarea name="invitation_message" rows="6" class="w-full border rounded-lg px-3 py-2 text-sm">{{ $event->messageOrDefault('invitation', false) }}</textarea>
+                @php($sms = app(\App\Services\MessageTemplateService::class)->smsSample($event))
+                <p class="text-xs {{ $sms['parts'] > 1 ? 'text-amber-700' : 'text-gray-500' }} mt-1">SMS sample (saved wording, guest "Amina Juma"): {{ $sms['length'] }} characters = <b>{{ $sms['parts'] }} SMS</b>@if ($sms['parts'] > 1). Shorten it to fit one SMS (160 characters)@endif.<br><span class="text-gray-400">{{ $sms['text'] }}</span></p>
                 <p class="text-[11px] text-gray-400 mt-1">You can use {name} {event_name} {event_type} {date} {place} {link} {code} {wall_link}</p>
                 @error('invitation_message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                 <button class="btn btn-primary mt-3"><i class="fa-solid fa-check"></i> Save message</button>

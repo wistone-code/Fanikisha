@@ -182,13 +182,9 @@ class Pledge extends Model
      * except a WhatsApp invitation that Meta reported as failed (it never arrived, so SMS is still allowed).
      * To send again on purpose, the host resets the guest's link, which clears this.
      */
-    /** The guest's own page to rate the event: a short link, so the thank-you SMS stays within one SMS. */
-    public function feedbackLink(): ?string
+    /** A short random code (the same one for the short card link and the feedback link), so SMS links stay short. */
+    private function shortCode(): string
     {
-        if (! $this->invite_token) {
-            return null;
-        }
-
         if (! $this->feedback_code) {
             do {
                 $code = \Illuminate\Support\Str::random(8);
@@ -200,7 +196,19 @@ class Pledge extends Model
             }
         }
 
-        return route('guest.feedback', $this->feedback_code);
+        return $this->feedback_code;
+    }
+
+    /** The guest's own page to rate the event: a short link, so the thank-you SMS stays within one SMS. */
+    public function feedbackLink(): ?string
+    {
+        return $this->invite_token ? route('guest.feedback', $this->shortCode()) : null;
+    }
+
+    /** The card link for SMS: about 32 characters instead of 58, and it opens the same card. */
+    public function shortCardLink(): ?string
+    {
+        return $this->invite_token ? route('guest.card.short', $this->shortCode()) : null;
     }
 
     public function invitationAlreadySent(): bool
