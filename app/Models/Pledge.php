@@ -15,7 +15,7 @@ class Pledge extends Model
         'invite_sent_at', 'invite_channel', 'first_opened_at', 'last_opened_at', 'open_count', 'unopened_reminded_at',
         'card_code', 'plus_ones', 'meal_choice', 'dietary_note', 'host_message',
         'group_name', 'seating_table_id', 'seating_area_id', 'seat_number',
-        'thank_you_sent_at', 'feedback_rating', 'feedback_message', 'feedback_at', 'invite_revoked_at', 'scan_attempts', 'event_day_reminder_sent_at',
+        'thank_you_sent_at', 'feedback_rating', 'feedback_message', 'feedback_at', 'feedback_code', 'invite_revoked_at', 'scan_attempts', 'event_day_reminder_sent_at',
         'guest_only', 'on_invite_list',
         'whatsapp_message_id', 'whatsapp_status', 'whatsapp_status_at', 'whatsapp_error',
     ];
@@ -182,10 +182,25 @@ class Pledge extends Model
      * except a WhatsApp invitation that Meta reported as failed (it never arrived, so SMS is still allowed).
      * To send again on purpose, the host resets the guest's link, which clears this.
      */
-    /** The guest's own page to rate the event (the card itself has expired by then). */
+    /** The guest's own page to rate the event: a short link, so the thank-you SMS stays within one SMS. */
     public function feedbackLink(): ?string
     {
-        return $this->invite_token ? route('guest.feedback', $this->invite_token) : null;
+        if (! $this->invite_token) {
+            return null;
+        }
+
+        if (! $this->feedback_code) {
+            do {
+                $code = \Illuminate\Support\Str::random(8);
+            } while (static::where('feedback_code', $code)->exists());
+
+            $this->feedback_code = $code;
+            if ($this->exists) {
+                $this->forceFill(['feedback_code' => $code])->save();
+            }
+        }
+
+        return route('guest.feedback', $this->feedback_code);
     }
 
     public function invitationAlreadySent(): bool

@@ -350,9 +350,12 @@ class Event extends Model
             'unopened_reminder' => $sw
                 ? 'Habari {name}, bado hatujapokea jibu lako kwa mwaliko wa {event} tarehe {date}. Tafadhali fungua kadi yako sasa na uchague "Ndiyo, nitakuwepo" au "Siwezi kuja": {link} Jibu lako linatusaidia kupanga. Asante!'
                 : 'Dear {name}, we have not yet received your reply to the invitation to {event} on {date}. Please open your card now and tap "Yes, I\'ll be there" or "Can\'t make it": {link} Your answer helps us plan. Thank you!',
-            'thank_you_attended' => $sw
-                ? 'Habari {name}, asante kwa kuwa nasi kwenye {event}. Uwepo wako ulituongezea furaha! — {hosts}'
-                : 'Dear {name}, thank you for celebrating {event} with us. Your presence made the day special! — {hosts}',
+            'thank_you_attended' => $this->feedback_enabled
+                // With the feedback link the message is kept short so it still fits in one SMS.
+                ? ($sw ? 'Habari {name}, asante kwa kuwa nasi kwenye {event}! Tupe maoni yako: {feedback_link} - {hosts}' : 'Dear {name}, thank you for celebrating {event}! Rate it: {feedback_link} - {hosts}')
+                : ($sw
+                    ? 'Habari {name}, asante kwa kuwa nasi kwenye {event}. Uwepo wako ulituongezea furaha! — {hosts}'
+                    : 'Dear {name}, thank you for celebrating {event} with us. Your presence made the day special! — {hosts}'),
             'thank_you_absent' => $sw
                 ? 'Habari {name}, tulikukumbuka kwenye {event}. Asante kwa mawazo na dua zako. — {hosts}'
                 : 'Dear {name}, we missed you at {event}. Thank you for your thoughts and good wishes. — {hosts}',

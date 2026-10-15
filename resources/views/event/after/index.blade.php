@@ -16,11 +16,12 @@
         @csrf @method('PATCH')
         <div><label class="text-xs font-semibold">Signed by <span class="text-gray-400 font-normal">(use {hosts} in the message)</span></label><input type="text" name="host_names" maxlength="160" value="{{ $event->host_names }}" placeholder="Asha &amp; Juma" class="w-full border rounded-lg px-3 py-2"></div>
         <div><label class="text-xs font-semibold">For guests who came</label><textarea name="thank_you_attended_message" rows="3" class="w-full border rounded-lg px-3 py-2">{{ $event->messageOrDefault('thank_you_attended', false) }}</textarea></div>
+        <p class="text-xs {{ $preview['parts'] > 1 ? 'text-amber-700' : 'text-gray-500' }}" style="margin-top:-6px">Sample (saved wording, as sent to a guest named Amina Juma): {{ $preview['length'] }} characters = <b>{{ $preview['parts'] }} SMS</b>@if ($preview['parts'] > 1). Shorten the wording or the signed-by name to fit one SMS (160 characters)@endif.<br><span class="text-gray-400">{{ $preview['text'] }}</span></p>
         <div><label class="text-xs font-semibold">For guests who could not come</label><textarea name="thank_you_absent_message" rows="3" class="w-full border rounded-lg px-3 py-2">{{ $event->messageOrDefault('thank_you_absent', false) }}</textarea></div>
         @unless ($event->isEcard())
         <label class="flex items-center gap-2"><input type="checkbox" name="thank_you_acknowledge_paid" value="1" @checked($event->thank_you_acknowledge_paid)> Also thank guests for the amount they contributed</label>
         @endunless
-        <label class="flex items-start gap-2"><input type="checkbox" name="feedback_enabled" value="1" class="mt-1" @checked($event->feedback_enabled)> <span>Ask guests who came to rate the event <span class="text-gray-400">(adds a "Rate the event" link to their thank-you SMS, so it may use 2 SMS per guest; ratings can be sent from the event day for 14 days)</span></span></label>
+        <label class="flex items-start gap-2"><input type="checkbox" name="feedback_enabled" value="1" class="mt-1" @checked($event->feedback_enabled)> <span>Ask guests who came to rate the event <span class="text-gray-400">(adds a "Rate the event" link to their thank-you SMS, the short default wording still fits in one SMS; ratings can be sent from the event day for 14 days)</span></span></label>
         <label class="flex items-center gap-2"><input type="checkbox" name="thank_you_enabled" value="1" @checked($event->thank_you_enabled)> Send automatically the morning after, at <input type="time" name="thank_you_time" value="{{ $event->thank_you_time }}" class="border rounded-lg px-2 py-1"></label>
         <button class="btn btn-primary">Save</button>
     </form>

@@ -244,7 +244,7 @@ class MessageTemplateService
         // Guests who came are invited to rate the event (the host switches this on). {feedback_link} can be placed anywhere; otherwise it goes at the end.
         $link = $attended && $event->feedback_enabled ? ($pledge->feedbackLink() ?? '') : '';
         if ($link !== '' && ! str_contains($text, '{feedback_link}')) {
-            $text .= ($event->sms_language === 'sw' ? ' Tupe maoni yako: ' : ' Rate the event: ').'{feedback_link}';
+            $text .= ($event->sms_language === 'sw' ? ' Maoni: ' : ' Rate it: ').'{feedback_link}';
         }
 
         return strtr($text, $this->common($event, $pledge) + ['{feedback_link}' => $link]);

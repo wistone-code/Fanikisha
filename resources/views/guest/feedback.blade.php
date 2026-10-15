@@ -41,16 +41,16 @@ button{margin-top:14px;width:100%;background:{{ $color }};color:#fff;border:0;bo
     <div class="done">★</div>
     <h1>{{ $t['thanks'] }}</h1>
     <p class="sub">{{ $t['thanks2'] }}</p>
-    <p class="link"><a href="{{ route('guest.feedback', $pledge->invite_token) }}?edit=1" style="color:#555">{{ $t['change'] }}</a></p>
+    <p class="link"><a href="{{ route('guest.feedback', $pledge->feedback_code) }}?edit=1" style="color:#555">{{ $t['change'] }}</a></p>
 @elseif ($mine && ! request('edit'))
     <div class="done">{{ str_repeat('★', $mine) }}</div>
     <h1>{{ $t['thanks'] }}</h1>
     <p class="sub">{{ $t['thanks2'] }}</p>
-    <p class="link"><a href="{{ route('guest.feedback', $pledge->invite_token) }}?edit=1" style="color:#555">{{ $t['change'] }}</a></p>
+    <p class="link"><a href="{{ route('guest.feedback', $pledge->feedback_code) }}?edit=1" style="color:#555">{{ $t['change'] }}</a></p>
 @else
     <h1>{{ $event->name }}</h1>
     <p class="sub">{{ str_replace(':name', trim(explode(' ', $pledge->name)[0]), $t['ask']) }}</p>
-    <form method="POST" action="{{ route('guest.feedback.store', $pledge->invite_token) }}">
+    <form method="POST" action="{{ route('guest.feedback.store', $pledge->feedback_code) }}">
         @csrf
         <div class="stars" role="radiogroup" aria-label="{{ $t['title'] }}">
             @foreach ([5, 4, 3, 2, 1] as $n)

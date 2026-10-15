@@ -22,7 +22,18 @@ class AfterEventController extends Controller
             'alreadySent' => $cards->whereNotNull('thank_you_sent_at')->count(),
             'eventOver' => $event->event_date->lte(now()->startOfDay()),
             'feedback' => $this->feedbackSummary($event),
+            'preview' => $this->attendedPreview($event),
         ]);
+    }
+
+    /** What the saved "guests who came" thank-you looks like for a sample guest, and how many SMS it takes. */
+    private function attendedPreview($event): array
+    {
+        $sample = new \App\Models\Pledge(['name' => 'Amina Juma', 'invite_token' => 'sample', 'checked_in_at' => now(), 'paid' => 0, 'feedback_code' => 'AbCd1234']);
+        $text = \App\Services\BeemSmsService::plainText(app(\App\Services\MessageTemplateService::class)->forThankYou($event, $sample));
+        $length = mb_strlen($text);
+
+        return ['text' => $text, 'length' => $length, 'parts' => $length <= 160 ? 1 : (int) ceil($length / 153)];
     }
 
     public function update(Request $request): RedirectResponse
