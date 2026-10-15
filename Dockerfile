@@ -38,4 +38,6 @@ ENV PHP_CLI_SERVER_WORKERS=8
 
 EXPOSE 8080
 
-CMD php artisan db:wait --timeout=60 && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8080
+# The scheduler runs inside this same container (restarted if it ever stops): automatic reminders, event-day messages and thank-yous all depend on it.
+# Each task takes a database lock and messages each guest at most once, so a second scheduler elsewhere cannot send anything twice.
+CMD php artisan db:wait --timeout=60 && php artisan migrate --force && (while true; do php artisan schedule:work --no-interaction >/dev/null 2>&1; sleep 5; done &) && php artisan serve --host=0.0.0.0 --port=8080
