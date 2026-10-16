@@ -45,9 +45,8 @@
             <span>{{ $c['brand'] }}</span>
         </a>
         <nav class="flex items-center gap-3 text-sm">
-            <a href="{{ url()->current() }}?lang={{ $other }}" class="text-gray-500 hover:text-gray-800" hreflang="{{ $other }}">{{ $sw ? 'English' : 'Kiswahili' }}</a>
-            <a href="{{ route('site-feedback', ['lang' => $sw ? 'sw' : null]) }}" class="text-gray-500 hover:text-gray-800"><i class="fa-solid fa-comment-dots"></i> {{ $sw ? 'Maoni' : 'Feedback' }}</a>
-            <a href="{{ route('login') }}" class="pbtn pbtn-primary !py-2 !px-4 !text-[13px]">{{ $sw ? 'Ingia' : 'Sign in' }}</a>
+            <a href="{{ url()->current() }}?lang={{ $other }}" class="text-gray-500 hover:text-gray-800 whitespace-nowrap" hreflang="{{ $other }}">{{ $sw ? 'English' : 'Kiswahili' }}</a>
+            <a href="{{ route('login') }}" class="pbtn pbtn-primary !py-2 !px-4 !text-[13px] whitespace-nowrap">{{ $sw ? 'Ingia' : 'Sign in' }}</a>
         </nav>
     </div>
 </header>

@@ -20,9 +20,11 @@ class FeedbackTest extends TestCase
         $this->assertDatabaseHas('feedback_items', ['source' => 'website', 'message' => 'Add dark mode', 'status' => 'new']);
     }
 
-    public function test_feedback_button_shows_on_public_pages(): void
+    public function test_feedback_button_floats_on_public_pages_and_not_in_the_header(): void
     {
-        $this->get('/')->assertOk()->assertSee('/feedback', false)->assertSee('Feedback');
+        $html = $this->get('/')->assertOk()->getContent();
+        $this->assertStringContainsString('fixed bottom-4 right-4', $html);
+        $this->assertStringNotContainsString('<nav class="flex items-center gap-3 text-sm">'."\n".'            <a href="'.route('site-feedback').'"', $html);
         $this->get('/privacy?lang=sw')->assertOk()->assertSee('Tupe maoni');
     }
 
