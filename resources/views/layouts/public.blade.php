@@ -46,6 +46,7 @@
         </a>
         <nav class="flex items-center gap-3 text-sm">
             <a href="{{ url()->current() }}?lang={{ $other }}" class="text-gray-500 hover:text-gray-800" hreflang="{{ $other }}">{{ $sw ? 'English' : 'Kiswahili' }}</a>
+            <a href="{{ route('site-feedback', ['lang' => $sw ? 'sw' : null]) }}" class="text-gray-500 hover:text-gray-800"><i class="fa-solid fa-comment-dots"></i> {{ $sw ? 'Maoni' : 'Feedback' }}</a>
             <a href="{{ route('login') }}" class="pbtn pbtn-primary !py-2 !px-4 !text-[13px]">{{ $sw ? 'Ingia' : 'Sign in' }}</a>
         </nav>
     </div>
@@ -82,5 +83,8 @@
     </div>
     <div class="border-t border-white/10 text-center text-xs text-gray-500 py-4">© {{ date('Y') }} {{ $c['legal_name'] }}. {{ $sw ? 'Haki zote zimehifadhiwa.' : 'All rights reserved.' }}</div>
 </footer>
+@unless (request()->routeIs('site-feedback'))
+<a href="{{ route('site-feedback', ['lang' => $sw ? 'sw' : null]) }}" class="fixed bottom-4 right-4 z-20 rounded-full bg-[#1F3A52] text-white shadow-lg px-4 py-3 text-sm font-semibold flex items-center gap-2" aria-label="{{ $sw ? 'Tupe maoni' : 'Send feedback' }}"><i class="fa-solid fa-comment-dots"></i> {{ $sw ? 'Tupe maoni' : 'Feedback' }}</a>
+@endunless
 </body>
 </html>

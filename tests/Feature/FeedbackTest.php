@@ -20,6 +20,12 @@ class FeedbackTest extends TestCase
         $this->assertDatabaseHas('feedback_items', ['source' => 'website', 'message' => 'Add dark mode', 'status' => 'new']);
     }
 
+    public function test_feedback_button_shows_on_public_pages(): void
+    {
+        $this->get('/')->assertOk()->assertSee('/feedback', false)->assertSee('Feedback');
+        $this->get('/privacy?lang=sw')->assertOk()->assertSee('Tupe maoni');
+    }
+
     public function test_honeypot_blocks_bots(): void
     {
         $this->post('/feedback', ['type' => 'idea', 'message' => 'spam spam', 'website' => 'x'])->assertSessionHasErrors('website');
