@@ -35,7 +35,7 @@
         </div>
         <div>
             <label class="text-xs font-semibold" for="phone">{{ $t('Phone number the messages came to', 'Namba ya simu iliyopokea ujumbe') }}</label>
-            <input id="phone" name="phone" inputmode="tel" value="{{ old('phone') }}" maxlength="30" placeholder="07XX XXX XXX" class="w-full border rounded-lg px-3 py-2.5 text-base mt-1">
+            <input id="phone" name="phone" required inputmode="tel" value="{{ old('phone') }}" maxlength="30" placeholder="07XX XXX XXX" class="w-full border rounded-lg px-3 py-2.5 text-base mt-1">
             @error('phone')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
         </div>
         <div>

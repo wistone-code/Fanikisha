@@ -8,7 +8,7 @@
     <div>
         <label for="importGuestsText" class="text-xs font-semibold">Paste or type the list</label>
         <textarea name="import_text" id="importGuestsText" rows="7" placeholder="Asha Said 0712 345 678 single&#10;Neema &amp; Baraka 0765 432 198 double&#10;John Mushi 0754 123 456" class="w-full border rounded-lg px-3 py-2 text-sm font-mono">{{ old('import_text') }}</textarea>
-        <p class="text-xs text-gray-500 mt-1">One guest per line: <strong>[name] [phone number] [single or double]</strong>. Phone and card type are optional; without a card type the guest gets a single card. Lists copied from WhatsApp, Excel or Notes work too.</p>
+        <p class="text-xs text-gray-500 mt-1">One guest per line: <strong>[name] [phone number] [single or double]</strong>. Each line needs a name and a phone number; the card type is optional (without it the guest gets a single card). Lines without a valid phone number are skipped. Lists copied from WhatsApp, Excel or Notes work too.</p>
     </div>
 
     <div class="rounded-lg border border-dashed px-3 py-3">

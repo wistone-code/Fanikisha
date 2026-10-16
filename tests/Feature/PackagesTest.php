@@ -46,10 +46,10 @@ class PackagesTest extends TestCase
     {
         Mail::fake();
 
-        $this->actingAs($this->superUser())->post(route('admin.users.store'), ['name' => 'Sam', 'username' => 'sam1', 'email' => 'sam@example.com', 'package' => 'sms'])->assertSessionHas('status');
+        $this->actingAs($this->superUser())->post(route('admin.users.store'), ['name' => 'Sam', 'username' => 'sam1', 'email' => 'sam@example.com', 'phone' => '0712345678', 'package' => 'sms'])->assertSessionHas('status');
         $this->assertSame('sms', User::where('username', 'sam1')->first()->package);
 
-        $this->actingAs($this->superUser())->post(route('admin.users.store'), ['name' => 'Fay', 'username' => 'fay1', 'email' => 'fay@example.com'])->assertSessionHas('status');
+        $this->actingAs($this->superUser())->post(route('admin.users.store'), ['name' => 'Fay', 'username' => 'fay1', 'email' => 'fay@example.com', 'phone' => '0712345679'])->assertSessionHas('status');
         $this->assertSame('full', User::where('username', 'fay1')->first()->package);
     }
 

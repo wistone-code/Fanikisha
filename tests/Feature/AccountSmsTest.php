@@ -45,16 +45,15 @@ class AccountSmsTest extends TestCase
         $this->assertStringContainsString('sent by SMS', session('status'));
     }
 
-    public function test_no_sms_when_the_box_is_unticked_or_there_is_no_phone(): void
+    public function test_no_sms_when_the_box_is_unticked(): void
     {
         $this->beem();
         $admin = User::factory()->create(['is_super_user' => true]);
 
         $this->actingAs($admin)->post('/admin/users', $this->newAccount())->assertRedirect();
-        $this->actingAs($admin)->post('/admin/users', $this->newAccount(['username' => 'two', 'email' => 'two@example.com', 'phone' => '', 'send_sms' => '1']))->assertRedirect();
 
         Http::assertNotSent(fn ($r) => str_contains((string) $r->url(), 'beem'));
-        $this->assertStringContainsString('No phone number', session('status'));
+        $this->assertDatabaseHas('users', ['username' => 'neema']);
     }
 
     public function test_adding_a_team_member_texts_them_and_uses_the_events_quota(): void

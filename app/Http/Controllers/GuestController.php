@@ -133,7 +133,7 @@ class GuestController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
+            'phone' => ['required', 'string', 'max:32', new \App\Rules\ValidPhone],
             'card_type' => ['required', 'in:single,double'],
         ]);
 
@@ -155,7 +155,7 @@ class GuestController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
+            'phone' => ['required', 'string', 'max:32', new \App\Rules\ValidPhone],
             'card_type' => ['nullable', 'in:single,double'],
         ]);
 
@@ -239,6 +239,13 @@ class GuestController extends Controller
                 continue;
             }
 
+            // Every guest needs a phone number the app can use.
+            if (! \App\Rules\ValidPhone::ok($phone)) {
+                $skipped++;
+
+                continue;
+            }
+
             // The same list imported twice must not double the guest list.
             $key = mb_strtolower($name).'|'.$phones->normalize($phone ?: null);
             if ($seen->has($key)) {
@@ -256,7 +263,7 @@ class GuestController extends Controller
             $imported++;
         }
 
-        return back()->with('status', "Added {$imported} guest(s)".($skipped > 0 ? ", skipped {$skipped} line(s) without a name or already on the list" : '').'.');
+        return back()->with('status', "Added {$imported} guest(s)".($skipped > 0 ? ", skipped {$skipped} line(s) without a name or a valid phone number, or already on the list" : '').'.');
     }
 
     /** Read names, phones and card types from photos of a list. Nothing is saved: the page fills the box for checking. */
@@ -286,7 +293,7 @@ class GuestController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
+            'phone' => ['required', 'string', 'max:32', new \App\Rules\ValidPhone],
             'card_type' => ['required', 'in:single,double'],
         ]);
 

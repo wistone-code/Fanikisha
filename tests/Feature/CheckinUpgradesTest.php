@@ -169,7 +169,7 @@ class CheckinUpgradesTest extends TestCase
     {
         [$event, $admin] = $this->ecardEvent();
 
-        $this->actingAs($admin)->post(route('team.store'), ['name' => 'Door Dan', 'username' => 'doordan', 'email' => 'dan@example.com', 'role' => 'scanner'])->assertRedirect();
+        $this->actingAs($admin)->post(route('team.store'), ['name' => 'Door Dan', 'username' => 'doordan', 'email' => 'dan@example.com', 'phone' => '0712345678', 'role' => 'scanner'])->assertRedirect();
         $member = EventMember::where('event_id', $event->id)->where('role', 'scanner')->firstOrFail();
 
         $this->actingAs($admin)->post(route('team.toggle-disabled', $member))->assertRedirect();

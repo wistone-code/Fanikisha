@@ -28,7 +28,7 @@ class ActivityLogCoverageTest extends TestCase
         $event = Event::factory()->create(['event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);
         $admin = $this->memberOf($event, 'admin');
 
-        $this->actingAs($admin)->post(route('team.store'), ['name' => 'Door Dan', 'username' => 'doordan', 'email' => 'dan@example.com', 'role' => 'scanner'])->assertRedirect();
+        $this->actingAs($admin)->post(route('team.store'), ['name' => 'Door Dan', 'username' => 'doordan', 'email' => 'dan@example.com', 'phone' => '0712345678', 'role' => 'scanner'])->assertRedirect();
         $dan = User::where('username', 'doordan')->firstOrFail();
         $member = EventMember::where('user_id', $dan->id)->firstOrFail();
 

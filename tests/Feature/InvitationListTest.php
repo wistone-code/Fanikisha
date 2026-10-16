@@ -137,7 +137,7 @@ class InvitationListTest extends TestCase
     {
         [$event, $admin] = $this->fullEvent();
 
-        $this->actingAs($admin)->post(route('guests.invite.new'), ['name' => 'Mr and Mrs Kimaro', 'card_type' => 'double'])->assertSessionHas('status');
+        $this->actingAs($admin)->post(route('guests.invite.new'), ['name' => 'Mr and Mrs Kimaro', 'phone' => '0712000555', 'card_type' => 'double'])->assertSessionHas('status');
         $this->actingAs($admin)->post(route('guests.invite.new'), ['name' => 'Odd One', 'card_type' => 'vip'])->assertSessionHasErrors('card_type');
 
         $guest = Pledge::where('name', 'Mr and Mrs Kimaro')->first();
@@ -145,7 +145,7 @@ class InvitationListTest extends TestCase
         $this->assertSame(2, $guest->headcount());
         $this->assertNull(Pledge::where('name', 'Odd One')->first());
 
-        $this->actingAs($admin)->patch(route('guests.update', $guest), ['name' => 'Mr and Mrs Kimaro', 'card_type' => 'single']);
+        $this->actingAs($admin)->patch(route('guests.update', $guest), ['name' => 'Mr and Mrs Kimaro', 'phone' => '0712000555', 'card_type' => 'single']);
         $this->assertSame(1, $guest->fresh()->headcount());
     }
 }

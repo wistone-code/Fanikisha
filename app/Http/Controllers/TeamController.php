@@ -37,7 +37,7 @@ class TeamController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'max:20', new \App\Rules\ValidPhone],
             'role' => ['required', 'in:admin,viewer,scanner'],
         ]);
 

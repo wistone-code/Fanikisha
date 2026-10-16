@@ -64,7 +64,7 @@ class GuestManagementAuditTest extends TestCase
         $this->assertSame(0, Pledge::where('name', 'Nope')->count());
 
         // A contribution account may import a guest list (invitation list only), but a funeral may not.
-        $this->actingAs($fullAdmin)->post(route('guests.import'), ['import_text' => 'Invited Guest'])->assertSessionHas('status');
+        $this->actingAs($fullAdmin)->post(route('guests.import'), ['import_text' => 'Invited Guest 0712000333'])->assertSessionHas('status');
         $this->assertTrue((bool) Pledge::where('name', 'Invited Guest')->first()->guest_only);
         [, $funeralAdmin] = $this->fullEvent(['event_type' => 'Funeral']);
         $this->actingAs($funeralAdmin)->post(route('guests.import'), ['import_text' => 'A'])->assertNotFound();
@@ -74,7 +74,7 @@ class GuestManagementAuditTest extends TestCase
     {
         [$event, $admin] = $this->ecardEvent();
 
-        $this->actingAs($admin)->post(route('guests.import'), ['import_text' => "Name, Phone, Card\nAsha, 0712000111, double\n\n,0712000222\nBen\tNo-phone-here"])
+        $this->actingAs($admin)->post(route('guests.import'), ['import_text' => "Name, Phone, Card\nAsha, 0712000111, double\n\n,0712000222\nBen\t0712000444"])
             ->assertSessionHas('status');
 
         $this->assertSame(2, $event->pledges()->count());

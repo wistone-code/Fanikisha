@@ -102,7 +102,7 @@
                         <div>
                             <label class="text-xs font-semibold">Phone</label>
                             <div class="flex gap-1">
-                                <input type="tel" id="phone-edit-{{ $p->id }}" name="phone" value="{{ $p->phone }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm">
+                                <input type="tel" id="phone-edit-{{ $p->id }}" name="phone" required value="{{ $p->phone }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm">
                                 <button type="button" onclick="pickContact('phone-edit-{{ $p->id }}')" class="contact-pick-btn btn btn-ghost !px-2.5" title="Pick from contacts"><i class="fa-solid fa-address-book"></i></button>
                             </div>
                         </div>
@@ -143,7 +143,7 @@
             <div>
                 <label class="text-xs font-semibold">Phone</label>
                 <div class="flex gap-1">
-                    <input type="tel" id="phone-add" name="phone" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    <input type="tel" id="phone-add" name="phone" required placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm">
                     <button type="button" onclick="pickContact('phone-add', 'name-add')" class="contact-pick-btn btn btn-ghost !px-2.5" title="Pick from contacts"><i class="fa-solid fa-address-book"></i></button>
                 </div>
             </div>

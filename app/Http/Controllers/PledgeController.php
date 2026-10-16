@@ -176,7 +176,7 @@ class PledgeController extends Controller
             $amountRaw = str_replace([',', ' '], '', trim((string) ($row[2] ?? '')));
             $amount = is_numeric($amountRaw) ? (float) $amountRaw : null;
 
-            if ($name === '' || $amount === null || $amount <= 0 || $amount > 100000000000) {
+            if ($name === '' || $amount === null || $amount <= 0 || $amount > 100000000000 || ! \App\Rules\ValidPhone::ok($phone)) {
                 $skipped++;
 
                 continue;
@@ -205,7 +205,7 @@ class PledgeController extends Controller
 
         $noun = $event->isFuneral() ? 'condolence(s)' : 'pledge(s)';
 
-        return back()->with('status', "Imported {$imported} {$noun}".($skipped > 0 ? ", skipped {$skipped} invalid row(s)" : '').'.');
+        return back()->with('status', "Imported {$imported} {$noun}".($skipped > 0 ? ", skipped {$skipped} row(s) with a missing name, amount or valid phone number" : '').'.');
     }
 
     /**
@@ -243,7 +243,7 @@ class PledgeController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
+            'phone' => ['required', 'string', 'max:32', new \App\Rules\ValidPhone],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'add_payment' => ['nullable', 'numeric', 'min:0'],
             'paid_correction' => ['nullable', 'numeric', 'min:0'],

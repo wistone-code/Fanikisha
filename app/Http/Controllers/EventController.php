@@ -300,7 +300,7 @@ class EventController extends Controller
     public function updateOwnPhone(Request $request, AccountUniquenessService $unique, PhoneNumberService $phones): RedirectResponse
     {
         $data = $request->validate([
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'max:20', new \App\Rules\ValidPhone],
             'current_password' => ['required', 'current_password'],
         ]);
 

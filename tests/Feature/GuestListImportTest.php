@@ -40,7 +40,7 @@ class GuestListImportTest extends TestCase
         $admin = $this->memberOf($event, 'admin');
 
         $this->actingAs($admin)->post(route('guests.import'), [
-            'import_text' => "Asha Said 0712 345 678\n2. John Mushi +255754123456 single\nNeema & Baraka 0765432198 double\n\nBibi Mkubwa",
+            'import_text' => "Asha Said 0712 345 678\n2. John Mushi +255754123456 single\nNeema & Baraka 0765432198 double\n\nBibi Mkubwa 0712999888",
         ])->assertSessionHas('status');
 
         $guests = Pledge::where('event_id', $event->id)->orderBy('id')->get();
@@ -50,7 +50,7 @@ class GuestListImportTest extends TestCase
         $this->assertSame('single', $guests[0]->card_type);
         $this->assertSame('John Mushi', $guests[1]->name);
         $this->assertSame('double', $guests[2]->card_type);
-        $this->assertNull($guests[3]->phone);
+        $this->assertSame('+255712999888', $guests[3]->phone);
 
         // Importing the same list again does not double it.
         $this->actingAs($admin)->post(route('guests.import'), ['import_text' => 'Asha Said 0712 345 678']);
@@ -64,7 +64,7 @@ class GuestListImportTest extends TestCase
     {
         [$event, $admin] = $this->ecardEvent();
 
-        $this->actingAs($admin)->post(route('guests.import'), ['import_text' => "Asha Said 0712345678 double\nBen Mollel"])->assertSessionHas('status');
+        $this->actingAs($admin)->post(route('guests.import'), ['import_text' => "Asha Said 0712345678 double\nBen Mollel 0754111222"])->assertSessionHas('status');
 
         $this->assertSame('double', Pledge::where('name', 'Asha Said')->first()->card_type);
         $this->assertFalse((bool) Pledge::where('name', 'Ben Mollel')->first()->guest_only);

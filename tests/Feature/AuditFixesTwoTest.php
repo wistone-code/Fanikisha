@@ -179,7 +179,7 @@ class AuditFixesTwoTest extends TestCase
         $event = Event::factory()->create(['package' => 'sms', 'mode' => 'contributions', 'event_type' => 'Wedding', 'event_date' => now()->addDays(20)->toDateString()]);
         $owner = $this->memberOf($event, 'admin');
 
-        $this->actingAs($owner)->post(route('team.store'), ['name' => 'Vi Ewer', 'username' => 'viewer.one', 'email' => 'vi@example.com', 'role' => 'viewer'])->assertSessionHas('status');
+        $this->actingAs($owner)->post(route('team.store'), ['name' => 'Vi Ewer', 'username' => 'viewer.one', 'email' => 'vi@example.com', 'phone' => '0712345678', 'role' => 'viewer'])->assertSessionHas('status');
 
         $this->assertSame('sms', User::where('username', 'viewer.one')->value('package'));
     }

@@ -100,7 +100,7 @@ class ProviderController extends Controller
             'budget' => ['required', 'numeric', 'min:0'],
             'add_payment' => ['nullable', 'numeric', 'min:0'],
             'paid_correction' => ['nullable', 'numeric', 'min:0'],
-            'phone' => ['nullable', 'string', 'max:32'],
+            'phone' => ['required', 'string', 'max:32', new \App\Rules\ValidPhone],
         ]);
     }
 

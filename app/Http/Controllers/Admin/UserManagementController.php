@@ -162,7 +162,7 @@ class UserManagementController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'max:20', new \App\Rules\ValidPhone],
             'package' => ['nullable', 'in:'.implode(',', array_keys(config('packages.packages')))],
         ]);
 
@@ -224,7 +224,7 @@ class UserManagementController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'max:20', new \App\Rules\ValidPhone],
         ]);
 
         if ($warnings = $unique->conflicts($data['username'], $data['email'], $data['phone'] ?? null, $user->id)) {

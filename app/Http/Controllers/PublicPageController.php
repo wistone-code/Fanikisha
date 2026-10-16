@@ -47,15 +47,11 @@ class PublicPageController extends Controller
         $data = $request->validate([
             'type' => ['required', 'in:'.implode(',', DataRequest::TYPES)],
             'name' => ['nullable', 'string', 'max:120'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'max:30', new \App\Rules\ValidPhone],
             'email' => ['nullable', 'email', 'max:150'],
             'details' => ['nullable', 'string', 'max:2000'],
             'website' => ['nullable', 'max:0'], // honeypot — humans leave it empty
         ]);
-
-        if (blank($data['phone'] ?? null) && blank($data['email'] ?? null)) {
-            return back()->withInput()->withErrors(['phone' => 'Please give a phone number or an email address so we can find your data and reply.']);
-        }
 
         unset($data['website']);
 

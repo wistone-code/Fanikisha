@@ -138,7 +138,7 @@ class AuditFixesTest extends TestCase
         $stale = Pledge::find($p->id);
         $p->update(['paid' => 10000]); // someone else just recorded 10,000
 
-        $this->actingAs($admin)->patch(route('pledges.update', $stale), ['name' => 'Pay Pat', 'amount' => 50000, 'phone' => '', 'add_payment' => 10000])->assertRedirect();
+        $this->actingAs($admin)->patch(route('pledges.update', $stale), ['name' => 'Pay Pat', 'amount' => 50000, 'phone' => '0712000999', 'add_payment' => 10000])->assertRedirect();
 
         $this->assertSame(20000.0, (float) $p->fresh()->paid);
     }

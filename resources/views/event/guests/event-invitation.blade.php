@@ -22,7 +22,7 @@
         <form method="POST" action="{{ route('guests.invite.new') }}" class="space-y-3">
             @csrf
             <input name="name" value="{{ old('name') }}" required maxlength="255" placeholder="Name" class="w-full border rounded-lg px-3 py-2 text-sm">
-            <input name="phone" value="{{ old('phone') }}" maxlength="32" inputmode="tel" placeholder="Phone (0712 345 678)" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <input name="phone" required value="{{ old('phone') }}" maxlength="32" inputmode="tel" placeholder="Phone (0712 345 678)" class="w-full border rounded-lg px-3 py-2 text-sm">
             <div><label class="text-xs font-semibold">Card type</label>
                 <select name="card_type" class="w-full border rounded-lg px-3 py-2 text-sm">
                     <option value="single" @selected(old('card_type', 'single') === 'single')>Single card (one person)</option>
@@ -172,7 +172,7 @@
         <form method="POST" action="{{ route('guests.update', $p) }}" class="space-y-3">
             @csrf @method('PATCH')
             <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ $p->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="text-xs font-semibold">Phone</label><input type="tel" name="phone" value="{{ $p->phone }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Phone</label><input type="tel" name="phone" required value="{{ $p->phone }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div><label class="text-xs font-semibold">Card type</label>
                 <select name="card_type" class="w-full border rounded-lg px-3 py-2 text-sm">
                     <option value="single" @selected(($p->card_type ?: 'single') === 'single')>Single card (one person)</option>

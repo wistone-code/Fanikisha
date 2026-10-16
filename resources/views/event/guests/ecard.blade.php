@@ -128,7 +128,7 @@
         <form method="POST" action="{{ route('guests.store') }}" class="space-y-3">
             @csrf
             <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ old('name') }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="text-xs font-semibold">Phone</label><input type="tel" name="phone" value="{{ old('phone') }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm"><p class="text-xs text-gray-400 mt-1">Optional — without a phone you can still copy the card link.</p></div>
+            <div><label class="text-xs font-semibold">Phone</label><input type="tel" name="phone" required value="{{ old('phone') }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm"><p class="text-xs text-gray-400 mt-1">A phone number is needed for every guest, so the card can be sent and the guest can be reached.</p></div>
             <div>
                 <label class="text-xs font-semibold">Card</label>
                 <select name="card_type" class="w-full border rounded-lg px-3 py-2 text-sm">
@@ -162,7 +162,7 @@
         <form method="POST" action="{{ route('guests.update', $g) }}" class="space-y-3">
             @csrf @method('PATCH')
             <div><label class="text-xs font-semibold">Name</label><input type="text" name="name" value="{{ $g->name }}" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="text-xs font-semibold">Phone</label><input type="tel" name="phone" value="{{ $g->phone }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Phone</label><input type="tel" name="phone" required value="{{ $g->phone }}" placeholder="0718 083 235" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
             <div>
                 <label class="text-xs font-semibold">Card</label>
                 <select name="card_type" class="w-full border rounded-lg px-3 py-2 text-sm">

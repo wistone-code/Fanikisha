@@ -238,7 +238,7 @@
             @csrf @method('PATCH')
             <h4 class="text-sm font-semibold">Phone</h4>
             <p class="text-xs text-gray-500">Used to send you a code if you ever need to reset your password.</p>
-            <input type="tel" name="phone" value="{{ auth()->user()->phone }}" placeholder="e.g. +255700000000" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <input type="tel" name="phone" required value="{{ auth()->user()->phone }}" placeholder="e.g. +255700000000" class="w-full border rounded-lg px-3 py-2 text-sm">
             <input type="password" name="current_password" placeholder="Current password (to confirm)" autocomplete="current-password" class="w-full border rounded-lg px-3 py-2 text-sm" required>
             @error('phone')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             <button class="btn btn-primary w-full justify-center">Save phone</button>
