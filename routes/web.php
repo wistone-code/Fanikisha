@@ -113,6 +113,8 @@ Route::middleware(['auth', 'not_suspended'])->group(function () {
 Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function () {
 
     Route::post('/account/password', [PasswordChangeController::class, 'updateOwn'])->name('password.own.update');
+    // Every signed-in account (admin, host, viewer, door staff, System Admin) can change its own username.
+    Route::patch('/account/username', [EventController::class, 'updateOwnUsername'])->name('account.username.update');
 
     // Hit by the session-timeout warning's "Stay signed in" button (see layouts/app.blade.php).
     // A real request here is what resets Laravel's session idle clock — this only fires when
@@ -219,7 +221,6 @@ Route::middleware(['auth', 'not_suspended', 'password_changed'])->group(function
         });
 
         Route::middleware('event_admin')->group(function () {
-            Route::patch('/account/username', [EventController::class, 'updateOwnUsername'])->name('account.username.update');
             Route::patch('/account/email', [EventController::class, 'updateOwnEmail'])->name('account.email.update');
             Route::patch('/account/phone', [EventController::class, 'updateOwnPhone'])->name('account.phone.update');
 

@@ -6,6 +6,19 @@
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl">
     <div class="card p-6">
+        <h3 class="font-semibold mb-1">Username</h3>
+        <p class="text-sm text-gray-500 mb-4">The name you type to sign in.</p>
+        <form method="POST" action="{{ route('account.username.update') }}" class="space-y-3">
+            @csrf @method('PATCH')
+            <div><label class="text-xs font-semibold">Username</label><input type="text" name="username" value="{{ $account->username }}" autocapitalize="none" autocorrect="off" required class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            <div><label class="text-xs font-semibold">Current password <span class="text-gray-400 font-normal">(to confirm it's you)</span></label><input type="password" name="current_password" required autocomplete="current-password" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+            @error('username')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            @error('current_password')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+            <button class="btn btn-primary">Save username</button>
+        </form>
+    </div>
+
+    <div class="card p-6">
         <h3 class="font-semibold mb-1">Email</h3>
         <p class="text-sm text-gray-500 mb-4">Used only for account recovery — no notifications are sent here.</p>
         <form method="POST" action="{{ route('admin.account.email') }}" class="space-y-3">

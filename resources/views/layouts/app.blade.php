@@ -173,10 +173,10 @@
                 </button>
                 <div id="accountMenu" class="cm-menu cm-right hidden" role="menu" style="min-width:13rem">
                     <div class="cm-label">Your account</div>
-                    @if ($isEventAdmin)
+                    @unless ($isSuperUser)
                     <button onclick="document.getElementById('accountSettingsModal').classList.remove('hidden'); document.getElementById('accountMenu').classList.add('hidden')" class="cm-item" role="menuitem"><i class="fa-solid fa-gear"></i> Account settings</button>
                     <div class="cm-sep"></div>
-                    @endif
+                    @endunless
                     @if (Route::has('feedback.host') && $rightEvent)<a href="{{ route('feedback.host', ['from' => request()->path()]) }}" class="cm-item" role="menuitem"><i class="fa-solid fa-comment-dots"></i> Send feedback</a><div class="cm-sep"></div>@endif
                     <form method="POST" action="{{ route('logout') }}">@csrf
                         <button class="cm-item cm-danger" role="menuitem"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>
@@ -221,6 +221,7 @@
             <button class="btn btn-primary w-full justify-center">Save username</button>
         </form>
 
+        @if (! auth()->user()->is_super_user && ($rightEvent ?? null) && auth()->user()->isAdminOn($rightEvent))
         <div class="border-t"></div>
 
         <form method="POST" action="{{ route('account.email.update') }}" class="space-y-3">
@@ -243,6 +244,8 @@
             @error('phone')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             <button class="btn btn-primary w-full justify-center">Save phone</button>
         </form>
+
+        @endif
 
         <div class="border-t"></div>
 

@@ -44,6 +44,6 @@ class NavMenuTest extends TestCase
             ->assertSee('id="accountMenu"', false)->assertSee('cm-menu', false)->assertSee('Account settings')->assertSee('Log out');
 
         $this->actingAs($viewer)->get(route('guests.index'))->assertOk()
-            ->assertSee('id="accountMenu"', false)->assertSee('Log out')->assertDontSee('fa-gear"></i> Account settings', false);
+            ->assertSee('id="accountMenu"', false)->assertSee('Log out')->assertSee('Account settings');
     }
 }
