@@ -188,11 +188,32 @@ class UserManagementController extends Controller
         ActivityLogger::log('account.created', "Created account for {$user->name} ({$user->username}) — ".config("packages.packages.{$data['package']}.label"), $user);
 
         $emailed = $mailer->sendWelcome($user, $plainPassword);
+        $sms = $request->boolean('send_sms') ? app(\App\Services\AccountSms::class)->sendWelcome($user, $plainPassword) : null;
 
         return redirect()->route('admin.users.index')->with([
-            'status' => $emailed ? "Account created — login details emailed to {$user->email}" : 'Account created, but the email could not be sent — share the details manually',
+            'status' => 'Account created — '.self::deliverySummary($emailed, $user->email, $sms, $user->phone),
             'reveal_credentials' => ['name' => $user->name, 'username' => $user->username, 'password' => $plainPassword],
         ]);
+    }
+
+    /** One sentence saying how the login details went out, and what to do if neither worked. */
+    public static function deliverySummary(bool $emailed, ?string $email, ?array $sms, ?string $phone): string
+    {
+        $parts = [];
+        if ($emailed) {
+            $parts[] = "emailed to {$email}";
+        }
+        if ($sms && $sms['sent']) {
+            $parts[] = "sent by SMS to {$phone}";
+        }
+        $text = $parts ? 'login details '.implode(' and ', $parts) : 'the login details could not be sent — share them manually';
+        if ($sms && ! $sms['sent'] && $parts) {
+            $text .= ". The SMS was not sent: {$sms['error']}";
+        } elseif ($sms && ! $sms['sent']) {
+            $text .= " (SMS: {$sms['error']})";
+        }
+
+        return $text;
     }
 
     public function update(Request $request, User $user, AccountUniquenessService $unique, PhoneNumberService $phones): RedirectResponse

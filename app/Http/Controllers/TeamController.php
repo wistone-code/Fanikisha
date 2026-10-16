@@ -64,9 +64,11 @@ class TeamController extends Controller
         ActivityLogger::log('team.member_added', "{$request->user()->name} added {$user->name} ({$user->username}) to \"{$event->name}\" as {$data['role']}", $user, $event);
 
         $emailed = $mailer->sendWelcome($user, $plainPassword);
+        // Charged to this event's SMS quota like any other message; skipped with a note when the quota is finished.
+        $sms = $request->boolean('send_sms') ? app(\App\Services\AccountSms::class)->sendWelcome($user, $plainPassword) : null;
 
         return back()->with([
-            'status' => $emailed ? "Member added — login details emailed to {$user->email}" : 'Member added, but the email could not be sent — share the details manually',
+            'status' => 'Member added — '.\App\Http\Controllers\Admin\UserManagementController::deliverySummary($emailed, $user->email, $sms, $user->phone),
             'reveal_credentials' => ['name' => $user->name, 'username' => $user->username, 'password' => $plainPassword],
         ]);
     }

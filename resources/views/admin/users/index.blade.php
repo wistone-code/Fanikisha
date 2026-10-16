@@ -422,6 +422,7 @@
                     @endforeach
                 </div>
             </div>
+            <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="send_sms" value="1" class="mt-1" checked> <span>Also send the sign-in link, username and temporary password by SMS to the phone number above <span class="text-gray-400">(needs a phone number; not charged to any event)</span></span></label>
             <p class="text-xs text-gray-400"><i class="fa-solid fa-wand-magic-sparkles"></i> A temporary password will be generated automatically.</p>
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('newAccountModal').classList.add('hidden')" class="btn btn-ghost flex-1 justify-center">Cancel</button>
